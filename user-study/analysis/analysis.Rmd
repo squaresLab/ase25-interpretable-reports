@@ -1,0 +1,249 @@
+```{r}
+library(readxl)
+library("dplyr") 
+library(lme4)
+library(lmerTest)
+library(sjPlot)
+library(GGally)
+```
+
+```{r}
+df <- read.csv('data/preprocessed_data.csv', header=TRUE)
+df$Sample <- as.factor(df$Sample)
+df$Report.type <- as.factor(df$Report.type)
+df$category_Correct <- as.factor(df$category_Correct)
+df$category_Incorrect <- as.factor(df$category_Incorrect)
+df$category_Plausible <- as.factor(df$category_Plausible)
+df$Patch.category  <- as.factor(df$Patch.category )
+df$P <- as.factor(df$P)
+
+```
+
+```{r}
+# For vulnerability understanding
+View(df)
+```
+
+```{r}
+
+#install.packages("effects")
+#library(effects)
+
+# Positive counts
+df$Report.type  <- relevel(df$Report.type , ref = "Ours")
+
+understanding_model1 <- glmer(vulnerability_understanding ~
+                               Report.type
+                             + vuln_experience
+                             #+ willigness_AI
+                             + programming_experience
+                             + Sample
+                             + (1|P), # random effects
+                             family = poisson,
+                             data=df)
+
+
+print(summary(understanding_model1),show.residuals=TRUE)
+
+```
+```{r}
+
+library(ggplot2)
+ggplot(data=df, aes(x=Report.type, y=vulnerability_understanding))  + geom_histogram(binwidth=.5, position="dodge")
+```
+
+```{r}
+
+# We define usefulness as the number of correct patches developed by the user + correct answered questions given 100% correct reports.
+
+df$Report.type  <- relevel(df$Report.type , ref = "Ours")
+df$usefulness <- df$vulnerability_understanding #+ df$correct_patches_count
+
+# Drop rows where reports are not correct
+df_filtered <- df[!(df$Report.type == "AmazonQ" & df$Sample == 1), ]
+df_filtered <- df[!(df$Report.type == "AmazonQ" & df$Sample == 3), ]
+df_filtered <- df[!(df$Report.type == "Ours" & df$Sample == 1), ]
+#df <- df[!(df$Report.type == "Ours" & df$Sample == 3), ]
+
+
+
+usefulness_model1 <- glmer(usefulness ~
+                               Report.type
+                             + vuln_experience
+                             #+willigness_AI
+                             + programming_experience
+                             + Sample
+                            + (1|P),
+                           family=poisson,
+                           data=df_filtered
+                           )
+
+print(summary(usefulness_model1))
+```
+
+```{r}
+# We are interested in correct & plausible patches only. So we filtered out the dataset to look for correct or plausible patches. 
+# We exclude incorrect patches because there may cases where the user has no idea how to resolve the vulnerability and just skips the exercise (without actually resolving anything).
+
+df_filtered <- df[df$Patch.category == "Correct", ]
+
+# Set our report as the baseline/reference
+df$Report.type  <- relevel(df$Report.type , ref = "Ours")
+
+# output is continuous. random and fixed effects
+patching_time_model1 <- lmer(Patching.time ~
+                               Report.type
+                             + vuln_experience
+                             #+ willigness_AI
+                             + programming_experience
+                             #+ overall_experience
+                             + Sample
+                             + (1|P),
+                             data=df_filtered)
+
+print(summary(patching_time_model1))
+# median is 0; the model is ok
+```
+
+```{r}
+View(df_filtered)
+```
+
+```{r}
+
+library(dplyr)
+
+df %>%
+  count(Patch.category)
+
+
+```
+
+```{r}
+
+library(nnet)
+#library(brms)
+
+# Set our report as reference
+df$Patch.category  <- relevel(df$Patch.category , ref = "Correct")
+df$Report.type  <- relevel(df$Report.type , ref = "Ours")
+
+
+corr_model <- multinom(Patch.category ~
+                           Report.type
+                             + vuln_experience
+                             #+ willigness_AI
+                             + programming_experience
+                             + Sample,
+                            data=df)
+
+print(summary(corr_model),show.residuals=TRUE)
+```
+
+```{r}
+
+# multinom package does not include p-value calculation for the regression coefficients, so we calculate p-values using Wald tests (here z-tests).
+# from https://stats.oarc.ucla.edu/r/dae/multinomial-logistic-regression/
+
+z <- summary(corr_model)$coefficients/summary(corr_model)$standard.errors
+p <- (1 - pnorm(abs(z), 0, 1)) * 2
+
+print(p)
+```
+
+```{r}
+# The ratio of the probability of choosing one outcome category over the probability of choosing the baseline category is often referred as relative risk (and it is sometimes referred to as odds). The relative risk is the right-hand side linear equation exponentiated, leading to the fact that the exponentiated regression coefficients are relative risk ratios for a unit change in the predictor variable. We can exponentiate the coefficients from our model to see these risk ratios.
+
+print(coef(corr_model))
+```
+
+```{r}
+
+# from Quantitative Social Science Data Analysis book (chapter 13)
+# from https://study.sagepub.com/fogarty2e
+ggcoef_multinom((corr_model),
+                variable_labels = c(
+                  Report.type = "Report type being used",
+                  vuln_experience = "Vulnerability analysis\nexperience",
+                  willigness_AI = "Willingness to use AI",
+                  programming_experience = "Programming experience",
+                  Sample = "Sample being used"
+                ),
+
+                y.level_label = c(
+                  "Incorrect" = "Incorrect vs. Correct",
+                  "Plausible" = "Plausible vs Correct"
+                 )) + labs(title = "Predicted correctness of the patches",
+                           x="Multinomial logit coefficients")
+
+
+```
+
+```{r}
+# we want to plot predicted probabilities instead of 
+
+
+```
+
+```{r}
+
+df$Report.type <- relevel(df$Report.type, ref = "Ours")
+
+patch_category_correct <- glm(df$category_Correct ~
+                            df$Report.type
+                             + df$vuln_experience
+                             + df$willigness_AI
+                             + df$programming_experience
+                             + df$Sample,
+                           #+ (1|df$P),
+                             family=binomial,
+                              data=df)
+
+summary(patch_category_correct)
+
+```
+
+```{r}
+patch_category_incorrect<- glm(df$category_Incorrect ~
+                            df$Report.type
+                             + df$vuln_experience
+                             + df$willigness_AI
+                             + df$programming_experience
+                             + df$Sample,
+                            # + (1|df$P),
+                             family=binomial,
+                              data=df)
+
+print(summary(patch_category_incorrect))
+
+```
+
+```{r}
+
+patch_category_plausible <- glm(df$category_Plausible ~
+                            df$Report.type
+                             + df$vuln_experience
+                             + df$willigness_AI
+                             + df$programming_experience
+                             + df$Sample,
+                             #+ (1|df$P),
+                             family=binomial,
+                              data=df)
+
+
+print(summary(patch_category_plausible))
+```
+
+```{r}
+
+multinom_model <- multinom(Patch.category ~ 
+                             Report.type + 
+                             vuln_experience + 
+                             willigness_AI + 
+                             programming_experience + 
+                             Sample, 
+                           data=df)
+
+print(summary(multinom_model))
+
+```
