@@ -1,26 +1,29 @@
-# Replication Package of Paper: "Interpretable Vulnerability Detection Reports"
+# Supplementary Material: "Interpretable Vulnerability Detection Reports"
 
-## Overview
 This package contains the user study instruments and prototypes. It is divided into two main components:
 - **secgen**: The prototype that generates reports along with a linter module.
 - **user-study**: Materials and data collected for the user study.
 
 ## Folder Structure
+```plaintext
 ├── secgen
-│   ├── secgen.zip         # Zip file for secgen prototype 
-│   ├── secgenlint.zip     # Zip file for linter module
-│   
+│   ├── secgen.zip            # Zip file for secgen prototype
+│   ├── secgenlint.zip        # Zip file for linter module
+│
 └── user-study
-    ├── analysis                        # Contains regression data and the regression analysis script
-    │   ├── regression_data.numbers     # Regression data file (update file names as needed)
-    │   └── analysis.Rmd                # Script to run the regression analysis
-    ├── surveys                  # Contains survey instruments in PDF format
+    ├── analysis              # Contains regression data and the regression analysis script
+    │   ├── regression_data.numbers  # Regression data file (update file names as needed)
+    │   └── analysis.Rmd      # Script to run the regression analysis
+    │
+    ├── surveys               # Contains survey instruments in PDF format
     │   ├── prestudy_survey.pdf  # Pre-study survey instrument (for eligibility)
     │   └── main_survey.pdf      # Main survey instrument
-    └── tasks                  # Contains code samples used in the tasks and all generated reports
-        ├── task1              # Folder with code samples and reports for task1 
-        └── task2              # Folder with code samples and reports for task2
-        └── task3              # Folder with code samples and reports for task3
+    │
+    └── tasks                 # Contains code samples used in the tasks and all generated reports
+        ├── task1             # Folder with code samples and reports for task1
+        ├── task2             # Folder with code samples and reports for task2
+        └── task3             # Folder with code samples and reports for task3
+```
 
 
 ## Complete set of entities and their descriptions
