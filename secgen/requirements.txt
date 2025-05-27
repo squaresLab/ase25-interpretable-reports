@@ -1,0 +1,7 @@
+pysarif
+python-dotenv
+click
+openai
+ollama
+requests
+pysarif
