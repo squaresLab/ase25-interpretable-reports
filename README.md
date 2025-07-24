@@ -1,6 +1,6 @@
-# Interpretable Vulnerability Detection Reports
+# Replication Package: Interpretable Vulnerability Detection Reports
 
-This repository contains two main tools for security-related code generation and analysis:
+This repository contains the replication package for our paper on interpretable vulnerability detection reports. It includes all data, code, and analysis scripts needed to reproduce the results presented in the paper.
 
 ## Tools Overview
 Our framework can be operationalized via [/secgen](/secgen) (which parses static analysis reports and generates improved versions) and [/secgenlint](/secgenlint) (which provides linting capabilities to validate report compliance).
@@ -33,9 +33,29 @@ Check [SECGenLint for more details](/secgenlint).
 
 ```
 .
-├── secgen/           # Main code generation tool
-│   ├── secgen/         # Source code for SecGen; calls secgenlint
-│   └── README.md/        # Documentation
+├── quantitative-eval/           # Quantitative evaluation data and results
+│   ├── 416/                      # Dataset 1 (416 samples)
+│   │   ├── 416.csv              # CWE-416 samples
+│   │   ├── applicability/       # Applicability results
+│   │   ├── compliance/          # Compliance evaluation
+│   │   ├── orig_samples/        # Original vulnerable code samples
+│   │   ├── patch/               # Generated patches
+│   │   └── reports/             # Generated vulnerability reports
+│   └── 787/                      # Dataset 2 (787 samples)
+│       ├── 787.csv              # CWE-787 samples
+│       ├── applicability/       # Applicability results
+│       ├── compliance/          # Compliance evaluation
+│       ├── orig_samples/        # Original vulnerable code samples
+│       ├── patch/               # Generated patches
+│       └── reports/             # Generated vulnerability reports
+│
+├── user-study/                  # Human evaluation study
+│   ├── analysis/                # Statistical analysis scripts (R)
+│   ├── surveys/                 # Pre-study and post-study surveys
+│   └── tasks/                   # User study tasks and results
+│
+├── secgen/                      # SecGen tool implementation
+│   └── secgen/                  # Source code for report generation
 │
 ├── secgenlint/      # Linting tool
 │   ├── secgenlint/         # Source code for SecGenLint
@@ -53,7 +73,7 @@ Check [SECGenLint for more details](/secgenlint).
    - Python v3.9.20 (exact version required)
    - pip package manager
 
-2. **Ollama**
+2. **Ollama** (for report generation)
    - Required for AI-powered report generation
    - Installation guidelines at [ollama.com](https://ollama.com/)
 
@@ -61,7 +81,7 @@ Check [SECGenLint for more details](/secgenlint).
 
 1. **Clone the Repository**
 ```bash
-git clone https://github.com/XXX
+git clone https://github.com/XXX/interpretable-vulnerability-reports
 cd interpretable-vulnerability-reports
 ```
 
@@ -140,7 +160,6 @@ explanation-suggested-fix: <explain how the suggested code diff resolves the vul
 
 method: <write CODEQL if there is any taint information; say UNKNOWN otherwise>
 ```
-
 
 ## License
 Licenses can be found [here](/secgen/LICENSE.md) and [here](/secgenlint/LICENSE.md).
