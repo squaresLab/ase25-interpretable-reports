@@ -1,0 +1,229 @@
+```{R}
+
+df <- read.csv('data/preprocessed_data_review.csv', header=TRUE)
+df$Sample <- as.factor(df$Sample)
+df$Report.type <- as.factor(df$Report.type)
+df$category_Correct <- as.factor(df$category_Correct)
+df$category_Incorrect <- as.factor(df$category_Incorrect)
+df$category_Plausible <- as.factor(df$category_Plausible)
+df$Patch.category  <- as.factor(df$Patch.category )
+df$P <- as.factor(df$P)
+
+```
+
+Next, we test the *Vulnerability Understanding* model for **overdispersion** and correct p-values for report type values (which are under testing) using **Holm-Bonferroni correction.**
+
+```{r}
+df$Report.type  <- relevel(df$Report.type , ref = "Ours")
+
+understanding_model1 <- glmer(vulnerability_understanding ~
+                               Report.type
+                             + vuln_experience
+                             + programming_experience
+                             + Sample                             
+                             + (1|P), # random effects
+                             family = poisson,
+                             data=df)
+
+
+print(summary(understanding_model1),show.residuals=TRUE)
+```
+
+```{r}
+# Calculate overdispersion statistic for glmer model
+overdisp_fun <- function(model) {
+  rdf <- df.residual(model)
+  rp <- residuals(model, type = "pearson")
+  Pearson.chisq <- sum(rp^2)
+  ratio <- Pearson.chisq / rdf
+  return(c(chisq = Pearson.chisq, ratio = ratio, rdf = rdf))
+}
+
+overdisp_fun(understanding_model1)
+
+# Ratio is 0.59 → This is well below 1, which suggests underdispersion, not overdispersion
+```
+
+```{r}
+
+# Get summary object
+summary_model <- summary(understanding_model1)
+
+# Extract all coefficients
+coefs <- summary_model$coefficients
+
+# Get rows for Report.type
+# This assumes your factor was turned into dummy variables like Report.typeCodeQL, Report.typeAmazonQ, etc.
+report_rows <- grep("^Report\\.type", rownames(coefs))
+
+# Extract raw p-values for Report.type only
+report_pvals <- coefs[report_rows, "Pr(>|z|)"]
+
+# Apply Holm-Bonferroni correction
+p_adjusted <- p.adjust(report_pvals, method = "holm")
+p_adjusted
+
+# Results: Report.typeAmazonQ  Report.typeCodeQL 
+#               0.01507767         0.45802006 
+# p < 0.01 became p = 0.015 because we're being statistically more conservative
+```
+
+Next, we test the *Patching Time* model for **homoscedasticity** and correct p-values for report type values (which are under testing) using **Holm-Bonferroni correction.**
+
+```{r}
+
+df_filtered <- df[df$Patch.category == "Correct", ]
+
+# Set our report as the baseline/reference
+df$Report.type  <- relevel(df$Report.type , ref = "Ours")
+
+# output is continuous. random and fixed effects
+patching_time_model1 <- lmer(Patching.time ~
+                               Report.type
+                             + vuln_experience
+                             + programming_experience
+                             + Sample
+                             + (1|P),
+                             data=df_filtered)
+
+
+```
+
+```{r}
+# 1. Get fitted values and residuals
+fitted_vals <- fitted(patching_time_model1)
+residuals_vals <- resid(patching_time_model1)
+
+# 2. Basic residuals vs fitted plot
+plot(fitted_vals, residuals_vals,
+     xlab = "Fitted Values",
+     ylab = "Residuals",
+     main = "Residuals vs Fitted Values",
+     pch = 20, col = "blue")
+
+# There is no obvious pattern which suggests that linearity assumption is reasonably satisfied and we have homoscedasticity
+```
+
+```{r}
+summary_model <- summary(patching_time_model1)
+coefs <- summary_model$coefficients
+report_pvals <- coefs[grep("^Report\\.type", rownames(coefs)), "Pr(>|t|)"]
+
+# Apply Holm correction
+report_pvals_holm <- p.adjust(report_pvals, method = "holm")
+
+# Display results
+data.frame(
+  term = rownames(coefs)[report_rows],
+  raw_p = report_pvals,
+  holm_p = report_pvals_holm
+)
+
+# Since there's only one Report.type coefficient (devs failed to successfull patch the code when using AmazonQ), Holm correction does nothing — because it's correcting for 1 test, and the adjustment factor is 1.
+```
+
+Next, we test the *Report Utility* model for **overdispersion** and correct p-values for report type values (which are under testing) using **Holm-Bonferroni correction.**
+
+```{r}
+df$Report.type  <- relevel(df$Report.type , ref = "Ours")
+df$usefulness <- df$usefulness 
+
+# Drop rows where reports are not correct
+df_filtered <- df[!(df$Report.type == "AmazonQ" & df$Sample == 1), ]
+df_filtered <- df[!(df$Report.type == "AmazonQ" & df$Sample == 3), ]
+df_filtered <- df[!(df$Report.type == "Ours" & df$Sample == 1), ]
+
+usefulness_model1 <- glmer(usefulness ~
+                               Report.type
+                             + vuln_experience
+                             + programming_experience
+                             + Sample
+                            + (1|P),
+                           family=poisson,
+                           data=df_filtered)
+
+
+```
+
+```{r}
+overdisp_fun(usefulness_model1)
+# Ratio is 0.61 → This is well below 1, which suggests underdispersion, not overdispersion
+```
+
+```{r}
+
+# Extract coefficient table from model summary
+coefs <- summary(usefulness_model1)$coefficients
+
+# Find the rows corresponding to Report.type
+report_rows <- grep("^Report\\.type", rownames(coefs))
+
+# Get raw p-values
+report_pvals <- coefs[report_rows, "Pr(>|z|)"]
+
+# Apply Holm–Bonferroni correction
+report_pvals_holm <- p.adjust(report_pvals, method = "holm")
+
+# Combine into a data frame
+report_comparison <- data.frame(
+  term = rownames(coefs)[report_rows],
+  raw_p = report_pvals,
+  holm_p = report_pvals_holm
+)
+
+# Print result
+print(report_comparison)
+
+# After Holm–Bonferroni correction, the significance of the results slightly changes: AmazonQ remains significant at p < 0.05 but no longer meets the stricter p < 0.01 threshold, while CodeQL remains non-significant.
+```
+
+Next, we correct *Patch Correctness* p-values using Holm-Bonferroni correction.
+
+```{r}
+library(nnet)
+
+# Set our report as reference
+df$Patch.category  <- relevel(df$Patch.category , ref = "Correct")
+df$Report.type  <- relevel(df$Report.type , ref = "Ours")
+
+
+corr_model <- multinom(Patch.category ~
+                           Report.type
+                             + vuln_experience
+                             + programming_experience
+                             + Sample,
+                            data=df)
+
+print(summary(corr_model),show.residuals=TRUE) 
+```
+
+```{r}
+# 1. Compute z and p values
+z_vals <- summary(corr_model)$coefficients / summary(corr_model)$standard.errors
+p_vals <- 2 * (1 - pnorm(abs(z_vals)))
+
+# 2. Filter columns that correspond to Report.type
+report_cols <- grep("^Report\\.type", colnames(p_vals), value = TRUE)
+
+# 3. Subset the matrix to only Report.type columns
+report_p_matrix <- p_vals[, report_cols, drop = FALSE]
+
+# 4. Flatten and label
+p_vector <- as.vector(report_p_matrix)
+term_labels <- colnames(report_p_matrix)
+category_labels <- rownames(report_p_matrix)
+
+result_df <- data.frame(
+  term = rep(term_labels, each = length(category_labels)),
+  category = rep(category_labels, times = length(term_labels)),
+  raw_p = p_vector
+)
+
+# 5. Holm–Bonferroni correction
+result_df$holm_p <- p.adjust(result_df$raw_p, method = "holm")
+
+result_df
+
+# After Holm–Bonferroni correction, the effects of AmazonQ remain highly significant, while the effects of CodeQL are no longer statistically significant at the 0.05 level.
+
+```
