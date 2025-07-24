@@ -1,0 +1,62 @@
+    
+vuln-fix: Unchecked Return Value (CWE-252) in falcon180b-11029.c at lines 53 and 31 (severity: Medium)
+what: The code does not check the return values of critical functions like `recv`, `bind`, `listen`, and `pthread_create`. This can lead to unhandled errors and unexpected behavior, including potential security risks.
+where: 
+  - Line 53: `pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);`
+  - Line 31: `recv(client_socket, request, MAX_REQUEST_SIZE, 0);`
+  - Line 23: `bind(server_socket, (struct sockaddr *) &server_addr, sizeof(server_addr));`
+  - Line 24: `listen(server_socket, BACKLOG);`
+why: If errors from these functions are not checked and handled, it can lead to undefined behavior, such as failing silently, resource leaks, or system crashes.
+how: An attacker can exploit these unchecked values to cause the server to crash or behave unpredictably. For example, an attacker could close a connection unexpectedly, leading to recv returning an error or zero, causing unexpected logic execution.
+code-sources: `recv()` function at line 31 receives data from the client, which can be influenced by the user's input.
+code-sinks: The `printf` statements and the subsequent handling of the request, which is user-controlled data.
+suggested-fix: 
+```diff
+--- falcon180b-11029.c
++++ falcon180b-11029_fixed.c
+@@ -23,7 +23,11 @@
+     server_addr.sin_addr.s_addr = INADDR_ANY;
+ 
+     if (bind(server_socket, (struct sockaddr *) &server_addr, sizeof(server_addr)) < 0) {
++        perror("Bind failed");
++        exit(EXIT_FAILURE);
+     }
+ 
+     if (listen(server_socket, BACKLOG) < 0) {
++        perror("Listen failed");
++        exit(EXIT_FAILURE);
+     }
+ 
+@@ -53,7 +57,11 @@
+         memset(request, 0, MAX_REQUEST_SIZE);
+         int bytes_received = recv(client_socket, request, MAX_REQUEST_SIZE, 0);
+ 
++        if (bytes_received < 0) {
++            perror("Receive failed");
++            close(client_socket);
++            pthread_exit(NULL);
+         }
+ 
+         printf("Client %d sent request: %s\n", client_socket, request);
+ 
+@@ -60,7 +68,11 @@
+     close(client_socket);
+     return NULL;
+ }
+ 
+@@ -74,7 +88,12 @@
+         }
+ 
+         pthread_t thread_id;
+-        pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
++        if (pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket) != 0) {
++            perror("Thread creation failed");
++            close(client_socket);
++        } else {
++            pthread_detach(thread_id);
++        }
+     }
+ }
+```
+explanation-suggested-fix: The code modification adds checks to verify the return values of `recv`, `bind`, `listen`, and `pthread_create`. If any of these functions fail, an appropriate error message is printed, and the program either stops or the socket is closed properly. This ensures that the program handles erroneous conditions gracefully and prevents undefined behavior.
+method: UNKNOWN

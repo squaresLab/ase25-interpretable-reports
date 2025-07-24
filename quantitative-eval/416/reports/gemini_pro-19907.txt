@@ -1,0 +1,88 @@
+ 
+    vuln-fix: CWE-362: Race Condition in gemini_pro-19907 (severity: High)
+    what: The code contains a race condition vulnerability in the `handle_client` function, where simultaneous access to shared resources (`client_socket` and `buffer`) can lead to unpredictable behavior and potential security issues.
+    where: 
+    - `gemini_pro-19907` at the `handle_client` function:
+      ```c
+        void *handle_client(void *arg) {
+            int client_socket = *(int *)arg;
+
+            while (1) {
+                char buffer[MAX_MESSAGE_LENGTH];
+                int bytes_received = recv(client_socket, buffer, MAX_MESSAGE_LENGTH, 0);
+                if (bytes_received <= 0) {
+                    sem_wait(&semaphore);
+                    pthread_mutex_lock(&mutex);
+                    printf("Client disconnected\n");
+                    close(client_socket);
+                    pthread_mutex_unlock(&mutex);
+                    sem_post(&semaphore);
+                    break;
+                }
+
+                pthread_mutex_lock(&mutex);
+                printf("Received message: %s\n", buffer);
+                pthread_mutex_unlock(&mutex);
+
+                char response[MAX_MESSAGE_LENGTH];
+                snprintf(response, MAX_MESSAGE_LENGTH, "Hello, client!");
+                int bytes_sent = send(client_socket, response, strlen(response), 0);
+                if (bytes_sent < 0) {
+                    sem_wait(&semaphore);
+                    pthread_mutex_lock(&mutex);
+                    printf("Failed to send message\n");
+                    pthread_mutex_unlock(&mutex);
+                    sem_post(&semaphore);
+                    break;
+                }
+            }
+
+            pthread_exit(NULL);
+        }
+      ```
+    why: If the race condition is not resolved, it can lead to data corruption, crashes, and security breaches such as Denial of Service (DoS) or potentially allow attackers to manipulate communications.
+    how: An attacker could exploit this vulnerability by causing simultaneous access to the vulnerable code paths, thereby causing unpredictable behavior in the server's handling of client communications.
+    code-sources: 
+    - `recv(client_socket, buffer, MAX_MESSAGE_LENGTH, 0);` as it receives data from a connected client socket.
+    code-sinks: 
+    - `printf("Received message: %s\n", buffer);` as it prints out the received message.
+    - `send(client_socket, response, strlen(response), 0);` as it sends data back to the client.
+    suggested-fix: 
+    ```diff
+    --- a/gemini_pro-19907
+    +++ b/gemini_pro-19907
+    @@ -19,6 +19,7 @@ void *handle_client(void *arg) {
+
+                 pthread_mutex_lock(&mutex);
+    +            char buffer[MAX_MESSAGE_LENGTH]; // Move buffer declaration inside the critical section
+                 int bytes_received = recv(client_socket, buffer, MAX_MESSAGE_LENGTH, 0);
+                 if (bytes_received <= 0) {
+                     sem_wait(&semaphore);
+    @@ -27,16 +28,17 @@ void *handle_client(void *arg) {
+                     printf("Client disconnected\n");
+                     close(client_socket);
+                     pthread_mutex_unlock(&mutex);
+                     sem_post(&semaphore);
+                     break;
+                 }
+
+    +            pthread_mutex_lock(&mutex);
+    +            printf("Received message: %s\n", buffer);
+                    pthread_mutex_unlock(&mutex);
+
+                 char response[MAX_MESSAGE_LENGTH];
+                 snprintf(response, MAX_MESSAGE_LENGTH, "Hello, client!");
+                 int bytes_sent = send(client_socket, response, strlen(response), 0);
+                 if (bytes_sent < 0) {
+                     sem_wait(&semaphore);
+                     pthread_mutex_lock(&mutex);
+                     printf("Failed to send message\n");
+                     pthread_mutex_unlock(&mutex);
+                     sem_post(&semaphore);
+                     break;
+                 }
+             }
+    ```
+    explanation-suggested-fix: By moving the declaration of `buffer` inside the critical section, we ensure that only one thread can access it at a time, thus avoiding race conditions. Additionally, moving `recv` and `printf` operations inside the critical section ensures that these operations are atomic.
+    method: UNKNOWN
+`

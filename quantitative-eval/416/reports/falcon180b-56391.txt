@@ -1,0 +1,79 @@
+    
+vuln-fix: Buffer Overflow (CWE-120) in falcon180b-56391 lines 14-32 (severity: High)
+what: The code is vulnerable to a buffer overflow due to the use of an unbounded `recv` call which can fill up the `buffer` array beyond its allocated size.
+where: The vulnerability is located in the `handle_client` function, specifically within the lines that contain the `recv` call and the `send` call. This is in file `falcon180b-56391` lines 14-32.
+why: If an attacker sends more data than the size of the buffer (1024 bytes), they can overwrite adjacent memory, leading to potential execution of arbitrary code, crashing of the application, or corruption of data.
+how: An attacker would send a payload larger than 1024 bytes to the server. Since the `recv` call does not check for the available buffer size, the data would overflow the buffer, allowing the attacker to overwrite memory adjacent to `buffer`.
+code-sources: The code source is the `recv` function call where data is received from the client on line 14 of the `handle_client` function.
+code-sinks: The code sink is the `send` function that sends back data to the client, located near the end of the `handle_client` function around line 19.
+suggested-fix: 
+```diff
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <pthread.h>
+
+#define MAX_CLIENTS 10
+#define PORT 8080
+#define BUFFER_SIZE 1024
+
+int listening_socket;
+int client_sockets[MAX_CLIENTS];
+int num_clients = 0;
+
+void *handle_client(void *arg) {
+    int client_socket = *(int *) arg;
+    char buffer[BUFFER_SIZE];
+    while (1) {
+        memset(buffer, 0, sizeof(buffer));
+        int bytes_received = recv(client_socket, buffer, sizeof(buffer)-1, 0);
+        if (bytes_received <= 0) {
+            close(client_socket);
+            break;
+        }
+        buffer[bytes_received] = '\0'; // Null-terminate the received data
+        printf("Client %d sent: %s\n", client_socket, buffer);
+        send(client_socket, buffer, bytes_received, 0);
+    }
+    close(client_socket);
+}
+
+void accept_connections() {
+    while (1) {
+        int client_socket = accept(listening_socket, NULL, NULL);
+        if (client_socket == -1) {
+            printf("Error accepting connection\n");
+        } else {
+            pthread_t thread_id;
+            pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+            client_sockets[num_clients++] = client_socket;
+        }
+    }
+}
+
+int main() {
+    int opt = 1;
+    setsockopt(listening_socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+
+    while (num_clients < MAX_CLIENTS) {
+        int client_socket = accept(listening_socket, NULL, NULL);
+        if (client_socket == -1) {
+            printf("Error accepting connection\n");
+        } else {
+            pthread_t thread_id;
+            pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+            client_sockets[num_clients++] = client_socket;
+        }
+    }
+
+    accept_connections();
+
+    return 0;
+
+```
+
+explanation-suggested-fix: The suggested fix includes modifying the `recv` call to limit the data received to `sizeof(buffer)-1` to ensure space for a null terminator. Additionally, it explicitly null-terminates the buffer after `recv` to prevent buffer overflows and potential security risks associated with them.
+method: UNKNOWN

@@ -1,0 +1,33 @@
+ 
+vuln-fix: CWE-362: Race Condition in falcon180b-21261 (severity: High)
+what: The `handle_client` function contains a race condition that arises from the fact that `client_socket` is a shared variable passed to each thread. Since threads are created using `pthread_create` before the variable is reassigned, multiple threads might operate on the same `client_socket` simultaneously.
+where: The race condition vulnerability occurs in the function `handle_client` in file falcon180b-21261 at the lines where `pthread_create` is called and the `client_socket` is assigned.
+why: Not resolving this weakness can lead to undefined behavior including potential crashes, data corruption, and information leaks. Simultaneous access to the same socket can result in incorrect client messages being sent or received, compromising the integrity of communication.
+how: An attacker can exploit this vulnerability by rapidly connecting and disconnecting from the server, causing race conditions that may lead to incorrect processing of client messages, data corruption, and potential crashing of the server.
+code-sources: Entry points for user input are the `recv` function calls in the `handle_client` function.
+code-sinks: User input from `recv` is used by `printf`, `send` in the `handle_client` function.
+suggested-fix: 
+```diff
+--- a/falcon180b-21261
++++ b/falcon180b-21261
+@@ -22,7 +22,7 @@ void *handle_client(void *arg) {
+ void accept_connections() {
+     while (1) {
+         int client_socket = accept(server_socket, NULL, NULL);
++        int *client_sock_ptr = malloc(sizeof(int));
++        *client_sock_ptr = client_socket;
+
+         if (num_clients >= MAX_CLIENTS) {
+             send(client_socket, "Server is full. Please try again later.\n", 45, 0);
+@@ -31,7 +31,7 @@ void accept_connections() {
+         client_sockets[num_clients] = client_socket;
+         num_clients++;
+
+         pthread_t thread_id;
+-        pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
++        pthread_create(&thread_id, NULL, handle_client, (void *) client_sock_ptr);
+     }
+ }
+```
+explanation-suggested-fix: The fix involves dynamically allocating memory for each client's socket descriptor, ensuring that each thread has a unique pointer to its own socket descriptor. This prevents multiple threads from operating on the same variable, thus removing the race condition.
+method: UNKNOWN

@@ -1,0 +1,6 @@
+ 
+
+char **parseArgs(const char *line) {
+-    char *args[10];
++    char **args = malloc(10 * sizeof(char*));
+

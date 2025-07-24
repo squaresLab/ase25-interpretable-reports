@@ -1,0 +1,40 @@
+ 
+    
+    --- falcon180b-64451.c
+    +++ falcon180b-64451-fixed.c
+    @@ -20,12 +20,16 @@
+     
+     void *worker(void *arg) {
+         int id = *(int *) arg;
+    -    printf("Thread %d is running\n", id);
+    +    printf("Thread %d is running\n", id);
+         sleep(1);
+    -    printf("Thread %d is done\n", id);
+    +    printf("Thread %d is done\n", id);
+         return NULL;
+     }
+     
+    -void create_thread(int id) {
+    -    thread_t *thread = &queue.threads[id];
+    -    pthread_create(&thread->thread_id, NULL, worker, &id);
+    +void create_thread(int *id_ptr) {
+    +    int id = *id_ptr;
+    +    thread_t *thread = &queue.threads[id];
+    +    int *arg = malloc(sizeof(int));
+    +    *arg = id;
+    +    pthread_create(&thread->thread_id, NULL, worker, arg);
+         thread->is_running = 1;
+    +    free(arg);
+     }
+     
+     void start_queue() {
+    @@ -38,7 +42,7 @@
+         int i;
+         for (i = 0; i < MAX_THREADS; i++) {
+    -        create_thread(i);
+    +        create_thread(&queue.threads[i].id);
+         }
+     }
+     
+    
+    

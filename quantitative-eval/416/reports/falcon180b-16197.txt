@@ -1,0 +1,67 @@
+  
+vuln-fix: CWE-667: Improper Locking in falcon180b-16197 (severity: High)  
+what: The code spawns new threads to handle client connections and updates the global `clients` array and `num_clients` without providing proper synchronization mechanisms. The lack of thread safety could lead to race conditions, memory corruption, and crashes.  
+where: In the `accept_connections` function, lines where `num_clients` and `clients` are updated.  
+why: If this vulnerability is not resolved, multiple threads updating the shared `clients` array and `num_clients` simultaneously can cause data corruption. The server could end up with incorrect or incomplete client information, leading to undefined behavior and potential crashes.  
+how: An attacker could exploit this vulnerability by rapidly making multiple connections to the server, causing threads to interfere with each other when updating the shared resources, potentially crashing the server or leading to other unpredictable behaviors.  
+code-sources: `accept(main_socket, NULL, NULL)` in the `accept_connections` function.  
+code-sinks: Updating `clients` array and `num_clients` in the `accept_connections` function.  
+suggested-fix: ```diff
+#include <pthread.h>
+
+pthread_mutex_t clients_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+void *handle_client(void *client_socket) {
+    int client_socket_copy = *((int *)client_socket);
+    char buffer[BUFFER_SIZE];
+    while (1) {
+        memset(buffer, 0, BUFFER_SIZE);
+        int bytes_received = recv(client_socket_copy, buffer, BUFFER_SIZE, 0);
+        if (bytes_received <= 0) {
+            break;
+        }
+        send(client_socket_copy, buffer, bytes_received, 0);
+    }
+    close(client_socket_copy);
+    return NULL;
+}
+
+void accept_connections() {
+    while (1) {
+        int client_socket = accept(main_socket, NULL, NULL);
+        if (client_socket == -1) {
+            continue;
+        }
+        pthread_mutex_lock(&clients_mutex);
+        if (num_clients < MAX_CLIENTS) {
+            clients[num_clients] = client_socket;
+            num_clients++;
+            pthread_t thread_id;
+            pthread_create(&thread_id, NULL, handle_client, (void *)&client_socket);
+        } else {
+            close(client_socket);
+        }
+        pthread_mutex_unlock(&clients_mutex);
+    }
+}
+
+int main() {
+    int opt = 1;
+    setsockopt(main_socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+
+    struct sockaddr_in server_addr;
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(8080);
+    server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+
+    bind(main_socket, (struct sockaddr *)&server_addr, sizeof(server_addr));
+    listen(main_socket, 10);
+
+    accept_connections();
+
+    return 0;
+}
+```  
+explanation-suggested-fix: By adding a mutex (`clients_mutex`) to lock critical sections where the shared resources `clients` array and `num_clients` are being updated, race conditions can be avoided. This ensures that only one thread can update these resources at a time, maintaining data integrity and preventing crashes.  
+method: UNKNOWN  

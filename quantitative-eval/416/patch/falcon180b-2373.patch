@@ -1,0 +1,58 @@
+ 
+
+diff --git a/falcon180b-2373 b/falcon180b-2373
+index 1234567..89abcdef 100644
+--- a/falcon180b-2373
++++ b/falcon180b-2373
+@@ -23,6 +23,7 @@
+ #include <arpa/inet.h>
+ #include <pthread.h>
++#include <semaphore.h>
+
+ #define MAX_CLIENTS 10
+ #define BUFFER_SIZE 1024
+@@ -30,6 +31,8 @@ int clients[MAX_CLIENTS];
+ int num_clients = 0;
+ 
++sem_t clients_sem;
++
+ void *handle_client(void *socket_desc) {
+     char buffer[BUFFER_SIZE];
+     int client_socket = *(int *) socket_desc;
+@@ -42,7 +45,9 @@ void broadcast(int sender_socket, char *message) {
+ int main(int argc, char *argv[]) {
+     int server_socket = socket(AF_INET, SOCK_STREAM, 0);
+ 
++    // Initialize semaphore
++    sem_init(&clients_sem, 0, 1);
++
+     struct sockaddr_in server_addr;
+     memset(&server_addr, 0, sizeof(server_addr));
+     server_addr.sin_family = AF_INET;
+@@ -54,15 +59,24 @@ void broadcast(int sender_socket, char *message) {
+     while (1) {
+         int client_socket = accept(server_socket, NULL, NULL);
+ 
+-        if (num_clients >= MAX_CLIENTS) {
++        // Lock the semaphore
++        sem_wait(&clients_sem);
++
++        if (num_clients >= MAX_CLIENTS) {
+             send(client_socket, "Server is full. Please try again later.\n", 45, 0);
+             close(client_socket);
++            // Unlock the semaphore
++            sem_post(&clients_sem);
+             continue;
+         }
+-        
++
+         clients[num_clients] = client_socket;
+         num_clients++;
+ 
++        // Unlock the semaphore
++        sem_post(&clients_sem);
++
+         printf("Client connected. Total clients: %d\n", num_clients);
+ 
+         pthread_t thread_id;
+

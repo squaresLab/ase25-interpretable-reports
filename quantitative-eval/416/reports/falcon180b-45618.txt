@@ -1,0 +1,26 @@
+ 
+vuln-fix: CWE-134: Uncontrolled Format String in falcon180b-45618 (severity: High)
+what: The code contains a format string vulnerability in the `printf` function call within the `handle_client` function.
+where: `handle_client` function, line where `printf` is invoked (around line 17) in falcon180b-45618
+why: This vulnerability can allow an attacker to execute arbitrary code, extract sensitive information, or crash the application.
+how: An attacker could exploit this vulnerability by sending specially crafted input to the application. This input would contain format specifiers that could lead to the disclosure of memory contents or control over the execution flow of the program.
+code-sources: The `recv` function call in the `handle_client` function, where data is received from the client.
+code-sinks: The `printf` function call in the `handle_client` function, which uses user input in an uncontrolled format string.
+suggested-fix: 
+```
+diff --git a/falcon180b-45618 b/falcon180b-45618
+index e69de29..b7c7e35 100644
+--- a/falcon180b-45618
++++ b/falcon180b-45618
+@@ -17,7 +17,7 @@ void *handle_client(void *arg) {
+         if (bytes_received <= 0) {
+             break;
+         }
+-        printf("Client %d sent: %s\n", client_socket, buffer);
++        printf("Client %d sent: %.*s\n", client_socket, bytes_received, buffer);
+         send(client_socket, buffer, strlen(buffer), 0);
+     }
+     close(client_socket);
+```
+explanation-suggested-fix: The suggested fix changes the `printf` invocation to use a format specifier that limits the length of the string to the number of bytes received. This prevents any format specifiers potentially injected by the attacker from being processed.
+method: UNKNOWN

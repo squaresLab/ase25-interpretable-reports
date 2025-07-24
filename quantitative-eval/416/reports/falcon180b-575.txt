@@ -1,0 +1,38 @@
+
+    vuln-fix: CWE-835: Loop with Unreachable Exit Condition ('Infinite Loop') in falcon180b-575 at line 64 (severity: Medium)
+    what: The program has an infinite loop that does not exit properly if a client disconnects, leading to a potential denial-of-service (DoS) attack.
+    where: ```
+    while (1) {
+        memset(buffer, 0, BUFFER_SIZE);
+        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+        if (bytes_received <= 0) {
+            break;
+        }
+        broadcast(client_socket, buffer);
+    }
+    ```
+    File: falcon180b-575, Line: 64-72
+    why: If this vulnerability is not resolved, an attacker could exploit this infinite loop to create a denial-of-service condition by causing the server to run indefinitely, thus consuming resources and potentially crashing.
+    how: An attacker could repeatedly connect to and disconnect from the server, causing multiple threads to enter an infinite loop and exhaust server resources.
+    code-sources: Entry point is receiving data from client connections via the `recv` function within `handle_client` function.
+    code-sinks: Sinks are the handling of messages and broadcasting them to other clients with the `broadcast` function.
+    suggested-fix: 
+    ```
+    --- falcon180b-575.old.c
+    +++ falcon180b-575.new.c
+    @@ -64,6 +64,7 @@
+            break;
+        }
+        broadcast(client_socket, buffer);
+    +    pthread_mutex_lock(&lock);
+    +    close(client_socket);
+    +    pthread_mutex_unlock(&lock);
+    +    return NULL;
+--handle-client 
+    @@ -74,6 +75,7 @@
+            }
+            pthread_t thread_id;
+            pthread_create(&thread_id, NULL, handle_client, &client_socket);
+    ```
+    explanation-suggested-fix: The suggested fix ensures that the socket is properly closed, and the client is properly removed from the client list when the `recv` function returns 0 or negative value indicating a closed/disconnected socket.
+    method: UNKNOWN

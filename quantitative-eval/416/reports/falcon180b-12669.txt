@@ -1,0 +1,34 @@
+ 
+    vuln-fix: CWE-362: Race Condition in falcon180b-12669 (severity: High)
+    what: The vulnerable code spawns multiple threads that all share and modify a common variable `i` without proper synchronization, causing a race condition.
+    where: `falcon180b-12669`, lines 37-42 
+    why: An attacker may exploit this race condition to execute arbitrary code or trigger unintended behaviors, potentially causing system instability or data corruption.
+    how: An attacker could manipulate the timing of thread execution to cause incorrect iterations, leading to undefined behavior in the system that may crash the application or lead to other security issues.
+    code-sources: The entry point is in the `main()` function where the threads are created: 
+    ```C
+    for (int i = 0; i < NUM_THREADS; i++) {
+        pthread_create(&threads[i], NULL, traffic_light, &i);
+    }
+    ```
+    code-sinks: The code sink is in the `traffic_light` function where the `next_state` and semaphore actions are performed based on the `light_num` value received:
+    ```C
+    int light_num = *(int *) arg;
+    // Other semaphore and state-changing code
+    ```
+    suggested-fix: 
+    ```diff
+    --- falcon180b-12669.c
+    +++ falcon180b-12669-fixed.c
+    @@ -37,7 +37,8 @@
+        pthread_t threads[NUM_THREADS];
+        int thread_args[NUM_THREADS];
+        for (int i = 0; i < NUM_THREADS; i++) {
+    +       thread_args[i] = i;
+    +       pthread_create(&threads[i], NULL, traffic_light, &thread_args[i]);
+    -       pthread_create(&threads[i], NULL, traffic_light, &i);
+        }
+        for (int i = 0; i < NUM_THREADS; i++) {
+            pthread_join(threads[i], NULL);
+    ```
+    explanation-suggested-fix: The suggested fix involves introducing a separate `thread_args` array to store the arguments for each thread, thereby avoiding the race condition caused by the shared `i` variable being accessed simultaneously by multiple threads.
+    method: UNKNOWN

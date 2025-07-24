@@ -1,0 +1,29 @@
+
+vuln-fix: Unbounded Write (CWE-787) in gemini_pro-21787 at line 43 (severity: High)
+what: The code allows for writing to a buffer without checking if the input fits within the allocated buffer size. This can lead to buffer overflow vulnerabilities.
+where: The vulnerability is located in file gemini_pro-21787 at line 43: `strcpy(clients[i].name, name);`.
+why: An unbounded write can allow an attacker to overflow the buffer, potentially leading to arbitrary code execution, crashes, or corruption of adjacent memory.
+how: An attacker can exploit this vulnerability by sending a specially crafted message containing a very long name. If the length of the name exceeds 256 characters, it will overflow the `name` buffer, leading to memory corruption or program crash.
+code-sources: The user input enters the application through the socket, read in the `handle_client` function at line 16.
+code-sinks: The actions performed using the input are at line 43 where the `strcpy` function writes the input name to the `name` member of `client_t`.
+suggested-fix: 
+```diff
+--- gemini_pro-21787.c
++++ gemini_pro-21787-fixed.c
+@@ -40,7 +40,7 @@
+            // Check if the client is already registered
+            pthread_mutex_lock(&clients_mutex);
+            int i;
+            for (i = 0; i < MAX_CLIENTS; i++) {
+                if (clients[i].fd == fd) {
+-                   strcpy(clients[i].name, name);
++                   strncpy(clients[i].name, name, sizeof(clients[i].name) - 1);
++                   clients[i].name[sizeof(clients[i].name) - 1] = '\0'; // Ensure null-termination
+                    break;
+                }
+            }
+            pthread_mutex_unlock(&clients_mutex);
+
+```
+explanation-suggested-fix: The suggested fix uses `strncpy` instead of `strcpy` to limit the number of characters copied to the buffer, avoiding buffer overflow. Additionally, ensuring null-termination by explicitly setting `clients[i].name[sizeof(clients[i].name) - 1]` to `'\0'` guarantees that the buffer is properly terminated.
+method: CODEQL

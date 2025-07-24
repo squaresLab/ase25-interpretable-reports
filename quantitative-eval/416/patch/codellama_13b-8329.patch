@@ -1,0 +1,63 @@
+
+    
+    #include <stdio.h>
+    #include <stdlib.h>
+    #include <string.h>
+
+    // Function to convert a color code to its corresponding hexadecimal value
+    char* color_to_hex(const char* color) {
+        static char hex[7];
+    +   memset(hex, 0, sizeof(hex));
+        if (strcmp(color, "red") == 0) {
+            strncpy(hex, "#FF0000", sizeof(hex) - 1);
+        } else if (strcmp(color, "green") == 0) {
+            strncpy(hex, "#00FF00", sizeof(hex) - 1);
+        } else if (strcmp(color, "blue") == 0) {
+            strncpy(hex, "#0000FF", sizeof(hex) - 1);
+        } else {
+            strncpy(hex, "", sizeof(hex) - 1);
+        }
+        return hex;
+    }
+
+    // Function to convert a hexadecimal value to its corresponding color code
+    char* hex_to_color(const char* hex) {
+        static char color[6];
+    +   memset(color, 0, sizeof(color));
+        if (strcmp(hex, "#FF0000") == 0) {
+            strncpy(color, "red", sizeof(color) - 1);
+        } else if (strcmp(hex, "#00FF00") == 0) {
+            strncpy(color, "green", sizeof(color) - 1);
+        } else if (strcmp(hex, "#0000FF") == 0) {
+            strncpy(color, "blue", sizeof(color) - 1);
+        } else {
+            strncpy(color, "", sizeof(color) - 1);
+        }
+        return color;
+    }
+
+    // Main function to demonstrate the use of the color code converter
+    int main() {
+        char color[6];
+        char hex[7];
+
+        // Get input from the user
+        printf("Enter a color code (red, green, or blue): ");
+        scanf("%5s", color);
+
+        // Convert the color code to its corresponding hexadecimal value
+        strncpy(hex, color_to_hex(color), sizeof(hex) - 1);
+
+        // Print the hexadecimal value
+        printf("Hexadecimal value: %s\n", hex);
+
+        // Convert the hexadecimal value to its corresponding color code
+        strncpy(color, hex_to_color(hex), sizeof(color) - 1);
+
+        // Print the color code
+        printf("Color code: %s\n", color);
+
+        return 0;
+    }
+    
+    

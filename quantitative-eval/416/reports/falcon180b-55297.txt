@@ -1,0 +1,99 @@
+ 
+vuln-fix: CWE-367: Time-of-Check Time-of-Use (TOCTOU) Race Condition in falcon180b-55297 (severity: High)
+what: The code contains a potential Time-of-Check to Time-of-Use (TOCTOU) race condition vulnerability. Specifically, the check on `num_clients` is made before adding a new client to the `clients` array and creating a new thread for the client in the critical section between the check and the increment of `num_clients`.
+where: 
+    - `if (num_clients >= MAX_CLIENTS)` line 45
+    - `clients[num_clients] = client_socket;` line 51
+why: If not resolved, this vulnerability can allow multiple threads to add to the `clients` array simultaneously, potentially overflowing the `clients` array, leading to undefined behavior, including crashes, corrupted memory, or security breaches.
+how: An attacker could exploit this vulnerability by rapidly creating multiple connections to force multiple threads into the critical section, bypassing the `MAX_CLIENTS` check and causing an overflow of the `clients` array.
+code-sources: 
+    - `accept(server_socket, NULL, NULL)` line 43
+code-sinks: 
+    - `send(clients[i], buffer, strlen(buffer), 0)` line 26
+    - `clients[num_clients] = client_socket;` line 51
+suggested-fix:
+```diff
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+#include <errno.h>
+#include <arpa/inet.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <pthread.h>
+
+#define MAX_CLIENTS 10
+#define PORT 8080
+#define BACKLOG 5
+
+int clients[MAX_CLIENTS];
+int num_clients = 0;
+pthread_mutex_t client_lock;
+
+void *handle_client(void *arg) {
+    int client_socket = *((int *) arg);
+
+    char buffer[1024];
+    while (1) {
+        memset(buffer, 0, sizeof(buffer));
+        int bytes_received = recv(client_socket, buffer, sizeof(buffer), 0);
+
+        if (bytes_received <= 0) {
+            break;
+        }
+
+        for (int i = 0; i < num_clients; i++) {
+            if (clients[i] != client_socket) {
+                send(clients[i], buffer, strlen(buffer), 0);
+            }
+        }
+    }
+
+    close(client_socket);
+    return NULL;
+}
+
+int main() {
+    pthread_mutex_init(&client_lock, NULL);
+
+    int server_socket = socket(AF_INET, SOCK_STREAM, 0);
+
+    struct sockaddr_in server_addr;
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(PORT);
+    server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+
+    bind(server_socket, (struct sockaddr *) &server_addr, sizeof(server_addr));
+
+    listen(server_socket, BACKLOG);
+
+    printf("Server started on port %d\n", PORT);
+
+    while (1) {
+        int client_socket = accept(server_socket, NULL, NULL);
+
+        pthread_mutex_lock(&client_lock);
+        if (num_clients >= MAX_CLIENTS) {
+            pthread_mutex_unlock(&client_lock);
+            send(client_socket, "Server is full. Please try again later.\n", 51, 0);
+            close(client_socket);
+            continue;
+        }
+
+        clients[num_clients] = client_socket;
+        num_clients++;
+        pthread_mutex_unlock(&client_lock);
+
+        pthread_t thread_id;
+        pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+    }
+
+    pthread_mutex_destroy(&client_lock);
+    return 0;
+}
+```
+explanation-suggested-fix: The suggested code diff introduces a mutex `client_lock` to manage exclusive access to the `num_clients` and `clients` array, ensuring that the critical section where the client is added only allows one thread at a time. This effectively prevents the race condition, preserving data integrity and preventing possible overflow.
+method: CODEQL

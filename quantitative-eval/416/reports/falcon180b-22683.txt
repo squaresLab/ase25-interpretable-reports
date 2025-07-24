@@ -1,0 +1,31 @@
+ 
+    vuln-fix: Buffer Overflow (CWE-120) in falcon180b-22683 at line 18-42 (severity: High)
+    what: The use of `strlen(buffer)` in `send(clients[i], buffer, strlen(buffer), 0);` allows for potential buffer overflow. If the received message is not null-terminated, `strlen(buffer)` may read out of bounds.
+    where: The vulnerability is located in the `handle_client` function, specifically at line `for (int i = 0; i < num_clients; i++) { if (clients[i]!= sock) { send(clients[i], buffer, strlen(buffer), 0); } }`.
+    why: A buffer overflow may lead to data corruption, crashes, or even remote code execution, impacting the availability, integrity, and confidentiality of the system.
+    how: An attacker could send a specially crafted message without a null terminator to the server, causing `strlen` to read out of bounds and potentially causing a buffer overflow.
+    code-sources: The `recv(sock, buffer, BUFFER_SIZE, 0)` call in `handle_client` function.
+    code-sinks: The `send(clients[i], buffer, strlen(buffer), 0)` call in the `handle_client` function.
+    suggested-fix: ```diff
+--- falcon180b-22683.c
++++ falcon180b-22683-fixed.c
+@@ -17,7 +17,7 @@
+ while (1) {
+         memset(buffer, 0, BUFFER_SIZE);
+         int bytes_received = recv(sock, buffer, BUFFER_SIZE, 0);
+-        if (bytes_received <= 0) {
++        if (bytes_received <= 0 || bytes_received >= BUFFER_SIZE) {
+             break;
+         }
++        buffer[bytes_received] = '\0';
+         pthread_mutex_lock(&mutex);
+         for (int i = 0; i < num_clients; i++) {
+             if (clients[i]!= sock) {
+                 send(clients[i], buffer, bytes_received, 0);
+             }
+         }
+         pthread_mutex_unlock(&mutex);
+ ```
+
+    explanation-suggested-fix: This suggested fix ensures that `buffer` is always null-terminated by setting `buffer[bytes_received] = '\0';` It also explicitly checks that the number of bytes received does not exceed `BUFFER_SIZE`. This prevents `strlen(buffer)` from reading out of bounds.
+    method: UNKNOWN

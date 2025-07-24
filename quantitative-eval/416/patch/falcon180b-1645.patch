@@ -1,0 +1,28 @@
+ 
+     
+    --- falcon180b-1645.c   2023-10-04 12:00:00.000000000 +0000
+    +++ falcon180b-1645-fixed.c   2023-10-04 12:00:00.000000000 +0000
+    @@ -16,7 +16,7 @@
+            pthread_exit(0);
+    }
+    
+    void accept_connections() {
+    +   while (num_clients < MAX_CLIENTS) {
+    +       int *client_socket = malloc(sizeof(int));
+            *client_socket = accept(server_socket, NULL, NULL);
+    
+            if (*client_socket == -1) {
+    @@ -26,8 +26,8 @@
+    
+            client_sockets[num_clients] = *client_socket;
+            num_clients++;
+    
+            printf("Client %d connected\n", num_clients - 1);
+    
+            pthread_t thread_id;
+    -       pthread_create(&thread_id, NULL, handle_client, (void *)client_socket);
+    +       pthread_create(&thread_id, NULL, handle_client, client_socket);
+        }
+    }
+    
+    

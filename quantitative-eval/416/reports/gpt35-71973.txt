@@ -1,0 +1,34 @@
+
+    vuln-fix: CWE-378: Create Thread Insecurely in gpt35-71973.c at lines 102-107 (severity: high)
+    what: The code vulnerable to the issue is creating a new thread for handling client connections using `pthread_create` and passing the address of `client_index` as an argument. This leads to a race condition where multiple threads could be accessing and modifying the same memory address concurrently, resulting in incorrect behavior such as incorrect client assignment.
+    where: Lines 102-107 in the file gpt35-71973.c
+    why: If this race condition is not resolved, the application might exhibit unpredictable behavior, potentially impacting data integrity and leading to unintended information disclosure or write operations to the wrong client's socket.
+    how: An attacker could exploit this vulnerability by rapidly connecting and disconnecting clients to and from the server. This could potentially cause the server to behave incorrectly regarding the assignment and handling of client connections, leading to unpredictable behavior.
+    code-sources: The entry point for user input is the `accept` function call which accepts new client connections in the `main` function.
+    code-sinks: The vulnerable action performed by the application is `pthread_create(&threads[client_index], NULL, client_handler, &client_index)` where the pointer to `client_index` can result in a race condition.
+    suggested-fix:
+    ```diff
+    --- gpt35-71973.c
+    +++ gpt35-71973-fixed.c
+    @@ -102,7 +102,7 @@
+         } else {
+             // add new client to clients array
+             clients[client_index].socket = client_socket;
+             clients[client_index].client_address = client_address;
+
+             int *pclient_index = malloc(sizeof(int));
+             *pclient_index = client_index;
+
+             // create new thread to handle client
+    -        if (pthread_create(&threads[client_index], NULL, client_handler, &client_index) != 0) {
+    +        if (pthread_create(&threads[client_index], NULL, client_handler, pclient_index) != 0) {
+                 printf("Error creating thread to handle client\n");
+                 close(client_socket);
+                 clients[client_index].socket = 0; // mark slot as available
+             }
+         }
+         pthread_mutex_unlock(&mutex);
+
+    ```
+    explanation-suggested-fix: The suggested code diff resolves the vulnerability by dynamically allocating memory for each `client_index` and passing a unique pointer to each thread. This eliminates the possibility of multiple threads accessing and modifying the same memory location concurrently, thereby preventing the race condition.
+    method: CODEQL

@@ -1,0 +1,17 @@
+ 
+
+--- falcon180b-37286
++++ falcon180b-37286_fixed
+@@ -27,6 +27,7 @@
+ int main() {
+     // Create an array to store the thread IDs
+     pthread_t threads[NUM_THREADS];
++    int thread_ids[NUM_THREADS]; 
+
+     // Create the threads
+     for (int i = 0; i < NUM_THREADS; i++) {
+-        pthread_create(&threads[i], NULL, thread_function, (void *) &i);
++        thread_ids[i] = i;
++        pthread_create(&threads[i], NULL, thread_function, (void *) &thread_ids[i]);
+     }
+

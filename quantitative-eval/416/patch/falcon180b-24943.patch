@@ -1,0 +1,17 @@
+ 
+    
+    --- falcon180b-24943
+    +++ falcon180b-24943
+    @@ -45,7 +45,9 @@
+    
+        // Create sentence data struct
+        SentenceData sentenceData;
+    -   strcpy(sentenceData.sentence, inputBuffer);
+    +   // Ensure we do not write beyond the maximum sentence length
+    +   strncpy(sentenceData.sentence, inputBuffer, MAX_SENTENCE_LENGTH - 1);
+    +   sentenceData.sentence[MAX_SENTENCE_LENGTH - 1] = '\0';  // Ensure null-termination
+        sentenceData.length = strlen(inputBuffer);
+    
+        // Add sentence to thread queue
+    
+    

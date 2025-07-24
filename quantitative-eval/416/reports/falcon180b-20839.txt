@@ -1,0 +1,99 @@
+
+vuln-fix: CWE-362: Race Condition in falcon180b-20839 between lines 36 and 47 (severity: Medium)
+what: The code has a race condition when accessing and modifying the `num_clients` variable and the `clients` array. 
+where: Lines 36 to 47 of file falcon180b-20839:
+```
+    ...
+        if (num_clients >= MAX_CLIENTS) {
+            close(client_socket);
+            printf("Maximum number of clients reached\n");
+            continue;
+        }
+
+        clients[num_clients] = client_socket;
+        num_clients++;
+
+        pthread_t thread_id;
+        pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+    ...
+```
+why: If the race condition is not resolved, it can lead to undefined behavior, such as serving more clients than the allowed maximum, memory corruption, or crashes.
+how: An attacker could exploit this race condition by rapidly connecting to the server with multiple clients, potentially causing simultaneous modifications to `num_clients` and `clients`, leading to buffer overflows, crashes, or security breaches.
+code-sources: The source of user input is the `accept` function and `recv` call within the `handle_client` function.
+code-sinks: The program uses the client sockets and messages received to print logs with the `printf` function.
+suggested-fix: 
+```diff
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <pthread.h>
+
+#define MAX_CLIENTS 10
+#define BUFFER_SIZE 1024
+
+int clients[MAX_CLIENTS];
+int num_clients = 0;
+pthread_mutex_t clients_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+void *handle_client(void *arg) {
+    int client_socket = *(int *) arg;
+    char buffer[BUFFER_SIZE];
+
+    while (1) {
+        memset(buffer, 0, BUFFER_SIZE);
+        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+
+        if (bytes_received <= 0) {
+            close(client_socket);
+            pthread_mutex_lock(&clients_mutex);
+            num_clients--;
+            pthread_mutex_unlock(&clients_mutex);
+            pthread_exit(0);
+        }
+
+        printf("Client %d sent message: %s\n", client_socket, buffer);
+    }
+}
+
+int main() {
+    int server_socket = socket(AF_INET, SOCK_STREAM, 0);
+
+    struct sockaddr_in server_addr;
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(8080);
+    inet_pton(AF_INET, "0.0.0.0", &server_addr.sin_addr);
+
+    bind(server_socket, (struct sockaddr *) &server_addr, sizeof(server_addr));
+    listen(server_socket, 10);
+
+    printf("Server started on port 8080\n");
+
+    while (1) {
+        int client_socket = accept(server_socket, NULL, NULL);
+
+        if (num_clients >= MAX_CLIENTS) {
+            close(client_socket);
+            printf("Maximum number of clients reached\n");
+            continue;
+        }
+
+        pthread_mutex_lock(&clients_mutex);
+        clients[num_clients] = client_socket;
+        num_clients++;
+        pthread_mutex_unlock(&clients_mutex);
+
+        pthread_t thread_id;
+        pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+    }
+
+    pthread_mutex_destroy(&clients_mutex);
+    return 0;
+}
+```
+explanation-suggested-fix: This fix adds a mutex to protect access to the `num_clients` counter and the `clients` array. By locking and unlocking the mutex before modifying these shared resources, we ensure that they are thread-safe and prevent race conditions.
+method: UNKNOWN

@@ -1,0 +1,41 @@
+ 
+
+void *dfs(void *arg) {
+    ThreadData *data = (ThreadData *) arg;
+
+    int idx = data->idx;
+    int start = idx * (data->n / MAX_THREADS);
+    int end = (idx + 1) * (data->n / MAX_THREADS);
+
+    if (idx == MAX_THREADS - 1) {
+        end = data->n;
+    }
+
+    for (int i = start; i < end; i++) {
+        for (int j = 0; j < m; j++) {
+            pthread_mutex_lock(&mutex);
+            if (maze[i][j] == 0 && !visited[i][j]) {
+                visited[i][j] = true;
+                path[path_len++] = data->nodes[i * m + j];
+
+                if (i == n - 1 && j == m - 1) {
+                    pthread_mutex_unlock(&mutex); // Unlock before returning
+                    return NULL;
+                }
+
+                pthread_mutex_unlock(&mutex); // Unlock before recursive call
+                dfs(arg);
+                pthread_mutex_lock(&mutex);
+
+                if (path_len > 0) {
+                    path_len--;
+                }
+                visited[i][j] = false;
+            }
+            pthread_mutex_unlock(&mutex);
+        }
+    }
+
+    return NULL;
+}
+

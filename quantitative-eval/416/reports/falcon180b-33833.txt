@@ -1,0 +1,40 @@
+
+vuln-fix: Buffer Overflow (CWE-120) in falcon180b-33833 (severity: High)
+what: The code constructs an HTTP response using multiple `strcat` calls which concatenate strings onto the `response` buffer without checking the length of the concatenated data. This can lead to a buffer overflow if the total size of the concatenated strings exceeds `MAX_REQUEST_SIZE`.
+where: Lines involving `strcat` in `handle_client` function, starting around `line 18` in `falcon180b-33833`.
+why: If not resolved, this vulnerability could allow an attacker to overwrite adjacent memory, potentially leading to arbitrary code execution, data corruption, or crashing the server.
+how: An attacker could send a specially crafted HTTP request that results in a response whose length exceeds `MAX_REQUEST_SIZE`, causing the buffer `response` to overflow and corrupt adjacent memory.
+code-sources: Input from `recv` function on `line 13` in the `handle_client` function.
+code-sinks: `strcat` operations on `line 18`, `line 20`, `line 21`, `line 22`, `line 23` and `line 24` in the `handle_client` function.
+suggested-fix:
+```diff
+--- falcon180b-33833.c
++++ falcon180b-33833_fixed.c
+@@ -18,11 +18,13 @@
+        memset(request, 0, MAX_REQUEST_SIZE);
+        bytes_received = recv(client_socket, request, MAX_REQUEST_SIZE, 0);
+
+        if (bytes_received <= 0) {
+            break;
+        }
+
+        response[0] = '\0';
+-       strcat(response, "HTTP/1.1 ");
+-       sprintf(response + strlen(response), "%d ", response_code);
+-       strcat(response, "OK");
+-       strcat(response, "\r\n");
+-       strcat(response, "Content-Type: text/html\r\n");
+-       strcat(response, "Connection: close\r\n");
+-       strcat(response, "\r\n");
+-       strcat(response, "<html><body><h1>Hello, World!</h1></body></html>");
++       snprintf(response, MAX_REQUEST_SIZE, "HTTP/1.1 %d OK\r\n", response_code);
++       strncat(response, "Content-Type: text/html\r\n", MAX_REQUEST_SIZE - strlen(response) - 1);
++       strncat(response, "Connection: close\r\n", MAX_REQUEST_SIZE - strlen(response) - 1);
++       strncat(response, "\r\n", MAX_REQUEST_SIZE - strlen(response) - 1);
++       strncat(response, "<html><body><h1>Hello, World!</h1></body></html>", MAX_REQUEST_SIZE - strlen(response) - 1);
+
+        send(client_socket, response, strlen(response), 0);
+    }
+```
+explanation-suggested-fix: The code diff changes string concatenation operations from `strcat` to `snprintf` and `strncat`, ensuring bounds checking on the `response` buffer to prevent buffer overflow. `snprintf` limits the total number of characters written to the buffer, and `strncat` ensures that the buffer is not overflowed by concatenation operations.
+method: UNKNOWN

@@ -1,0 +1,17 @@
+ 
+    
+    --- gpt35-51720.c
+    +++ gpt35-51720-fixed.c
+    @@ -44,7 +44,7 @@
+         for (int i = 0; i < auction->number_of_bidders; i++) {
+             char* name = (char*)calloc(10, sizeof(char));
+    -        sprintf(name, "Bidder #%d", i+1);
+    +        snprintf(name, 10, "Bidder #%d", i+1);
+ 
+             auction->bidders[i].id = i;
+             auction->bidders[i].name = name;
+             auction->bidders[i].balance = 50.00;
+         }
+     }
+    
+    

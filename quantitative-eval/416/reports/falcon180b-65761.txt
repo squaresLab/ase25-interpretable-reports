@@ -1,0 +1,41 @@
+
+    vuln-fix: CWE-362: Race Condition in falcon180b-65761 (severity: high)
+    what: The code suffers from a race condition vulnerability. The `client_socket` variable is shared between threads without synchronization, specifically when multiple threads are created in the `main` function.
+    where: The vulnerability is located in the `main` function around the line where `pthread_create` is called:
+    ```
+    pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+    ```
+    why: A race condition can lead to undefined behavior and crashes as multiple threads may overwrite the value of `client_socket`, leading to invalid references and possible denial of service or data corruption.
+    how: An attacker would connect multiple clients simultaneously, potentially causing race conditions and undefined behavior, possibly crashing the application or making unauthorized modifications.
+    code-sources: `int client_socket = accept(server_socket, NULL, NULL);`
+    code-sinks: `pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);`
+    suggested-fix:
+    ```diff
+    --- falcon180b-65761.c 
+    +++ falcon180b-65761-fixed.c
+    @@ -48,7 +48,8 @@
+             if (num_clients >= MAX_CLIENTS) {
+                 printf("Maximum clients reached\n");
+                 close(client_socket);
+    -            continue;
+    +
+    +            pthread_t thread_id;
+    +            int *new_client_socket = malloc(sizeof(int));
+    +            *new_client_socket = client_socket;
+    +            pthread_create(&thread_id, NULL, handle_client, (void *) new_client_socket);
+             }
+     
+    -        client_sockets[num_clients] = client_socket;
+    -        num_clients++;
+    -
+    -        pthread_t thread_id;
+    -        pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+    +    client_sockets[num_clients] = *new_client_socket;
+    +    num_clients++;
+    +    free(new_client_socket);
+         }
+     
+         return 0;
+    ```
+    explanation-suggested-fix: The suggested fix allocates memory for each `client_socket` and ensures each thread gets its own copy of the `client_socket` to handle. This avoids the race condition by preventing multiple threads from sharing the same memory location.
+    method: UNKNOWN

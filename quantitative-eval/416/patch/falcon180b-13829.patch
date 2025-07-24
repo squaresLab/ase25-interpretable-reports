@@ -1,0 +1,13 @@
+ 
+
+--- falcon180b-13829	2023-10-01 10:00:00.000000000 +0000
++++ falcon180b-13829-fixed	2023-10-01 10:05:00.000000000 +0000
+@@ -45,6 +45,7 @@
+         strcat(response_buffer, "Server response to client ");
+         // Safe concatenation ensuring no buffer overflow
+-        strcat(response_buffer, request_buffer);
++        strncat(response_buffer, request_buffer, MAX_RESPONSE_SIZE - strlen(response_buffer) - 1);
+ 
+         send(client_socket, response_buffer, strlen(response_buffer), 0);
+     }
+

@@ -1,0 +1,31 @@
+
+vuln-fix: Buffer Overflow (CWE-119) in falcon180b-49570 (severity: High)
+what: The code does not correctly handle the buffer length in the `send` function.
+where: `falcon180b-49570`, within `handle_client()` function, specifically at the line: `send(clients[i], buffer, strlen(buffer), 0);`
+why: Buffer overflow can lead to unexpected behavior, crashes, or a potential vector for arbitrary code execution.
+how: An attacker could send a crafted payload to the server that exceeds the expected size, causing overflow into adjacent memory and potentially executing arbitrary code.
+code-sources: User input is received via `recv` in the `handle_client()` function.
+code-sinks: The `send` function in the `handle_client()` function transmits data to clients without proper validation.
+suggested-fix:
+```diff
+--- falcon180b-49570.c
++++ falcon180b-49570.c
+@@ -27,7 +27,12 @@
+         if (bytes_received <= 0) {
+             break;
+         }
+
++        // Ensure data to be sent does not exceed buffer size
++        if (bytes_received > BUFFER_SIZE) {
++            bytes_received = BUFFER_SIZE;
++        }
++
+         for (int i = 0; i < num_clients; i++) {
+             if (clients[i]!= client_socket) {
+                 send(clients[i], buffer, bytes_received, 0);
+             }
+         }
+```
+explanation-suggested-fix: The fix ensures that the size of the data being sent does not exceed the buffer size by using `bytes_received` instead of `strlen(buffer)`, thus preventing a buffer overflow condition.
+method: UNKNOWN
+`

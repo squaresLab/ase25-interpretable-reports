@@ -1,0 +1,37 @@
+
+    vuln-fix: Use of Uninitialized Variable (CWE-457) in falcon180b-46164 (severity: High)
+    what: This vulnerability occurs due to use of the `client_socket` variable in the `handle_client` thread without ensuring it is properly initialized or correctly passed. When `pthread_create` is invoked, the `client_socket` may be modified before the thread has time to initiate, which can lead to unpredictable behavior, including potential security risks.
+    where: 
+        - Line 17: `int client_socket = *(int *)arg;`
+        - Line 54: `pthread_create(&thread_id, NULL, handle_client, (void *)&client_socket)`
+    why: If not resolved, this weakness could lead to unintended resource access, unreliable program behavior, and possible exploitation by malicious users. This might result in unauthorized access, data corruption, or even application crashes.
+    how: An attacker would create a race condition by quickly opening multiple connections, trying to force a state where `client_socket` is accessed incorrectly by the threads, leading to inconsistent state or illegal memory access.
+    code-sources: 
+        - Line 53: `accept(server_socket, NULL, NULL)`
+    code-sinks:
+        - Line 57: `clients[num_clients++] = client_socket;`
+        - Line 58: `pthread_create(&thread_id, NULL, handle_client, (void *)&client_socket)`
+    suggested-fix: 
+```diff
+    --- a/falcon180b-46164
+    +++ b/falcon180b-46164
+    @@ -52,13 +52,14 @@
+                continue;
+            }
+            if (num_clients >= MAX_CLIENTS) {
+                close(client_socket);
+                continue;
+            }
+            clients[num_clients++] = client_socket;
+            pthread_t thread_id;
+    -       if (pthread_create(&thread_id, NULL, handle_client, (void *)&client_socket) != 0) {
+    +       int *client_sock_ptr = malloc(sizeof(int));
+    +       *client_sock_ptr = client_socket;
+    +       if (pthread_create(&thread_id, NULL, handle_client, (void *)client_sock_ptr) != 0) {
+                printf("Error creating thread\n");
+                close(client_socket);
+            }
+        }
+    ```
+    explanation-suggested-fix: The proposed solution allocates memory to store each `client_socket` data, ensuring that each thread receives a distinct and stable pointer to the client socket information. This fixes the race condition and makes sure the `client_socket` value is correctly passed to the new thread.
+    method: UNKNOWN

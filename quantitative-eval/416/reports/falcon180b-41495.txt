@@ -1,0 +1,58 @@
+
+    vuln-fix: Function returning stack-allocated memory (CWE-562, CWE-825) in falcon180b-41495 lines 58-60 (severity: High)
+    what: A function returns a pointer to a stack-allocated region of memory which is deallocated at the end of the function.
+    where: Line 58-60 in the function get_process_name() in file falcon180b-41495.
+    why: The caller may dereference a dangling pointer, which can lead to undefined behavior or a crash, potentially causing a Denial of Service (DoS).
+    how: An attacker could exploit this vulnerability by making repeated calls to this function, leading to dereferencing of invalid memory locations, resulting in a program crash.
+    code-sources: Entry point is the 'get_process_info' function which calls the 'get_process_name' function.
+    code-sinks: The return value of 'get_process_name' is directly used in 'strncpy(name, (char *)get_process_name(pid), MAX_PROCESS_NAME_LENGTH);'.
+    suggested-fix: 
+    ```diff
+    diff --git a/falcon180b-41495 b/falcon180b-41495
+    index abcdefg..hijklmn 100644
+    --- a/falcon180b-41495
+    +++ b/falcon180b-41495
+    @@ -56,15 +56,16 @@ void get_process_name(int pid, char *name) {
+         char path[64];
+         FILE *fp;
+         char line[1024];
+         
+         sprintf(path, "/proc/%d/cmdline", pid);
+     
+         fp = fopen(path, "r");
+         if (fp == NULL) {
+             strcpy(name, "Unknown");
+             return;
+         }
+     
+         fgets(line, sizeof(line), fp);
+         strtok(line, "\0");
+         fclose(fp);
+     
+    +    strncpy(name, line, MAX_PROCESS_NAME_LENGTH - 1);
+    +    name[MAX_PROCESS_NAME_LENGTH - 1] = '\0'; // ensure null-termination
+     }
+     
+     int main() {
+         int i, num_processes, ret;
+    @@ -92,7 +93,8 @@ int main() {
+     
+         for (i = 0; i < MAX_PROCESSES; i++) {
+             ret = get_process_info(i, processes[i].name, &processes[i].ram_usage);
+             if (ret == 0) {
+                 num_processes++;
+             }
+         }
+     
+         printf("Number of processes: %d\n", num_processes);
+     
+         for (i = 0; i < num_processes; i++) {
+             printf("Process %d: %s\n", processes[i].pid, processes[i].name);
+             printf("RAM usage: %d KB\n", processes[i].ram_usage);
+             printf("\n");
+         }
+
+         free(processes);
+    ```
+    explanation-suggested-fix: The suggested diff modifies the get_process_name function to take a char *name argument, allowing the caller to allocate memory and pass a reference. This prevents returning a pointer to stack-allocated memory, avoiding the risk of dangling pointers. Additionally, it ensures the string is properly null-terminated.
+    method: UNKNOWN

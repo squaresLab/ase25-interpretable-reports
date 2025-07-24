@@ -1,0 +1,41 @@
+ 
+
+--- a/codellama_13b-11598
++++ b/codellama_13b-11598
+@@ -45,9 +45,12 @@ void print_network_list(char **networks, int num_networks) {
+ void scan_networks(char ***networks, int *num_networks) {
+-    // Simulate scanning for wireless networks
+-    char *networks_list[] = {"Wi-Fi", "Ethernet", "5G"};
+-    *networks = networks_list;
++    // Allocate memory for networks
++    *num_networks = 3;
++    *networks = (char **)malloc(*num_networks * sizeof(char *));
++    (*networks)[0] = strdup("Wi-Fi");
++    (*networks)[1] = strdup("Ethernet");
++    (*networks)[2] = strdup("5G");
+     *num_networks = sizeof(networks_list) / sizeof(char*);
+ }
+
+ int main() {
+     // Initialize variables
+--- b/codellama_13b-11598
++++ codellama_13b-11598
+@@ -65,6 +65,9 @@ int main() {
+     print_network_list(networks, num_networks);
+
+     // Print message
+     print_message("Scan complete!");
+
++    // Free allocated memory
++    for (int i = 0; i < num_networks; i++) {
++        free(networks[i]);
++    }
++    free(networks);
+
+     // Print line
+     print_line();
+
+     return 0;
+}
+
+    

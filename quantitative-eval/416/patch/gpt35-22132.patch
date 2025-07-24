@@ -1,0 +1,23 @@
+ 
+
+--- a/gpt35-22132.c
++++ b/gpt35-22132.c
+@@ -62,8 +62,14 @@ void *connection_handler(void *socket_desc) {
+         memset(buffer, 0, 1024);
+         int valread = read(sock, buffer, 1024);
+         
++        if (valread < 0) {
++            perror("read failed");
++            break;
++        }
++
++        if (valread >= 1024) {
++            fprintf(stderr, "Received too much data, possible overflow attempt.\n");
++            break;
++        }
++
+         if (valread <= 0) {
+             perror("read failed");
+             break;
+         }
+

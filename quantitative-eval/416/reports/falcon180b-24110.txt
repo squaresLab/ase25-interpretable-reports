@@ -1,0 +1,32 @@
+
+vuln-fix: CWE-473: Incorrect Permissions for Memory Buffer in falcon180b-24110 (severity: High)
+what: The vulnerability arises because `client_socket` is passed to the thread function `handle_client` by reference rather than by value. This leads to a race condition where multiple threads could try to access or modify the same memory space, leading to undefined behavior.
+where: The vulnerability is located in the `pthread_create` call in `main` function.
+```c
+pthread_create(&thread_id, NULL, handle_client, (void *)&client_socket);
+```
+why: If unaddressed, this can lead to undefined behavior and potential crashes or data corruption, thereby compromising the reliability and security of the system. The race condition could allow attackers to execute arbitrary code or cause denial of service.
+how: An attacker would exploit this by causing multiple connections to the server in rapid succession, thereby increasing the likelihood of the race condition occurring. This could lead to unpredictable behavior including crashes or code execution.
+code-sources: `client_socket` in the line `int client_socket = accept(server_socket, (struct sockaddr *)&client_addr, &client_addr_size);`
+code-sinks: `pthread_create(&thread_id, NULL, handle_client, (void *)&client_socket);`
+suggested-fix: 
+```diff
+--- falcon180b-24110 2023-10-08 12:00:00.000000000 +0000
++++ falcon180b-24110-fixed 2023-10-08 12:00:00.000000000 +0000
+@@ -47,7 +47,12 @@
+         }
+
+         clients[num_clients] = client_socket;
++        int* pclient = malloc(sizeof(int));
++        *pclient = client_socket;
++
+         num_clients++;
+ 
+-        pthread_create(&thread_id, NULL, handle_client, (void *)&client_socket);
++        pthread_create(&thread_id, NULL, handle_client, pclient);
+     }
+ 
+     return 0;
+```
+explanation-suggested-fix: The fix involves using dynamic memory allocation to create a separate memory location for each client's socket value. By allocating memory for `client_socket` and passing that pointer to `pthread_create`, each thread will have its own isolated copy of `client_socket`, avoiding the race condition.
+method: UNKNOWN

@@ -1,0 +1,18 @@
+ 
+
+diff --git a/gpt35-36390 b/gpt35-36390
+index abcdef1..1234567 100644
+--- a/gpt35-36390
++++ b/gpt35-36390
+@@ -19,6 +19,10 @@ void *handle_client(void *arg) {
+         int bytes_read = read(client_socket, buffer, sizeof(buffer));
+         if (bytes_read < 0) {
+             perror("Error reading from client");
++        } else if (bytes_read >= sizeof(buffer)) {
++            fprintf(stderr, "Buffer overflow attempt detected, closing connection\n");
++            close(client_socket);
++            return NULL;
+         }
+         if (bytes_read == 0 || strcmp(buffer, "quit\n") == 0) {
+             printf("Client disconnected\n");
+

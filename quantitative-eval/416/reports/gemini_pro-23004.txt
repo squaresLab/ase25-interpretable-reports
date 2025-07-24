@@ -1,0 +1,49 @@
+
+vuln-fix: CWE-362: Race Condition in gemini_pro-23004 (severity: High)
+what: The code has a race condition where the `client_sockfd` value is shared between main thread and each newly spawned thread, leading to mismanagement and potential overwrites of `client_sockfd`.
+where: Lines 46-61 in gemini_pro-23004
+why: If not resolved, this weakness can cause unexpected behavior and crashes due to incorrect socket management, which could result in denial of service or the wrong client getting the socket intended for another client.
+how: An attacker can exploit this by making simultaneous connection requests to the server, causing the `client_sockfd` to be overwritten and mishandled in multiple threads, leading to unpredictable behaviors or crashes.
+code-sources: Client connections via the accept function in server_function.
+code-sinks: Socket communication within the client_thread.
+suggested-fix: 
+```diff
+--- gemini_pro-23004.c
++++ gemini_pro-23004_fix.c
+@@ -47,7 +47,7 @@
+ 
+     // Listen for incoming connections
+     int client_sockfd;
++    int *pclient;
+     struct sockaddr_in client_addr;
+     socklen_t client_addr_len = sizeof(client_addr);
+     while ((client_sockfd = accept(server_sockfd, (struct sockaddr *)&client_addr, &client_addr_len)) >= 0)
+     {
++        pclient = malloc(sizeof(int));  // Allocate memory for client socket descriptor
++        if (pclient == NULL)
++        {
++            perror("malloc");
++            close(client_sockfd);
++            continue;
++        }
++        *pclient = client_sockfd;
+         pthread_t client_thread_id;
+ 
+         // Create a new thread to handle the client connection
+-        if (pthread_create(&client_thread_id, NULL, client_thread, &client_sockfd) != 0)
++        if (pthread_create(&client_thread_id, NULL, client_thread, pclient) != 0)
+         {
+             perror("pthread_create");
+             exit(EXIT_FAILURE);
+         }
++        pthread_detach(client_thread_id);  // Detach the thread to avoid memory leaks
+     }
+ 
+     if (client_sockfd == -1)
+     {
+         perror("accept");
+         exit(EXIT_FAILURE);
+     }
+```
+explanation-suggested-fix: The fix allocates memory dynamically for each client socket descriptor, ensuring each thread gets its separate copy of the socket descriptor. The thread is then detached to properly manage resources and avoid memory leaks.
+method: UNKNOWN

@@ -1,0 +1,33 @@
+ 
+    
+    --- falcon180b-11100  2023-09-10 10:00:00.000000000 +0000
+    +++ falcon180b-11100-fixed  2023-09-10 10:00:00.000000000 +0000
+    @@ -11,6 +11,7 @@
+     int num_connections = 0;
+
+     void* handle_connection(void* arg) {
+    +   int index = *((int*) arg);
+         int client_socket = connections[index];
+         char buffer[BUFFER_SIZE];
+
+    @@ -100,7 +101,7 @@
+             }
+
+             if (num_connections >= MAX_CONNECTIONS) {
+                     printf("Maximum number of connections reached\n");
+    -                 continue;
+    +                 close(client_socket); continue;
+             }
+
+    -        connections[num_connections] = client_socket;
+    +        connections[num_connections] = client_socket;  // num_connections is still valid here
+             int thread_arg = num_connections;
+    +        num_connections++;  // Increment separately to ensure thread_arg is correct
+             pthread_t thread_id;
+    -        pthread_create(&thread_id, NULL, handle_connection, &client_socket);
+    +        pthread_create(&thread_id, NULL, handle_connection, &thread_arg);
+         }
+     }
+    
+
+    

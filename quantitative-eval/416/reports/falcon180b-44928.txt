@@ -1,0 +1,37 @@
+
+vuln-fix: Race Condition (CWE-362) in falcon180b-44928 lines 42-44 (severity: High)
+what: The vulnerability lies in the handling of the `client_socket` variable in the `accept_connections` function, where the same variable is accessed and modified concurrently by multiple threads without proper synchronization.
+where: The issue is located in the `accept_connections` function at lines 42-44 of falcon180b-44928.
+why: If this weakness is not resolved, it could lead to unexpected behavior where the same client socket might be accessed by multiple threads, potentially causing data corruption, crashes, and unpredictable outcomes in the server application.
+how: An attacker could exploit this vulnerability by sending multiple connection requests to the server simultaneously, causing multiple threads to attempt to access and modify the `client_socket` variable concurrently. This can result in race conditions, leading to undefined behavior and potential server crashes.
+code-sources: The entry point in the code where user input enters the application is the `accept` function call in `accept_connections`.
+code-sinks: The actions performed by the application using user input from a source include adding the socket to the `clients` array and creating a new thread with `pthread_create`.
+suggested-fix: 
+```diff
+diff --git a/falcon180b-44928 b/falcon180b-44928
+index abcdef1..1234567 100644
+--- a/falcon180b-44928
++++ b/falcon180b-44928
+@@ -42,10 +42,13 @@ void accept_connections(int server_socket) {
+         int client_socket = accept(server_socket, NULL, NULL);
+         if (client_socket == -1) {
+             break;
+         }
++        int added_socket;
+         if (num_clients >= MAX_CLIENTS) {
+             close(client_socket);
+             continue;
+         }
++        added_socket = num_clients;
++        pthread_mutex_lock(&clients_mutex);
+         clients[num_clients] = client_socket;
+         num_clients++;
++        pthread_mutex_unlock(&clients_mutex);
+         pthread_t thread_id;
+-        pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
++        pthread_create(&thread_id, NULL, handle_client, (void *) &added_socket);
+     }
+ }
+```
+explanation-suggested-fix: The suggested code diff resolves the vulnerability by introducing a new variable `added_socket` to store the index of the client socket being added, ensuring that the `client_socket` variable is not used concurrently across threads. Additionally, a mutex (`clients_mutex`) is used to synchronize access to the `clients` array and the `num_clients` counter, ensuring that only one thread can modify these resources at a time.
+method: UNKNOWN

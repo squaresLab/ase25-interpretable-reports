@@ -1,0 +1,30 @@
+ 
+vuln-fix: Buffer Overflow (CWE-120) in falcon180b-50436 (severity: High)
+what: The buffer used to receive data from the client is vulnerable to buffer overflow because the received data is directly written into a fixed-size buffer without proper boundary checks.
+where: The vulnerability is located in the `handle_client` function, particularly at lines:
+   ```c
+   int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+   ```
+   in file `falcon180b-50436`.
+why: An attacker could exploit this vulnerability to cause a crash, execute arbitrary code, or perform other malicious activities, potentially compromising the system's security or availability.
+how: An attacker can send more data than the `BUFFER_SIZE` to the server, causing an overflow in the `buffer` array. Since the server code does not validate the size of the incoming data, the excess data can overwrite adjacent memory, leading to unpredictable behavior.
+code-sources: The entry point for user input is the `recv()` function in `handle_client`:
+   ```c
+   int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+   ```
+code-sinks: The actions performed by the application after receiving user input include responding to the client or processing the received data, which could be influenced if the buffer overflow is exploited.
+suggested-fix: 
+```diff
+--- falcon180b-50436.c.orig 2023-10-16 18:20:00.000000000 +0000
++++ falcon180b-50436.c 2023-10-16 18:22:00.000000000 +0000
+@@ -21,6 +21,7 @@
+    while (1) {
+        memset(buffer, 0, BUFFER_SIZE);
+        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE-1, 0);
++       buffer[BUFFER_SIZE-1] = '\0';  // Ensure null-termination
+
+        if (bytes_received <= 0) {
+            break;
+```
+explanation-suggested-fix: The suggested code diff ensures that the buffer always null-terminates after receiving input, which prevents potential overflows and ensures that the buffer is treated as a proper string.
+method: UNKNOWN

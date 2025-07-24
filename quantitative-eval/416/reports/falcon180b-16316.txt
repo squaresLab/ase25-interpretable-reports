@@ -1,0 +1,38 @@
+
+vuln-fix: Buffer Overflow (CWE-120) in falcon180b-16316 at lines 20-22 in function broadcast (severity: High)
+what: The function `broadcast` does not properly handle potential buffer overflow due to the use of `strlen` on potentially untrusted input without bounds checking the message length.
+where: At lines 20-22 in the file falcon180b-16316.
+why: Not resolving this weakness could allow attackers to overflow the buffer and execute arbitrary code or crash the system, leading to potential denial of service or further exploits.
+how: An attacker could send a message to the server that exceeds the size of the receiving buffer, causing the `broadcast` function to write beyond the end of `message`, leading to a buffer overflow.
+code-sources: The entry point is the `recv` function in the `listen_thread` function which accepts incoming messages from clients.
+code-sinks: The buffer received in `listen_thread` is subsequently passed to the `broadcast` function where it is sent to other clients using the `send` function without size validation.
+suggested-fix: 
+```diff
+diff --git a/falcon180b-16316 b/falcon180b-16316
+index d15af18..23d9b37 100644
+--- a/falcon180b-16316
++++ b/falcon180b-16316
+@@ -21,7 +21,7 @@ void broadcast(int sender_socket, char message[]) {
+ void *listen_thread(void *socket) {
+     int new_socket = *((int *) socket);
+     char buffer[BUFFER_SIZE];
+-    while (1) {
++    while (1) {
+         memset(buffer, 0, BUFFER_SIZE);
+         int bytes_received = recv(new_socket, buffer, BUFFER_SIZE, 0);
+         if (bytes_received <= 0) {
+@@ -25,6 +25,10 @@ void *listen_thread(void *socket) {
+             break;
+         }
+-        broadcast(new_socket, buffer);
++        buffer[BUFFER_SIZE - 1] = '\0'; // Ensure null-termination
++        if (strlen(buffer) < BUFFER_SIZE) {
++            broadcast(new_socket, buffer);
++        } else {
++            // Handle the error appropriately
++            printf("Received message too large\n");
++        }
+     }
+```
+explanation-suggested-fix: The suggested code diff ensures the received buffer is null-terminated to prevent reading beyond its boundaries. Additionally, it adds a check to verify the length of the buffer before passing it to `broadcast`, thus preventing a buffer overflow by ensuring that only properly sized messages are processed.
+method: UNKNOWN

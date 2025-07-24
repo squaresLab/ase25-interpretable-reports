@@ -1,0 +1,23 @@
+
+
+diff --git a/gpt35-24384 b/gpt35-24384
+index e69de29..2e69e36 100644
+--- a/gpt35-24384
++++ b/gpt35-24384
+@@ -43,6 +43,7 @@ int main() {
+     add_node(&g, 4, "Switch2");
+     add_node(&g, 5, "Router3");
+     add_node(&g, 6, "Server1");
++    free(g.nodes[0].name);
+     add_node(&g, 7, "Server2");
+ 
+     add_edge(&g, 1, 2, 1);
+@@ -55,6 +56,7 @@ int main() {
+     add_edge(&g, 4, 6, 2);
+     add_edge(&g, 4, 7, 1);
+ 
++    for (int i = 0; i < g.num_nodes; i++) { free(g.nodes[i].name); }
+     print_graph(&g);
+ 
+     return 0;
+

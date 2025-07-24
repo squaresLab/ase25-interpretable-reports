@@ -1,0 +1,47 @@
+ 
+    
+    --- falcon180b-20450.c 2023-10-08 16:59:00.000000000 +0000
+    +++ falcon180b-20450-fixed.c 2023-10-08 17:02:00.000000000 +0000
+    @@ -26,7 +26,7 @@
+    
+         while (1) {
+             memset(buffer, 0, BUFFER_SIZE);
+    -        int bytes_received = recv(sock, buffer, BUFFER_SIZE, 0);
+    +        int client_index = -1;
+    
+    +        // Find the associated client index
+    +        for (int i = 0; i < num_clients; i++) {
+    +            if (clients[i].sock == sock) {
+    +                client_index = i;
+    +                break;
+    +            }
+    +        }
+    +
+    +        if (client_index == -1) {
+    +            printf("Client not found\n");
+    +            close(sock);
+    +            return NULL;
+    +        }
+    +
+    +        int bytes_received = recv(sock, buffer, BUFFER_SIZE, 0);
+    
+             if (bytes_received <= 0) {
+                 break;
+             }
+    
+    -        printf("%s: %s\n", clients[num_clients].name, buffer);
+    +        printf("%s: %s\n", clients[client_index].name, buffer);
+         }
+    
+         close(sock);
+    @@ -72,7 +72,7 @@
+     
+             if (new_client.sock == -1) {
+                 printf("Error accepting connection\n");
+    -            continue;
+    +            close(new_client.sock);
+             }
+     
+             getpeername(new_client.sock, (struct sockaddr *) &new_client.addr, &addr_size);
+    
+    

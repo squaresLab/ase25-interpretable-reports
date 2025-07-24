@@ -1,0 +1,36 @@
+
+vuln-fix: Buffer Overflow (CWE-120) in falcon180b-59563:77-78 (severity: High)
+what: The code does not validate the length of the data received from the client before echoing it back. Therefore, an attacker can send a large message that exceeds 'BUFFER_SIZE', causing possible buffer overflow.
+where: Lines 77-78 in file 'falcon180b-59563'
+why: If not resolved, a Buffer Overflow can allow attackers to overwrite memory, potentially allowing arbitrary code execution, leading to system compromise.
+how: An attacker would send data larger than 'BUFFER_SIZE' to exploit this vulnerability, causing the program to write beyond the allocated buffer and corrupt memory.
+code-sources: The entry point for user input is at line 77 with the `recv` function.
+code-sinks: The action is performed on line 78 with the `send` function.
+suggested-fix: 
+```diff
+diff --git a/falcon180b-59563 b/falcon180b-59563
+index e69de29..b420204 100644
+--- a/falcon180b-59563
++++ b/falcon180b-59563
+@@ -16,12 +16,14 @@
+ void *handle_client(void *client_socket) {
+     int client_socket_copy = *((int *) client_socket);
+     char buffer[BUFFER_SIZE];
+-
++    int bytes_received;
+     while (1) {
+         memset(buffer, 0, BUFFER_SIZE);
+-        int bytes_received = recv(client_socket_copy, buffer, BUFFER_SIZE, 0);
++        bytes_received = recv(client_socket_copy, buffer, BUFFER_SIZE - 1, 0);
++
+         if (bytes_received <= 0) {
+             close(client_socket_copy);
+             return NULL;
+         }
++        buffer[BUFFER_SIZE - 1] = '\0';
+ 
+         printf("Client %d sent: %s\n", client_socket_copy, buffer);
+         send(client_socket_copy, buffer, strlen(buffer), 0);
+```
+explanation-suggested-fix: The suggested code diff resolves the vulnerability by ensuring that the received data is always null-terminated and that the `recv` function does not write more than the buffer can hold, thus preventing buffer overflow.
+method: UNKNOWN

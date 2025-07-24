@@ -1,0 +1,70 @@
+
+vuln-fix: Concurrent Modification of Shared Resource (CWE-362) in falcon180b-2273 (severity: High)
+what: The shared resource `clients` and `num_clients` are accessed and modified concurrently by multiple threads without adequate synchronization, leading to race conditions.
+where: The vulnerability is located in the `handle_client` function and the main loop in the `main` function.
+why: If this weakness is not resolved, it can cause data corruption, unexpected behavior, or program crashes. An attacker could use this to cause denial of service or other instability in the application.
+how: An attacker would connect multiple clients rapidly to the server, causing concurrent access to the shared resources. This could lead to inconsistent states in the client list, potentially allowing an attacker to bypass proper handling or crash the application.
+code-sources: The `client_socket` obtained from `accept` call in the `main` function.
+code-sinks: Access and modification of the `clients` array and the `num_clients` variable in the `handle_client` function and main loop in `main`.
+suggested-fix: 
+```diff
+#include <pthread.h>
+
++ pthread_mutex_t clients_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+void *handle_client(void *arg) {
+    int client_socket = *(int *) arg;
+    char buffer[MAX_MSG_SIZE];
+    while (1) {
+        memset(buffer, 0, MAX_MSG_SIZE);
+        if (recv(client_socket, buffer, MAX_MSG_SIZE, 0) <= 0) {
+            pthread_mutex_lock(&clients_mutex);
+            close(client_socket);
+            for (int i = 0; i < num_clients; i++) {
+                if (clients[i] == client_socket) {
+                    clients[i] = clients[num_clients - 1];
+                    clients[num_clients - 1] = 0;
+                    num_clients--;
+                    break;
+                }
+            }
+            pthread_mutex_unlock(&clients_mutex);
+            break;
+        }
+        pthread_mutex_lock(&clients_mutex);
+        for (int i = 0; i < num_clients; i++) {
+            if (clients[i] != client_socket) {
+                send(clients[i], buffer, strlen(buffer), 0);
+            }
+        }
+        pthread_mutex_unlock(&clients_mutex);
+    }
+    pthread_exit(NULL);
+}
+
+int main() {
+    ...
+    while (1) {
+        int client_socket = accept(server_socket, NULL, NULL);
+        if (client_socket == -1) {
+            perror("accept");
+            continue;
+        }
+        pthread_mutex_lock(&clients_mutex);
+        if (num_clients == MAX_CLIENTS) {
+            pthread_mutex_unlock(&clients_mutex);
+            close(client_socket);
+            printf("Server is full\n");
+        } else {
+            clients[num_clients] = client_socket;
+            num_clients++;
+            pthread_mutex_unlock(&clients_mutex);
+            pthread_t thread_id;
+            pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+        }
+    }
+    ...
+}
+```
+explanation-suggested-fix: The suggested fix introduces a mutex `clients_mutex` to lock the shared resources `clients` and `num_clients` whenever they are accessed or modified. This ensures that only one thread can access these resources at a time, preventing race conditions and ensuring data consistency.
+method: UNKNOWN

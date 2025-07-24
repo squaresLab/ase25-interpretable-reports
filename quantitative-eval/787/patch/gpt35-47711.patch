@@ -1,0 +1,25 @@
+
+
+--- gpt35-47711.c   2023-10-07 10:00:00.000000000 +0000
++++ gpt35-47711-fixed.c   2023-10-07 10:05:00.000000000 +0000
+@@ -36,6 +36,10 @@
+     if (num_nodes > MAX_NODES || num_edges > MAX_NODES * MAX_NODES) {
+         fprintf(stderr, "Error: Number of nodes or edges exceed the limits.\n");
+         exit(EXIT_FAILURE);
++    }
++
++    if (num_nodes < 0 || num_edges < 0) {
++        fprintf(stderr, "Error: Number of nodes or edges cannot be negative.\n");
+         exit(EXIT_FAILURE);
+     }
+     g->num_nodes = num_nodes;
+@@ -49,7 +53,7 @@
+         int u = -1;
+         double min_dist = INF;
+         for (int j = 0; j < g->num_nodes; j++) {
+-            if (!visited[j] && dist[j] < min_dist) {
++            if (!visited[j] && dist[j] < min_dist && dist[j] <= INF) {
+                 u = j;
+                 min_dist = dist[j];
+             }
+

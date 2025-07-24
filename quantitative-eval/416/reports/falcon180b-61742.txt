@@ -1,0 +1,29 @@
+
+vuln-fix: Improper Resource Shutdown or Release (CWE-404) in falcon180b-61742 (severity: High)
+what: The vulnerability is caused by improper handling of client socket descriptor when `pthread_create` is called in an iterative server design. If the client exits or any error occurs, client socket descriptors may not be correctly closed, possibly leading to resource exhaustion or undefined behavior.
+where: Lines 60-64 in the `falcon180b-61742` file
+why: If this vulnerability is not resolved, it could lead to resource leakage where file descriptors are not properly closed, ultimately depleting the available file descriptors/system resources, potentially causing the server to crash or deny service to new clients (denial of service).
+how: An attacker could exploit this vulnerability to intentionally cause resource leakage by establishing multiple connections without closing them properly, thereby consuming resources and causing DoS.
+code-sources: `int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);` (Line 20)
+code-sinks: `send(client_socket, buffer, bytes_received, 0);` (Line 26)
+suggested-fix: 
+```diff
+diff --git a/falcon180b-61742-original.c b/falcon180b-61742-fixed.c
+index dcf06..eb01f 100644
+--- a/falcon180b-61742-original.c
++++ b/falcon180b-61742-fixed.c
+@@ -70,7 +70,10 @@ int main() {
+         num_clients++;
+ 
+         pthread_t thread_id;
+-        pthread_create(&thread_id, NULL, handle_client, (void *)&client_socket);
++        
++        int *client_sock_ptr = malloc(sizeof(int));
++        *client_sock_ptr = client_socket;
++        pthread_create(&thread_id, NULL, handle_client, (void *)client_sock_ptr);
+     }
+ 
+     return 0;
+```
+explanation-suggested-fix: The suggested code diff resolves the resource leakage issue by dynamically allocating memory for each client socket pointer passed to the `pthread_create` function. This ensures that the socket descriptor's value is preserved correctly across different threads, preventing the potential of undefined behavior or resource leakage.
+method: UNKNOWN

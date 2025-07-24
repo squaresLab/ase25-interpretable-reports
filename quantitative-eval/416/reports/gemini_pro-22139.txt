@@ -1,0 +1,78 @@
+
+vuln-fix: CWE-362: Race Condition in gemini_pro-22139 (severity: Medium)
+
+what: The vulnerable code contains a race condition that arises from sharing the loop variable `i` between the main thread and the newly created threads during the calls to `pthread_create`.
+
+where: The vulnerability occurs in the `main` function within the loop that creates threads in the file `gemini_pro-22139`.
+
+why: If not resolved, this weakness may lead to undefined behavior because multiple threads might use the same value of the loop variable, causing unexpected outputs or data corruption.
+
+how: An attacker could exploit this vulnerability by inducing the affected program to perform incorrect operations or crash by manipulating the timing of thread execution, potentially exposing sensitive information or causing a denial of service.
+
+code-sources: The entry point is the loop variable `i` in the `main` function at line 23 that is passed to `pthread_create`.
+
+code-sinks: The application uses the loop variable `i` in the function `thread_function` to determine the thread ID, leading to unpredictable results since the variable may be modified before it is dereferenced by the thread.
+
+suggested-fix: 
+```diff
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+
+// Define the number of threads to create
+#define NUM_THREADS 5
+
+// Define the thread function
+void *thread_function(void *arg) {
+    // Get the thread ID
+    int thread_id = *(int *)arg;
+
+    // Print a message from the thread
+    printf("Hello from thread %d!\n", thread_id);
+
+    // Sleep for a random amount of time
+    sleep(rand() % 5);
+
+    // Return NULL
+    return NULL;
+}
+
+int main() {
+    // Initialize the random number generator
+    srand(time(NULL));
+
+    // Create an array of thread IDs
+    pthread_t thread_ids[NUM_THREADS];
++    int thread_args[NUM_THREADS];
+
+    // Create the threads
+    for (int i = 0; i < NUM_THREADS; i++) {
++        thread_args[i] = i;
+        // Create the thread
+-        if (pthread_create(&thread_ids[i], NULL, thread_function, &i) != 0) {
++        if (pthread_create(&thread_ids[i], NULL, thread_function, &thread_args[i]) != 0) {
+            perror("pthread_create");
+            return EXIT_FAILURE;
+        }
+    }
+
+    // Join the threads
+    for (int i = 0; i < NUM_THREADS; i++) {
+        // Join the thread
+        if (pthread_join(thread_ids[i], NULL) != 0) {
+            perror("pthread_join");
+            return EXIT_FAILURE;
+        }
+    }
+
+    // Print a message from the main thread
+    printf("Hello from the main thread!\n");
+
+    // Return success
+    return EXIT_SUCCESS;
+}
+```
+
+explanation-suggested-fix: The suggested code diff introduces an array `thread_args` to store a unique copy of each thread ID. This prevents the race condition by passing the correct thread ID as an argument to `pthread_create` for each thread, ensuring that each thread works with the intended value.
+
+method: UNKNOWN

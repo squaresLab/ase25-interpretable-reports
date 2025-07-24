@@ -1,0 +1,29 @@
+
+    
+    --- falcon180b-48421.c    2023-10-07 10:00:00
+    +++ falcon180b-48421-fixed.c   2023-10-07 10:05:00
+    @@ -64,11 +64,14 @@
+             }
+
+             if (num_clients >= MAX_CLIENTS) {
+                 close(client_socket);
+                 continue;
+             }
+
+    -        clients[num_clients] = client_socket;
+    +        int *client_sock_ptr = malloc(sizeof(int));
+    +        if (client_sock_ptr == NULL) {
+    +            perror("malloc");
+    +            close(client_socket);
+    +            continue;
+    +        }
+    +        *client_sock_ptr = client_socket;
+             num_clients++;
+    -        pthread_create(&thread_id, NULL, handle_client, (void *)&client_socket);
+    +        pthread_create(&thread_id, NULL, handle_client, (void *)client_sock_ptr);
+         }
+
+         return 0;
+     }
+    
+    

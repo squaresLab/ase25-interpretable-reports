@@ -1,0 +1,20 @@
+ 
+
+--- gpt35-20819-cv.c	2023-10-04 10:57:19.000000000 -0600
++++ gpt35-20819-fixed.c	2023-10-04 11:35:52.000000000 -0600
+@@ -67,12 +67,14 @@
+         client_sockets[client_count++] = client_socket;
+         printf("New client connected: %s:%d\n", inet_ntoa(client_address.sin_addr), ntohs(client_address.sin_port));
+         pthread_t thread;
+-        if(pthread_create(&thread, NULL, handle_client, &client_socket) < 0) {
++        int* new_client_socket = malloc(sizeof(int));
++        *new_client_socket = client_socket;
++        if(pthread_create(&thread, NULL, handle_client, new_client_socket) < 0) {
+             perror("pthread_create() failed");
+             exit(1);
+         }
+         pthread_detach(thread);
+     }
+     return 0;
+ }
+

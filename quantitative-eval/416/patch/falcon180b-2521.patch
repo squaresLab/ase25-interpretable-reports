@@ -1,0 +1,17 @@
+ 
+    
+    --- a/falcon180b-2521
+    +++ b/falcon180b-2521
+    @@ -11,7 +11,7 @@
+         int treasure = 0;
+
+         while(health > 0) {
+    -        system("clear");
+    +        #ifdef _WIN32
+    +            system("cls");
+    +        #else
+    +            system("clear");
+    +        #endif
+             printf("You are in a dark, damp cave.\n"); 
+    
+    

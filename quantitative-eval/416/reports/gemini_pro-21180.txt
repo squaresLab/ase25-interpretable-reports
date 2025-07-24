@@ -1,0 +1,72 @@
+
+vuln-fix: Race Condition (CWE-362) in gemini_pro-21180 (severity: High)
+what: The code contains a race condition due to improper handling of shared resources (`traffic_light_id` variable). Multiple threads attempt to control traffic lights but pass the address of an iterating index variable `i` to the thread creation function, leading to all threads potentially modifying the same memory location.
+where: 
+- Vulnerability is located in `gemini_pro-21180` at lines where `pthread_create` is called in a loop within the `main` function, specifically:
+  ```c
+  // Create the traffic light threads
+  for (int i = 0; i < NUM_TRAFFIC_LIGHTS; i++)
+  {
+      pthread_create(&traffic_light_threads[i], NULL, traffic_light_controller, &i);
+  }
+  ```
+why: If not resolved, this weakness can cause threads to manipulate the state of traffic lights incorrectly, leading to unpredictable traffic light behaviors which could result in dangerous traffic situations or system malfunctions.
+how: An attacker could exploit this vulnerability by manipulating thread execution timing, causing illogical or unsafe traffic light signals (e.g., multiple lights turning green simultaneously).
+code-sources: The loop variable `i` is directly used as a source for `pthread_create`:
+  ```c
+  for (int i = 0; i < NUM_TRAFFIC_LIGHTS; i++)
+  {
+      pthread_create(&traffic_light_threads[i], NULL, traffic_light_controller, &i);
+  }
+  ```
+code-sinks: The `traffic_light_controller` function dereferences the pointer `&i` passed to it:
+  ```c
+  void *traffic_light_controller(void *arg)
+  {
+      int traffic_light_id = *(int *)arg;
+      // ... rest of the code
+  }
+  ```
+suggested-fix: 
+```diff
+#include <stdio.h>
+#include <stdlib.h>
+
+int main()
+{
+    // Initialize the semaphores
+    for (int i = 0; i < NUM_TRAFFIC_LIGHTS; i++)
+    {
+        sem_init(&traffic_lights[i], 0, 0);
+    }
+
+    // Create the traffic light threads with individual traffic_light_ids
+    int *traffic_light_id[NUM_TRAFFIC_LIGHTS];
+    for (int i = 0; i < NUM_TRAFFIC_LIGHTS; i++)
+    {
+        traffic_light_id[i] = malloc(sizeof(int));
+        *traffic_light_id[i] = i;
+        pthread_create(&traffic_light_threads[i], NULL, traffic_light_controller, (void *)traffic_light_id[i]);
+    }
+
+    // Join the traffic light threads
+    for (int i = 0; i < NUM_TRAFFIC_LIGHTS; i++)
+    {
+        pthread_join(traffic_light_threads[i], NULL);
+        free(traffic_light_id[i]);
+    }
+
+    // Destroy the semaphores
+    for (int i = 0; i < NUM_TRAFFIC_LIGHTS; i++)
+    {
+        sem_destroy(&traffic_lights[i]);
+    }
+
+    // Destroy the traffic lights mutex
+    pthread_mutex_destroy(&traffic_lights_mutex);
+
+    return 0;
+}
+```
+explanation-suggested-fix: The suggested code fix allocates memory for each traffic light ID and passes the address of that memory to each thread. This ensures that each thread has a unique identifier and avoids the race condition caused by the threads sharing a common variable. Additionally, the allocated memory for the traffic light IDs is freed after the thread execution completes to prevent memory leaks.
+method: UNKNOWN

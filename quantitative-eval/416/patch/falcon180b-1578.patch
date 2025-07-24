@@ -1,0 +1,24 @@
+ 
+
+--- falcon180b-1578.c
++++ falcon180b-1578-fixed.c
+@@ -13,6 +13,7 @@
+     char buffer[BUFFER_SIZE];
+
+     while (1) {
++        memset(buffer, 0, BUFFER_SIZE + 1);  // Ensure extra space for null-termination
+         int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+
+         if (bytes_received <= 0) {
+@@ -20,6 +21,7 @@
+         }
+
+         buffer[bytes_received] = '\0';  // Explicitly null-terminate the received data
+-        printf("Client %d sent message: %s\n", client_socket, buffer);
++        printf("Client %d sent message: %.*s\n", client_socket, bytes_received, buffer);  // Prevent overflow in printf
+         for (int i = 0; i < num_clients; i++) {
+             if (clients[i] != client_socket) {
+                 send(clients[i], buffer, bytes_received, 0);
+             }
+         }
+

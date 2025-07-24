@@ -1,0 +1,94 @@
+
+vuln-fix: CWE-20: Improper Input Validation in gpt35-65290, lines: 81, 85, 92, 97, 113 (severity: Medium)
+what: The code does not properly validate the user input for the email index. This can potentially lead to issues such as reading or deleting unintended memory locations, which can corrupt memory or possibly cause a segmentation fault.
+where: 
+    - readEmail function: lines 81, 85
+    - deleteEmail function: lines 92, 97
+    - main function: line 113
+why: If an attacker provides an invalid index, they could overwhelm the bounds of the list, potentially causing the program to crash or manipulate unintended memory. This could lead to denial of service and undefined behavior.
+how: An attacker could input an out-of-bounds index number when prompted by the program for an email index. This could lead the program to try and access invalid memory locations, corrupting memory, or causing the application to crash.
+code-sources: Inputs gathered by `scanf` in the `main` function on lines 81, 92, and 113.
+code-sinks: 
+    - The improper index is used in the `readEmail` function on lines 81 and 85.
+    - The improper index is used in the `deleteEmail` function on lines 92 and 97.
+suggested-fix: 
+```
+diff --git a/gpt35-65290.c b/gpt35-65290-fixed.c
+index f3b6e5d..8d25e45 100644
+--- a/gpt35-65290.c
++++ b/gpt35-65290-fixed.c
+@@ -81,6 +81,9 @@ void readEmail(int index) {
+     if(head == NULL) {
+         printf("You have no emails.\n");
+     } else {
++        if (index <= 0) {
++            printf("Invalid email index.\n");
++            return;
+         int current = 1;
+         Node *currentNode = head;
+         while(currentNode != NULL && current != index) {
+@@ -85,6 +88,9 @@ void readEmail(int index) {
+             current++;
+         }
+         if(currentNode == NULL) {
++            printf("Invalid email index.\n");
++            return;
++        }
+         while(currentNode != NULL && current != index) {
+             currentNode = currentNode->next;
+             current++;
+@@ -92,6 +98,9 @@ void deleteEmail(int index) {
+     if(head == NULL) {
+         printf("You have no emails.\n");
+     } else {
++        if (index <= 0) {
++            printf("Invalid email index.\n");
++            return;
+         int current = 1;
+         Node *currentNode = head;
+         Node *previousNode = NULL;
+@@ -97,6 +106,9 @@ void deleteEmail(int index) {
+             current++;
+         }
+         if(currentNode == NULL) {
++            printf("Invalid email index.\n");
++            return;
++        }
+             currentNode = currentNode->next;
+             current++;
+@@ -113,6 +125,9 @@ int main() {
+     while(true) {
+         printf("\n");
+         printf("1. List Emails\n");
+         printf("2. Read Email\n");
+         printf("3. Delete Email\n");
+@@ -119,7 +132,9 @@ int main() {
+         printf("Enter your choice: ");
+         int choice;
+         scanf("%d", &choice);
+@@ -127,9 +142,13 @@ int main() {
+             case 1:
+                 listEmails();
+                 break;
+             case 2:
+                 printf("Enter email index: ");
+                 int index;
++                if (scanf("%d", &index) != 1 || index <= 0) {
++                    printf("Invalid email index.\n");
++                    while(getchar() != '\n');
++                    break;
++                }
+                 readEmail(index);
+                 break;
+             case 3:
+                 printf("Enter email index: ");
++                if (scanf("%d", &index) != 1 || index <= 0) {
++                    printf("Invalid email index.\n");
++                    while(getchar() != '\n');
++                    break;
++                }
+                 deleteEmail(index);
+                 break;
+             case 4:
+explanation-suggested-fix: The suggested fix introduces input validation for the email index in the `readEmail` and `deleteEmail` functions. Specifically, it ensures the index is a positive number and prevents further execution if it is invalid. Additionally, this fix removes extraneous second checks for `currentNode == NULL`, ensuring there is only a single validation to improve clarity.
+method: UNKNOWN

@@ -1,0 +1,62 @@
+
+vuln-fix: CWE-825 in falcon180b-64585 (severity: High)
+what: A function returns a pointer to a stack-allocated region of memory. This memory is deallocated at the end of the function, which may lead the caller to dereference a dangling pointer.
+where: Located the vulnerabilities at lines 21 and 23 in the file falcon180b-64585.
+why: If this vulnerability is not resolved, it could lead to undefined behavior, crashes, or potential security vulnerabilities due to dereferencing a dangling pointer.
+how: An attacker could exploit this vulnerability by making the program operate on a dangling pointer, possibly leading to arbitrary code execution or security breaches if sensitive memory regions are accessed or corrupted.
+code-sources: The entry point in the code where user input enters is the `main` function's argument `argv[1]`.
+code-sinks: The actions performed by the application using user input are within the `sanitize_url` function.
+suggested-fix:
+```diff
+/* =======================================================================
+   Sanitize a single character
+   -----------------------------------------------------------------------
+   This function will take a single character as input and return a
+   sanitized version of it, or NULL if the character is not valid. */
+
+-char* sanitize_char(char c) {
++char sanitize_char(char c) {
+    if (isalnum(c)) {
+-        return &c;
++        return c;
+    } else if (c == '.' || c == '-' || c == '_') {
+-        return &c;
++        return c;
+    } else {
+        return '\0';
+    }
+}
+
+/* =======================================================================
+   Sanitize a URL
+   -----------------------------------------------------------------------
+   This function will take a URL as input and return a sanitized version
+   of it, or NULL if the URL is not valid. */
+
+char* sanitize_url(char* url) {
+    int i, j;
+    char* sanitized_url = malloc(strlen(url) + 1);
+
+    if (sanitized_url == NULL) {
+        return NULL;
+    }
+
+    for (i = 0, j = 0; url[i] != '\0'; i++) {
+-        char* sanitized_char = sanitize_char(url[i]);
+
+-        if (sanitized_char != NULL) {
+-            sanitized_url[j++] = *sanitized_char;
++        char sanitized_char = sanitize_char(url[i]);
+
++        if (sanitized_char != '\0') {
++            sanitized_url[j++] = sanitized_char;
+        }
+    }
+
+    sanitized_url[j] = '\0';
+
+    return sanitized_url;
+}
+```
+explanation-suggested-fix: The suggested code diff changes the return type of the `sanitize_char` function from `char*` to `char`. Instead of returning a pointer to a local variable, it now returns the character itself. This eliminates the risk of returning a pointer to a stack-allocated region of memory, thereby preventing the caller from dereferencing a dangling pointer.
+method: CODEQL

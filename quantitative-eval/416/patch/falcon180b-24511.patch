@@ -1,0 +1,23 @@
+ 
+
+--- falcon180b-24511	2023-01-10 12:00:00.000000000 -0600
++++ falcon180b-24511	2023-01-10 12:00:00.000000000 -0600
+@@ -15,7 +15,11 @@
+ void *handle_client(void *arg) {
+     int client_socket = *(int *) arg;
+     char request[MAX_REQUEST_SIZE];
+-    memset(request, 0, MAX_REQUEST_SIZE);
+-    recv(client_socket, request, MAX_REQUEST_SIZE, 0);
+-    printf("Received request from client %d: %s\n", client_socket, request);
++    ssize_t bytes_received = recv(client_socket, request, MAX_REQUEST_SIZE - 1, 0);
++    if (bytes_received < 0) {
++        perror("recv");
++        close(client_socket);
++        pthread_exit(0);
++    }
++    request[bytes_received] = '\0';
++    printf("Received request from client %d: %s\n", client_socket, request);
+     close(client_socket);
+     pthread_exit(0);
+ }
+

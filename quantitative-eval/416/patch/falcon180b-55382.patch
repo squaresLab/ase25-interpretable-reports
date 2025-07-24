@@ -1,0 +1,15 @@
+ 
+
+--- falcon180b-55382    2023-10-10 02:00:00.000000000 +0000
++++ falcon180b-55382_fixed    2023-10-10 02:15:00.000000000 +0000
+@@ -15,7 +15,7 @@
+         if (bytes_received <= 0) {
+             break;
+         }
+
+-        send(client_socket, buffer, strlen(buffer), 0);
++        send(client_socket, buffer, bytes_received, 0);
+     }
+
+     close(client_socket);
+

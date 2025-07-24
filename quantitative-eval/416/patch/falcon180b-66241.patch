@@ -1,0 +1,27 @@
+ 
+
+--- falcon180b-66241.c
++++ falcon180b-66241_fixed.c
+@@ -38,11 +38,10 @@
+ 
+     while (num_clients < MAX_CLIENTS) {
+         socklen_t client_size = sizeof(clients[num_clients]);
+-        int client_socket = accept(server_socket, (struct sockaddr *) &clients[num_clients], &client_size);
++        int *client_socket = malloc(sizeof(int));
++        *client_socket = accept(server_socket, (struct sockaddr *) &clients[num_clients], &client_size);
+
+         if (*client_socket == -1) {
+             printf("Error accepting client\n");
+             free(client_socket);
+-        } else {
+-            printf("Client %d connected\n", *client_socket);
+-            pthread_t thread_id;
+-            pthread_create(&thread_id, NULL, handle_client, (void *) client_socket);
++        } else { 
++            printf("Client %d connected\n", *client_socket);
++            pthread_t thread_id;
++            pthread_create(&thread_id, NULL, handle_client, (void *) client_socket);
+             num_clients++;
+         }
+     }
+

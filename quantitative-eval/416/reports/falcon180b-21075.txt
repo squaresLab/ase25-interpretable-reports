@@ -1,0 +1,114 @@
+
+vuln-fix: Improper Handling of Exception (CWE-248) in falcon180b-21075 (severity: High)
+what: The vulnerability lies in the improper handling of socket errors in the `handle_client` function.
+where: `falcon180b-21075` in the `handle_client` function, specifically this code block:
+    ```c
+    while (1) {
+        memset(buffer, 0, BUFFER_SIZE);
+        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+
+        if (bytes_received <= 0) {
+            break;
+        }
+
+        printf("Client %d sent: %s\n", client_socket, buffer);
+    }
+
+    close(client_socket);
+    ```
+why: An attacker could cause the server to crash or behave unexpectedly by closing the connection abruptly or sending malformed data, leading to potential denial of service.
+how: An attacker would open a connection to the server and then abruptly close it or send malformed data, causing the `recv` function to return either 0 or a negative value. Since the code breaks the loop without proper handling or logging of errors, it does not provide feedback or manage resources correctly.
+code-sources: The source of the user input is through the `recv` function which receives data from the connected client socket.
+code-sinks: The vulnerable sink is the `recv` function call where the user input is read into the `buffer` without proper error handling.
+suggested-fix: 
+```diff
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/wait.h>
+#include <errno.h>
+#include <signal.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/time.h>
+#include <time.h>
+#include <pthread.h>
+
+#define MAX_CLIENTS 10
+#define BUFFER_SIZE 1024
+
+int client_sockets[MAX_CLIENTS];
+int num_clients = 0;
+
+void *handle_client(void *socket_desc) {
+    int client_socket = *(int *)socket_desc;
+    char buffer[BUFFER_SIZE];
+
+    while (1) {
+        memset(buffer, 0, BUFFER_SIZE);
+        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+
+        if (bytes_received < 0) {
+            perror("Error receiving data");
+            break;
+        } else if (bytes_received == 0) {
+            printf("Client %d disconnected\n", client_socket);
+            break;
+        }
+
+        printf("Client %d sent: %s\n", client_socket, buffer);
+    }
+
+    close(client_socket);
+    return NULL;
+}
+
+int main() {
+    int server_socket = socket(AF_INET, SOCK_STREAM, 0);
+    struct sockaddr_in server_addr;
+
+    if (server_socket == -1) {
+        perror("Error creating socket");
+        return 1;
+    }
+
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    server_addr.sin_port = htons(8080);
+
+    if (bind(server_socket, (struct sockaddr *)&server_addr, sizeof(server_addr)) == -1) {
+        perror("Error binding socket");
+        return 1;
+    }
+
+    if (listen(server_socket, MAX_CLIENTS) == -1) {
+        perror("Error listening on socket");
+        return 1;
+    }
+
+    while (1) {
+        printf("Waiting for clients...\n");
+        
+        int client_socket = accept(server_socket, NULL, NULL);
+
+        if (client_socket == -1) {
+            perror("Error accepting connection");
+            continue;
+        }
+
+        pthread_t thread_id;
+        pthread_create(&thread_id, NULL, handle_client, (void *)&client_socket);
+
+        client_sockets[num_clients++] = client_socket;
+    }
+
+    return 0;
+}
+```
+explanation-suggested-fix: The suggested code modification adds proper error logging and handling in the `handle_client` function. It uses `perror` to print descriptive error messages when `recv` fails, and prints a specific message when the client disconnects, thus enhancing robustness against unexpected socket behavior.
+method: UNKNOWN

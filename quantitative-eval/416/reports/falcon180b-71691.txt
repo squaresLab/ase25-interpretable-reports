@@ -1,0 +1,92 @@
+    
+vuln-fix: CWE-201: Insecure Socket Configuration in falcon180b-71691 (severity: High)
+what: The vulnerable code does not initialize the server_socket variable before using it, leading to undefined behavior and potential security risks.
+where: falcon180b-71691, missing initialization of `server_socket` in main function, relevant lines are around the socket setup in `main()`.
+why: An uninitialized server socket can lead to unpredictable behavior, potentially causing the server to bind to unintended network interfaces or ports, leading to denial of service or unauthorized access.
+how: An attacker could exploit this by sending malicious data or commands to unintended network interfaces or manipulate the server to listen on an incorrect port, potentially gaining unauthorized access or disrupting service.
+code-sources: `recv(client_socket, buffer, BUFFER_SIZE, 0)` where data is received from the client.
+code-sinks: `printf("Client %d sent: %s\n", client_socket, buffer);` where the untrusted data is used directly for formatting in a print statement.
+suggested-fix: 
+```diff
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <errno.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <pthread.h>
+
+#define MAX_CLIENTS 10
+#define BUFFER_SIZE 1024
+
++int server_socket;
+int client_sockets[MAX_CLIENTS];
+int num_clients = 0;
+
+void *handle_client(void *arg) {
+    int client_socket = *(int *) arg;
+    char buffer[BUFFER_SIZE];
+    while (1) {
+        memset(buffer, 0, BUFFER_SIZE);
+        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+        if (bytes_received <= 0) {
+            break;
+        }
+        printf("Client %d sent: %s\n", client_socket, buffer);
+    }
+    close(client_socket);
+    pthread_exit(NULL);
+}
+
+int main() {
+    server_socket = socket(AF_INET, SOCK_STREAM, 0);
+    if (server_socket < 0) {
+        printf("Error creating socket\n");
+        exit(1);
+    }
+    int opt = 1;
+    setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+
+    struct sockaddr_in server_addr, client_addr;
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    server_addr.sin_port = htons(8080);
+
+    if (bind(server_socket, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
+        printf("Error binding socket\n");
+        exit(1);
+    }
+
+    if (listen(server_socket, MAX_CLIENTS) < 0) {
+        printf("Error listening on socket\n");
+        exit(1);
+    }
+
+    printf("Server listening on port 8080\n");
+
+    while (1) {
+        socklen_t client_size = sizeof(client_addr);
+        int client_socket = accept(server_socket, (struct sockaddr *)&client_addr, &client_size);
+        if (client_socket < 0) {
+            printf("Error accepting connection\n");
+            continue;
+        }
+        if (num_clients >= MAX_CLIENTS) {
+            printf("Maximum number of clients reached\n");
+            close(client_socket);
+            continue;
+        }
+        client_sockets[num_clients++] = client_socket;
+        pthread_t thread_id;
+        pthread_create(&thread_id, NULL, handle_client, (void *)&client_socket);
+    }
+
+    return 0;
+}
+```
+explanation-suggested-fix: The suggested fix initializes the `server_socket` variable by invoking the `socket` function. This ensures that the server socket is properly created and bound to a valid network interface and port. Assigning a valid socket descriptor to `server_socket` eliminates the undefined behavior and associated security risks.
+method: UNKNOWN

@@ -1,0 +1,22 @@
+ 
+
+--- falcon180b-30477
++++ falcon180b-30477
+@@ -51,12 +51,12 @@
+     printf("Server started on port 8080\n");
+
+     while (1) {
+-        int client_socket = accept(server_socket, NULL, NULL);
++        int *client_socket = malloc(sizeof(int));
++        *client_socket = accept(server_socket, NULL, NULL);
+         if (client_socket != -1) {
+-            client_sockets[num_clients] = client_socket;
+-            num_clients++;
+             pthread_t thread_id;
+-            pthread_create(&thread_id, NULL, handle_client, (void *)&client_socket);
++            pthread_create(&thread_id, NULL, handle_client, (void *)client_socket);
++            num_clients++;
+         }
+     }
+
+

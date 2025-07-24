@@ -1,0 +1,44 @@
+ 
+
+35c35
+<        bzero(buffer, bufferLength);
+---
+>        memset(buffer, 0, bufferLength);
+41,51c41,52
+<            pthread_mutex_lock(&mutex);
+<            for (int i = 0; i < clientCount; i++) {
+<                if (clientSockets[i] == clientSocket) {
+<                    while (i < clientCount - 1) {
+<                        clientSockets[i] = clientSockets[i + 1];
+<                        i++;
+<                    }
+<                    break;
+<                }
+<            }
+<            clientCount--;
+---
+>            {
+>                pthread_mutex_lock(&mutex); 
+>                for (int i = 0; i < clientCount; i++) {
+>                    if (clientSockets[i] == clientSocket) {
+>                        while (i < clientCount - 1) {
+>                            clientSockets[i] = clientSockets[i + 1]; 
+>                            i++; 
+>                        } 
+>                        break; 
+>                    } 
+>                }
+>                clientCount--;
+>                pthread_mutex_unlock(&mutex);
+>            }
+68,72c68,73
+<         pthread_mutex_lock(&mutex);
+<         clientSockets[clientCount] = clientSocket;
+<         pthread_mutex_unlock(&mutex);
+---
+>        {
+>            pthread_mutex_lock(&mutex); 
+>            clientSockets[clientCount] = clientSocket; 
+>            pthread_mutex_unlock(&mutex);
+>        }
+

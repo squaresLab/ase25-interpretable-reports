@@ -1,0 +1,25 @@
+
+vuln-fix: Buffer Overflow (CWE-120) in falcon180b-64460, handle_client() function (severity: High)
+what: The code contains a buffer overflow vulnerability because the `recv()` function can write more data into the buffer than it can hold.
+where: handle_client() function, starting at line 12 in falcon180b-64460.
+why: If not resolved, an attacker could exploit this vulnerability to execute arbitrary code on the server, potentially gaining unauthorized access and control.
+how: An attacker can send a specially crafted message that exceeds the `BUFFER_SIZE` of 1024 bytes. This can overwrite adjacent memory, potentially leading to arbitrary code execution.
+code-sources: 
+- First code source: int client_socket = accept(server_socket, NULL, NULL);  (main function, line 42)
+code-sinks: 
+- First code sink: int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0); (handle_client function, line 16)
+suggested-fix: 
+```diff
+--- falcon180b-64460.c
++++ falcon180b-64460-fixed.c
+@@ -16,7 +16,7 @@
+     while (1) {
+         memset(buffer, 0, BUFFER_SIZE);
+-        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
++        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE - 1, 0);
+
+         if (bytes_received <= 0) {
+             printf("Client disconnected\n");
+```
+explanation-suggested-fix: The code diff reduces the buffer size passed to `recv()` by 1 byte, allowing space for a null terminator. This prevents the buffer overflow by ensuring that the buffer cannot be overfilled, thus mitigating the risk of overwriting adjacent memory.
+method: UNKNOWN

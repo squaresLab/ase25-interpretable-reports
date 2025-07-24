@@ -1,0 +1,12 @@
+ 
+
+49c49
+<         int c = a / b;
+---
+>         if (b == 0) {
+>             error_context_add_error(&ctx, "Division by zero error!");
+>             longjmp(ctx.env, 1);
+>         } else {
+>             int c = a / b;
+>         }
+

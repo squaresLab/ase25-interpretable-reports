@@ -1,0 +1,17 @@
+ 
+
+--- gemma7b-26983.c
++++ gemma7b-26983-fixed.c
+@@ -35,7 +35,7 @@
+ 
+     if (fgets(line, MAX_BUFFER_SIZE, reader->fp) == NULL) {
+         return;
+     }
+ 
+     reader->bufferSize++;
+     reader->buffer = realloc(reader->buffer, reader->bufferSize * sizeof(char *));
+-    strcpy(reader->buffer[reader->currentLineNo - 1], line);
++    reader->buffer[reader->currentLineNo - 1] = strdup(line);
+     reader->currentColNo = 0;
+ }
+

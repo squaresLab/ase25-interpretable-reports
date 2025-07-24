@@ -1,0 +1,18 @@
+ 
+
+diff --git a/falcon180b-26790 b/falcon180b-26790
+index d324738..a45ce21 100644
+--- a/falcon180b-26790
++++ b/falcon180b-26790
+@@ -18,6 +18,10 @@ void *handle_client(void *arg) {
+     char buffer[BUFFER_SIZE];
+ 
+     while (1) {
++        // Ensure buffer size is not exceeded
++        size_t len = BUFFER_SIZE - 1;
++        memset(buffer, 0, BUFFER_SIZE);
++        
+         int bytes_received = recv(client_socket, buffer, len, 0);
+ 
+         if (bytes_received <= 0) {
+

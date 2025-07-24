@@ -1,0 +1,41 @@
+
+vuln-fix: Buffer Overflow (CWE-120) in falcon180b-43039.c at line 13 and line 27 (severity: high)
+what: The code does not properly check the amount of data written to the buffer `char buffer[BUFFER_SIZE]` and uses `strlen` to determine the length of the buffer, which can cause a buffer overflow in the function `recv` and the `send` calls, potentially leading to arbitrary code execution or denial-of-service attacks.
+where: 
+    - Vulnerable code: falcon180b-43039.c at line 27 with the `recv` function.
+    - Vulnerable code: falcon180b-43039.c at line 34 with the `send` function.
+    - More specifically:
+      ```c
+      int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0); // line 27
+      ...
+      send(clients[i], buffer, strlen(buffer), 0); // line 34
+      ```
+why: An attacker who can send a specially crafted payload to the server could exploit this vulnerability to execute arbitrary code on the server, crash the server, or otherwise affect the program's behavior.
+how: An attacker could send a larger than anticipated input to cause a buffer overflow in the `buffer` array. Since there is no boundary check on the buffer size during the `recv` operation or before using `send` with `strlen(buffer)`, an attacker can manipulate the length and content of the received data which could lead to executing malicious code.
+code-sources: `recv(client_socket, buffer, BUFFER_SIZE, 0);` at falcon180b-43039.c line 27
+code-sinks: `send(clients[i], buffer, strlen(buffer), 0);` at falcon180b-43039.c line 34
+suggested-fix:
+    ```diff
+    --- falcon180b-43039.c
+    +++ falcon180b-43039-fixed.c
+    @@ -24,7 +24,7 @@
+         while (1) {
+             memset(buffer, 0, BUFFER_SIZE);
+             int bytes_received = recv(client_socket, buffer, BUFFER_SIZE - 1, 0);
+    +        if (bytes_received <= 0) {
+                 break;
+             }
+             buffer[bytes_received] = '\0';
+    @@ -31,6 +31,8 @@
+             for (int i = 0; i < num_clients; i++) {
+                 if (clients[i] != client_socket) {
+    +                int send_bytes = send(clients[i], buffer, bytes_received, 0);
+    +                if (send_bytes < 0) {
+    +                    perror("Send failed");
+    +                }
+                 }
+             }
+         }
+    ```
+explanation-suggested-fix: The suggested fix limits the received buffer size by one byte to ensure space for the null terminator. Additionally, it explicitly adds a null terminator to the buffer after reading data, which prevents overflowing the buffer. The send function is modified to use the exact number of bytes received to avoid reading beyond the buffer limits.
+method: UNKNOWN

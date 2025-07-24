@@ -1,0 +1,34 @@
+    
+vuln-fix: Data Race (CWE-362) in gemini_pro-23401 (severity: High)
+what: The vulnerable code contains a data race due to improper handling of shared variables when creating threads.
+where: The vulnerability is located in the thread creation loop in the `main` function, specifically in the line: `pthread_create(&threads[i], NULL, change_light_state, &i);`
+why: If the data race is not resolved, it can lead to inconsistent and unpredictable behavior of the traffic lights, potentially causing synchronization problems and unsafe traffic light changes.
+how: An attacker would exploit this vulnerability by creating a scenario where incorrect traffic light states could lead to unsequenced traffic lights, causing potential hazards in traffic management.
+code-sources: The entry point is through the argument passed to `pthread_create`, specifically `&i` in the `main` function.
+code-sinks: The action performed using the user input is the dereferencing and usage of the index in the `change_light_state` function.
+suggested-fix: 
+```diff
+--- gemini_pro-23401.c
++++ gemini_pro-23401-fixed.c
+@@ -45,7 +45,7 @@
+   // Initialize the traffic lights
+   for (int i = 0; i < NUM_LIGHTS; i++) {
+     lights[i].state = RED;
+     lights[i].color = RED_COLOR;
+   }
+ 
+   // Create the threads
++  int indexes[NUM_LIGHTS];
+   for (int i = 0; i < NUM_LIGHTS; i++) {
++    indexes[i] = i;
+-    pthread_create(&threads[i], NULL, change_light_state, &i);
++    pthread_create(&threads[i], NULL, change_light_state, &indexes[i]);
+   }
+ 
+   // Join the threads
+   for (int i = 0; i < NUM_LIGHTS; i++) {
+     pthread_join(threads[i], NULL);
+   }
+```
+explanation-suggested-fix: The suggested fix resolves the vulnerability by using an array `indexes` to store the indices of the traffic lights. Each thread is then passed a unique index from this array, instead of the address of the loop variable `i`. This prevents the data race by ensuring each thread works with a separate and stable index value.
+method: UNKNOWN

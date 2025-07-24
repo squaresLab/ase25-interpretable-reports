@@ -1,0 +1,25 @@
+
+
+--- falcon180b-809.c
++++ falcon180b-809-fixed.c
+@@ -59,7 +59,7 @@
+         int client_sock = accept(server_sock, (struct sockaddr *) &clients[num_clients].addr, &addr_size);
+
+         if (client_sock == -1) {
+             printf("Error accepting connection\n");
+             continue;
+         }
+
+         inet_ntop(AF_INET, &clients[num_clients].addr.sin_addr, clients[num_clients].name, 20);
+         clients[num_clients].sock = client_sock;
+
+         pthread_t thread_id;
+-        pthread_create(&thread_id, NULL, thread_func, (void *) &client_sock);
++        int *pclient = malloc(sizeof(int));
++        *pclient = client_sock;
++        pthread_create(&thread_id, NULL, thread_func, pclient);
+     }
+
+     return 0;
+ }
+

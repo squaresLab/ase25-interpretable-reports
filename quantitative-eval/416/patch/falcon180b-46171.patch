@@ -1,0 +1,22 @@
+ 
+
+diff --git a/falcon180b-46171 b/falcon180b-46171
+index abcdef0..1234567 100644
+--- a/falcon180b-46171
++++ b/falcon180b-46171
+@@ -61,9 +61,11 @@ void *handle_client(void *param) {
+ 
+         printf("Received message: %s\n", buffer);
+ 
++        if (strnlen(buffer, BUFFER_SIZE) == BUFFER_SIZE) {
++            buffer[BUFFER_SIZE-1] = '\0'; // Ensure null termination
++        } 
++
+         for (int i = 0; i < num_clients; i++) {
+             if (client_sockets[i]!= client_socket) {
+                 send(client_sockets[i], buffer, strlen(buffer), 0);
+             }
+         }
+     }
+}
+

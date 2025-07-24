@@ -1,0 +1,65 @@
+
+vuln-fix: Race condition (CWE-362) in falcon180b-67969 (severity: High)
+what: The code has a race condition due to the fact that the variable 'i' is shared between the main thread and the new threads being created.
+where: Lines 22-24 in falcon180b-67969
+why: If this race condition is not resolved, it may lead to undefined behavior, where threads may receive incorrect thread IDs or fail to start correctly.
+how: An attacker could potentially exploit this race condition to cause the application to misbehave in unpredictable ways, possibly causing a denial of service or incorrect processing.
+code-sources: `void* thread_func(void* arg)` function where thread IDs are passed as arguments.
+code-sinks: Creation of threads in the `main` function and accessing the shared 'i' variable.
+suggested-fix: 
+```diff
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+
+// Mutex for thread synchronization
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+
+// Condition variable for thread synchronization
+pthread_cond_t condition = PTHREAD_COND_INITIALIZER;
+
+// Number of threads
+#define NUM_THREADS 5
+
+// Function to be executed by each thread
+void* thread_func(void* arg) {
+    int id = *(int*) arg;
+    printf("Thread %d started\n", id);
+
+    // Lock the mutex
+    pthread_mutex_lock(&mutex);
+
+    // Signal the main thread that a new thread has started
+    pthread_cond_signal(&condition);
+
+    // Wait for the main thread to signal that it's time to exit
+    pthread_cond_wait(&condition, &mutex);
+
+    // Unlock the mutex
+    pthread_mutex_unlock(&mutex);
+
+    printf("Thread %d exited\n", id);
+    return NULL;
+}
+
+int main() {
+    pthread_t threads[NUM_THREADS];
+    int thread_ids[NUM_THREADS]; // Separate array to store thread IDs
+
+    // Create threads
+    for (int i = 0; i < NUM_THREADS; i++) {
+        thread_ids[i] = i; // Assign unique thread IDs
+        pthread_create(&threads[i], NULL, thread_func, (void*) &thread_ids[i]); 
+    }
+
+    // Wait for threads to finish
+    for (int i = 0; i < NUM_THREADS; i++) {
+        pthread_join(threads[i], NULL);
+    }
+
+    printf("Main thread exited\n");
+    return 0;
+}
+```
+explanation-suggested-fix: The suggested code change ensures that each thread gets a unique ID by creating a separate array `thread_ids` to hold unique thread IDs. This prevents the race condition in the original code where the shared variable 'i' could be modified by the main thread while being read by a new thread.
+method: UNKNOWN

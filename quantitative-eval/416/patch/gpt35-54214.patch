@@ -1,0 +1,19 @@
+ 
+
+--- gpt35-54214.c
++++ gpt35-54214-fixed.c
+@@ -48,7 +48,10 @@
+     while ((bytes_read = read(socket, buffer, sizeof(buffer))) > 0) {
+         printf("Received message from client[%d]: %s\n", socket, buffer);
+         // Echo message back to client
+-        if (write(socket, buffer, strlen(buffer)) < 0) {
++        if (write(socket, buffer, bytes_read) < 0) {
+             perror("Failed to send message to client");
+             exit(EXIT_FAILURE);
+         }
++        if (bytes_read >= sizeof(buffer)) {
++            fprintf(stderr, "Warning: Buffer size limit reached\n");
++        }
+         memset(buffer, 0, 1024);
+     }
+

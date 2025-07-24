@@ -1,0 +1,37 @@
+
+vuln-fix: Buffer Overflow (CWE-120) in falcon180b-3908 (severity: High)
+what: The buffer used to store data received from clients in the `handle_client` function is vulnerable to buffer overflow, as there is no proper boundary check when receiving data.
+where: Lines 20-21 in `falcon180b-3908`:
+```
+recv(client_socket, buffer, BUFFER_SIZE, 0);
+```
+why: If this vulnerability is not resolved, it may allow an attacker to execute arbitrary code or crash the application by overflowing the buffer.
+how: An attacker can exploit this vulnerability by sending data larger than `BUFFER_SIZE` to the server, which overflows the buffer `char buffer[BUFFER_SIZE]` in the `handle_client` function, potentially overwriting adjacent memory and causing undefined behavior.
+code-sources: The entry point for user input is the call to `recv` in the `handle_client` function, where data is received from the client and stored in the `buffer`.
+code-sinks: The application sends the received data to all connected clients via the `send` function inside the loop:
+```
+send(clients[i][0], buffer, strlen(buffer), 0);
+```
+suggested-fix: 
+```diff
+--- falcon180b-3908	2023-xx-xx xx:xx:xx.000000000 +0000
++++ falcon180b-fixed	2023-xx-xx xx:xx:xx.000000000 +0000
+@@ -20,7 +20,11 @@
+     int client_socket = *(int *)arg;
+     char buffer[BUFFER_SIZE];
+
++    ssize_t bytes_received;
++
+     while (1) {
+         memset(buffer, 0, BUFFER_SIZE);
+-        recv(client_socket, buffer, BUFFER_SIZE, 0);
++        bytes_received = recv(client_socket, buffer, BUFFER_SIZE - 1, 0);
++        if (bytes_received < 0) {
++            break; // Error handling can be improved as needed
++        }
+
+         printf("Client %d said: %s\n", client_socket, buffer);
+         for (int i = 0; i < num_clients; i++) {
+```
+explanation-suggested-fix: The suggested fix changes the `recv` call to limit the number of bytes read to `BUFFER_SIZE - 1`, leaving room for a null terminator in the buffer. This ensures that data written to `buffer` does not overflow its bounds, preventing a buffer overflow attack. Additionally, error handling after the `recv` call can prevent further issues if receiving data fails.
+method: UNKNOWN

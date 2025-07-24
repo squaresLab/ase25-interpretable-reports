@@ -1,0 +1,26 @@
+ 
+
+--- gpt35-31261.c.old
++++ gpt35-31261.c
+@@ -48,6 +48,8 @@
+ // Add node to circuit
+ void add_node(circuit *c) {
+     if (c->num_nodes < MAX_NODES) {
++        c->nodes[c->num_nodes].index = c->num_nodes;
++        c->nodes[c->num_nodes].voltage = 0.0;
+         c->num_nodes++;
+     } else {
+         fprintf(stderr, "Error: Maximum number of nodes exceeded\n");
+@@ -57,6 +59,8 @@
+ void add_component(circuit *c, component_type type, int node1, int node2, double value) {
+     if (c->num_components < MAX_NODES) {
+         c->components[c->num_components].type = type;
+         c->components[c->num_components].node1 = node1;
+         c->components[c->num_components].node2 = node2;
+         c->components[c->num_components].value = value;
+         c->num_components++;
+     } else {
+         fprintf(stderr, "Error: Maximum number of components exceeded\n");
+     }
+}
+

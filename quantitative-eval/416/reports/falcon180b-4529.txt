@@ -1,0 +1,27 @@
+
+    vuln-fix: CWE-362: Race Condition in falcon180b-4529 (severity: High)
+    what: A race condition vulnerability exists due to improper handling of client socket assignments in a multi-threaded environment.
+    where: The vulnerability is located in the main function around line 59-75 and in the handle_client function around line 19-41.
+    why: If this race condition is exploited, an attacker could potentially cause a Denial of Service (DoS) attack by flooding the server with rapid connections, causing erroneous client socket indexing and unexpected behavior in client communication.
+    how: An attacker can exploit this vulnerability by rapidly connecting and disconnecting clients. This can lead to incorrect client handling or overwriting of the client_sockets array due to multiple threads accessing and modifying the array concurrently without synchronization.
+    code-sources: The user input enters at the accept function call in the main function (around line 65).
+    code-sinks: The user input from the client is used in the recv function in the handle_client function (around line 26).
+    suggested-fix: 
+    ```diff
+    @@ -61,7 +61,10 @@ int main() {
+            continue;
+        }
+
+    -   client_sockets[num_clients] = client_socket;
+    -   num_clients++;
+    +   pthread_mutex_lock(&client_sockets_mutex);
+    +   if (num_clients < MAX_CLIENTS) {
+    +       client_sockets[num_clients++] = client_socket;
+    +   }
+    +   pthread_mutex_unlock(&client_sockets_mutex);
+
+        pthread_t thread_id;
+        pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+    ```
+    explanation-suggested-fix: The suggested code diff resolves the vulnerability by adding a mutex lock around the critical section where the client_sockets array and num_clients variable are accessed and modified. This ensures that only one thread can make changes to these variables at a time, preventing race conditions.
+    method: UNKNOWN

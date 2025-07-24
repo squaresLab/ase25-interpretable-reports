@@ -1,0 +1,21 @@
+ 
+
+--- gpt35-60341.c	2023-10-07 12:34:56.000000000 +0200
++++ gpt35-60341-fixed.c	2023-10-07 14:34:56.000000000 +0200
+@@ -53,6 +53,8 @@
+         // Echo back message to client
+         write(sock, client_message, strlen(client_message));
+ 
++        // Clear buffer
++        memset(client_message, 0, 2000);
+     }
+
+     if (read_size == 0) {
+@@ -65,7 +67,7 @@
+     // Free socket pointer
+-    free(socket_desc);
++    close(sock);
+
+     return 0;
+ }
+

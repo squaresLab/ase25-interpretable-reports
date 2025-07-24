@@ -1,0 +1,107 @@
+
+vuln-fix: CWE-362: Race Condition in falcon180b-10577:33-40 (severity: Medium)
+what: The code has a race condition in the shared variable `num_clients` and `clients` array management within the `handle_client` function and the main loop. Multiple threads can modify `num_clients` and access/modify `clients` array concurrently without proper synchronization, potentially leading to inconsistent or incorrect results.
+where: 
+    File: falcon180b-10577
+    Line: 33-40
+    Code Segment: 
+    ```
+    clients[num_clients] = client_socket;
+    num_clients++;
+    ```
+
+    Line: 16-30
+    Code Segment: 
+    ```
+    for (int i = 0; i < num_clients; i++) {
+        if (clients[i] == client_socket) {
+            clients[i] = -1;
+        }
+    }
+
+    num_clients--;
+    ```
+why: If not resolved, this race condition can lead to situations where the server maintains an incorrect count of client connections or overwrites connections. This could cause crashes, rejected valid connections, or possibly denial-of-service.
+how: An attacker could potentially exploit this race condition by flooding the server with requests, increasing the probability of simultaneous modifications of the shared variables from different threads, causing the server to behave unpredictably or crash.
+code-sources: 
+    - Line 48: `int client_socket = accept(server_socket, NULL, NULL);`
+    - Line 4 from handle_client: `int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);`
+code-sinks: 
+    - Line 53: `clients[num_clients] = client_socket;`
+    - Line 54: `num_clients++;`
+    - Line 29-30 from handle_client: 
+    ```
+    for (int i = 0; i < num_clients; i++) {
+        if (clients[i] == client_socket) {
+            clients[i] = -1;
+        }
+    }
+
+    num_clients--;
+    ```
+suggested-fix: 
+```
+diff --git a/falcon180b-10577 b/falcon180b-10577
+index abcdefg..hijklmn 100644
+--- a/falcon180b-10577
++++ b/falcon180b-10577
+@@ -7,6 +7,7 @@
+ #include <arpa/inet.h>
+ #include <pthread.h>
+ #include <stdio.h>
++#include <semaphore.h>
+
+ #define MAX_CLIENTS 10
+ #define BUFFER_SIZE 1024
+@@ -13,6 +14,8 @@
+
+ int clients[MAX_CLIENTS];
+ int num_clients = 0;
++sem_t client_sem;
++
+ void *handle_client(void *arg) {
+     int client_socket = *(int *)arg;
+     char buffer[BUFFER_SIZE];
+@@ -26,10 +29,14 @@
+     }
+
+     close(client_socket);
++
++    sem_wait(&client_sem);
+     for (int i = 0; i < num_clients; i++) {
+         if (clients[i] == client_socket) {
+             clients[i] = -1;
+         }
+     }
+     num_clients--;
++    sem_post(&client_sem);
+ }
+
+ int main() {
+@@ -44,8 +51,12 @@
+     while (1) {
+         int client_socket = accept(server_socket, NULL, NULL);
+ 
++        sem_wait(&client_sem);
+         if (num_clients >= MAX_CLIENTS) {
+             send(client_socket, "Server is full\n", 15, 0);
+             close(client_socket);
++            sem_post(&client_sem);
+             continue;
+         }
+ 
+         clients[num_clients] = client_socket;
+         num_clients++;
++        sem_post(&client_sem);
+ 
+         pthread_t thread_id;
+         pthread_create(&thread_id, NULL, handle_client, (void *)&client_socket);
+     }
++
++    sem_init(&client_sem, 0, 1);
++ 
+     return 0;
+ }
+```
+explanation-suggested-fix: The suggested fix introduces a semaphore (`client_sem`) to synchronize access to the shared resources `num_clients` and `clients`. This ensures that only one thread can modify `num_clients` and the `clients` array at any given time, preventing race conditions.
+method: UNKNOWN

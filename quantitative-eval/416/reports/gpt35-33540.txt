@@ -1,0 +1,32 @@
+    
+    vuln-fix: CWE-362: Race Condition in gpt35-33540 (severity: High)
+    what: The vulnerability is a race condition caused by using a local variable `client_fd` to pass data to a new thread. After the `pthread_create` call, `client_fd` might be overwritten with a new client's file descriptor before the new thread starts running, leading to data corruption or mixup in client connections.
+    where: The vulnerability is located in the `main` function, specifically around lines 51-56 where `pthread_create` is called.
+    why: If the weakness is not resolved, it can cause multiple threads to interact unpredictably with client file descriptors, leading to incorrect client connections being handled, potential data leaks, or crashes.
+    how: An attacker could exploit this vulnerability by making multiple connections to the server in quick succession, causing the server to misroute client connections, which could lead to exposing sensitive data from one client to another or denial of service.
+    code-sources: The `accept` function at line 49 is the entry point where user connections are accepted.
+    code-sinks: The `pthread_create` function call at line 54 where the `client_fd` is passed to the new thread and the `read` function inside the `handle_client` function.
+    suggested-fix: 
+    ```diff
+    --- a/gpt35-33540
+    +++ b/gpt35-33540
+    @@ -49,12 +49,14 @@
+       while(1) {
+         int client_fd = accept(server_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen);
+         if(client_fd < 0) {
+           perror("accept failed");
+           exit(EXIT_FAILURE);
+         }
+    +    int *new_sock = malloc(sizeof(int));
+    +    *new_sock = client_fd;
+         pthread_t thread_id;
+    -    if(pthread_create(&thread_id, NULL, handle_client, (void *)&client_fd) < 0) {
+    +    if(pthread_create(&thread_id, NULL, handle_client, (void *)new_sock) < 0) {
+           perror("pthread_create failed");
+           exit(EXIT_FAILURE);
+         }
+         pthread_detach(thread_id);
+       }
+    ```
+    explanation-suggested-fix: The suggested fix allocates memory for each client's file descriptor and passes a pointer to this memory to the new thread. This prevents the `client_fd` from being overwritten by new connections before the thread can handle the previous connection, thereby eliminating the race condition.
+    method: UNKNOWN

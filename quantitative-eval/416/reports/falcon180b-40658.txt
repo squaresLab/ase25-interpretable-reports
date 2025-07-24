@@ -1,0 +1,25 @@
+
+    vuln-fix: Buffer Overflow (CWE-120) in falcon180b-40658 (severity: High)
+    what: The vulnerable code allows for a buffer overflow condition due to insufficient bounds checking on the `request` buffer within the `handle_client` function.
+    where: Lines 13-23 in falcon180b-40658
+    why: Failing to resolve this buffer overflow can lead to arbitrary code execution, crashes, or data corruption by overwriting memory adjacent to the buffer.
+    how: An attacker can exploit this vulnerability by sending a specially crafted, oversized request to the server, which results in data exceeding the buffer's boundary and corrupting adjacent memory.
+    code-sources: `while (recv(client_socket, request, MAX_REQUEST_SIZE, 0) > 0)` in handle_client function
+    code-sinks: `printf("Request from client %d: %s\n", client_socket, request)` in handle_client function
+    suggested-fix: 
+    ```diff
+    --- falcon180b-40658.c
+    +++ falcon180b-40658-fixed.c
+    @@ -14,6 +14,7 @@
+        {
+            int client_socket = *(int *) arg;
+            char request[MAX_REQUEST_SIZE];
+            bzero(request, MAX_REQUEST_SIZE);
+    +       ssize_t recv_size;
+
+            while ((recv_size = recv(client_socket, request, MAX_REQUEST_SIZE - 1, 0)) > 0) {
+                request[recv_size] = '\0';
+                printf("Request from client %d: %s\n", client_socket, request);
+    ```
+    explanation-suggested-fix: The suggested code diff adds a boundary check to ensure that `recv` does not exceed the buffer size. It captures the number of bytes received (`recv_size`) and then explicitly terminates the `request` buffer with a null character, preventing overflow beyond the buffer size.
+    method: UNKNOWN

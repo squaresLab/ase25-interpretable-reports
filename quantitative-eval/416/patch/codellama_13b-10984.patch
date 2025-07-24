@@ -1,0 +1,19 @@
+ 
+    
+diff --git a/codellama_13b-10984 b/codellama_13b-10984
+index f7c2e6d..f5bb254 100644
+--- a/codellama_13b-10984
++++ b/codellama_13b-10984
+@@ -54,7 +54,7 @@ Subarray* maxSubarraySum(int* arr, int n, int m) {
+     // Add the final subarray to the subarrays array
+     subarrays[num_subarrays++] = curr_subarray;
+     // Return the subarrays array
+-    return subarrays;
++    Subarray* result = (Subarray*)malloc(num_subarrays * sizeof(Subarray));
++    memcpy(result, subarrays, num_subarrays * sizeof(Subarray));
++    return result;
+ }
+
+ // Function to print the subarrays array
+     
+    

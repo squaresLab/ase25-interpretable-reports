@@ -1,0 +1,31 @@
+ 
+    
+    --- a/falcon180b-52804
+    +++ b/falcon180b-52804
+    @@ -34,7 +34,7 @@
+                 if (bytes_received <= 0) {
+                     close(client_socket);
+                     break;
+                 }
+
+                 printf("Client %d sent message: %s\n", client_socket, buffer);
+
+                 // Send message to all connected clients
+    -            for (int i = 0; i < num_clients; i++) {
+    +            for (int i = 0; i < MAX_CLIENTS; i++) {
+    +              if (clients[i] != 0 && clients[i] != client_socket) {
+    +                send(clients[i], buffer, bytes_received, 0);
+                 }
+             }
+         }
+    +    // Ensure the client_socket is removed from the clients array
+    +    for (int i = 0; i < MAX_CLIENTS; i++) {
+    +        if (clients[i] == client_socket) {
+    +            clients[i] = 0;
+    +            break;
+    +        }
+    +    }
+         return NULL;
+     }
+    
+    

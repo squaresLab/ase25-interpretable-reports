@@ -1,0 +1,25 @@
+ 
+    
+    --- falcon180b-41616	2023-10-13
+    +++ falcon180b-41616-fixed	2023-10-13
+    @@ -31,8 +31,10 @@
+            int client_socket = accept(server_socket, (struct sockaddr *)&client_addr, &addr_len);
+
+            if(num_clients >= MAX_CLIENTS) {
+                send(client_socket, "Server is full.", strlen("Server is full."), 0);
+                close(client_socket);
+                continue;
+            }
+
+    -        client_sockets[num_clients] = client_socket;
+    -        num_clients++;
+    +        pthread_mutex_lock(&lock);
+    +        client_sockets[num_clients] = client_socket;
+    +        num_clients++;
+    +        pthread_mutex_unlock(&lock);
+
+            pthread_t thread_id;
+            pthread_create(&thread_id, NULL, handle_client, (void *)&client_socket);
+    
+
+    

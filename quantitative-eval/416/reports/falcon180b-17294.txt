@@ -1,0 +1,115 @@
+`
+vuln-fix: Buffer Overflow (CWE-120) in falcon180b-17294 (severity: High)
+what: The vulnerability is a buffer overflow in the `handle_client` function. Specifically, the usage of `recv()` to read data into a fixed-size buffer without proper boundary checking can lead to overflowing the buffer with more data than it can handle.
+where: 
+- Vulnerable lines:
+  ```c
+  int bytes_received = recv(client_sock, buffer, BUF_SIZE, 0);
+  ```
+- File: `falcon180b-17294`
+why: If this weakness is not resolved, an attacker can exploit the buffer overflow to alter the execution flow of the program, potentially leading to code execution, crashing the server, or other unintended behaviors.
+how: An attacker could send a specially crafted payload larger than `BUF_SIZE` that can overflow the buffer, leading to memory corruption and enabling further exploits such as code execution or Denial of Service (DoS).
+code-sources: 
+- Entry point: 
+  ```c
+  int bytes_received = recv(client_sock, buffer, BUF_SIZE, 0);
+  ```
+code-sinks: 
+- Action performed: 
+  ```c
+  printf("Client %d sent: %s\n", client_sock, buffer);
+  send(client_sock, buffer, strlen(buffer), 0);
+  ```
+suggested-fix: 
+```diff
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <pthread.h>
+
+#define MAX_CLIENTS 10
+#define PORT 8080
+#define BACKLOG 10
+#define BUF_SIZE 1024
+
+int client_socks[MAX_CLIENTS];
+int num_clients = 0;
+
+void *handle_client(void *arg) {
+    int client_sock = *(int *) arg;
+    char buffer[BUF_SIZE];
+
+    while (1) {
+        memset(buffer, 0, BUF_SIZE);
+        int bytes_received = recv(client_sock, buffer, BUF_SIZE - 1, 0);
+
+        if (bytes_received <= 0) {
+            close(client_sock);
+            client_socks[num_clients - 1] = -1;
+            num_clients--;
+            break;
+        }
+
+        buffer[bytes_received] = '\0'; // null-terminate the buffer
+        printf("Client %d sent: %s\n", client_sock, buffer);
+        send(client_sock, buffer, bytes_received, 0);
+    }
+
+    return NULL;
+}
+
+int main() {
+    int server_sock = socket(AF_INET, SOCK_STREAM, 0);
+
+    if (server_sock == -1) {
+        printf("Error creating socket\n");
+        exit(1);
+    }
+
+    struct sockaddr_in server_addr;
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(PORT);
+    server_addr.sin_addr.s_addr = INADDR_ANY;
+
+    if (bind(server_sock, (struct sockaddr *) &server_addr, sizeof(server_addr)) == -1) {
+        printf("Error binding socket\n");
+        exit(1);
+    }
+
+    if (listen(server_sock, BACKLOG) == -1) {
+        printf("Error listening on socket\n");
+        exit(1);
+    }
+
+    printf("Server listening on port %d\n", PORT);
+
+    while (1) {
+        int client_sock = accept(server_sock, NULL, NULL);
+
+        if (client_sock == -1) {
+            printf("Error accepting connection\n");
+            continue;
+        }
+
+        if (num_clients >= MAX_CLIENTS) {
+            close(client_sock);
+            printf("Maximum number of clients reached\n");
+            continue;
+        }
+
+        client_socks[num_clients] = client_sock;
+        num_clients++;
+
+        pthread_t thread_id;
+        pthread_create(&thread_id, NULL, handle_client, (void *) &client_sock);
+    }
+
+    return 0;
+}
+```
+explanation-suggested-fix: The suggested code diff rectifies the buffer overflow vulnerability by ensuring that the `recv()` function reads `BUF_SIZE - 1` bytes of data, reserving one byte for the null-terminator. After receiving the data, it manually sets the null-terminator to the end of the string, preventing buffer overflow while maintaining data integrity.
+method: UNKNOWN

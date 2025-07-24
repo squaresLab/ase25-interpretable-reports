@@ -1,0 +1,47 @@
+
+    vuln-fix: CWE-120: Buffer Overflow in falcon180b-10213 (severity: High)
+    what: The code does not properly manage the received data length in the `buffer` array, potentially allowing a buffer overflow if more data is received than can be stored in the buffer. This can cause the program to behave unexpectedly or even crash.
+    where: The vulnerability is located within the `handle_client` function, specifically on the line where `recv` is called to populate the `buffer`.
+    why: Failing to resolve this weakness can lead to various issues, including crashing the application, overwriting adjacent memory, and creating an entry point for executing arbitrary code, potentially leading to a full system compromise.
+    how: An attacker could send a payload larger than `BUFFER_SIZE` to overflow the buffer. This can overwrite adjacent memory spaces, potentially corrupting the program's state, causing it to crash, or enabling execution of malicious code.
+    code-sources: The entry point for user input is the `recv` function call in the `handle_client` function where data is received from the socket: `int bytes_received = recv(sock, buffer, BUFFER_SIZE, 0);`
+    code-sinks: The sink is the `buffer` array which directly receives user input from the `recv` call.
+    suggested-fix: 
+    ```diff
+    --- falcon180b-10213.c
+    +++ falcon180b-10213_fixed.c
+    @@ -12,7 +12,7 @@
+     
+     void *handle_client(void *socket_desc) {
+         int sock = *(int *) socket_desc;
+    -    char buffer[BUFFER_SIZE];
+    +    char buffer[BUFFER_SIZE + 1];
+     
+         while(1) {
+             memset(buffer, 0, BUFFER_SIZE);
+    @@ -15,7 +15,7 @@
+    -        int bytes_received = recv(sock, buffer, BUFFER_SIZE, 0);
+    +        int bytes_received = recv(sock, buffer, BUFFER_SIZE, 0); 
+         if(bytes_received <= 0) {
+             break;
+         }
+     
+    -        printf("Client %d sent: %s\n", sock, buffer);
+    +        buffer[BUFFER_SIZE] = '\0';
+    
+    +        if(bytes_received == BUFFER_SIZE) {
+    +            buffer[BUFFER_SIZE - 1] = '\0';
+    +        }
+    
+    +        printf("Client %d sent: %s\n", sock, buffer);
+    
+         for(int i = 0; i < num_clients; i++) {
+             if(clients[i]!= sock) {
+                 send(clients[i], buffer, strlen(buffer), 0);
+         }
+    @@ -41,7 +41,8 @@
+    
+     ```
+    explanation-suggested-fix: The suggested code diff resolves the vulnerability by ensuring that the `buffer` array has a null terminator. By extending the buffer size to `BUFFER_SIZE + 1`, there is additional space for the null character. Additionally, it ensures that if bytes received equals `BUFFER_SIZE`, the last byte in the buffer is set to `\0`, preventing a buffer overflow.
+    method: UNKNOWN
+`

@@ -1,0 +1,31 @@
+ 
+
+--- falcon180b-56680.c
++++ falcon180b-56680.c
+@@ -10,6 +10,7 @@
+
+ void *handle_client(void *arg) {
+     int client_socket = *(int *) arg;
++    const size_t buffer_size = 1024;
+     char buffer[buffer_size];
+     while (1) {
+         memset(buffer, 0, sizeof(buffer));
+@@ -13,6 +14,9 @@
+         int bytes_received = recv(client_socket, buffer, sizeof(buffer), 0);
+         if (bytes_received <= 0) {
+             break;
++        } else if (bytes_received > buffer_size - 1) {
++            printf("Received message too large for buffer\n");
++            continue;
+         }
+         printf("Client %d sent: %s\n", client_socket, buffer);
+         for (int i = 0; i < num_clients; i++) {
+@@ -51,7 +55,8 @@
+         if (num_clients >= MAX_CLIENTS) {
+             printf("Maximum number of clients reached\n");
+             close(client_socket);
++            num_clients--; // Decrement number of clients
+             continue;
+         }
+
+

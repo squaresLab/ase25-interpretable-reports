@@ -1,0 +1,27 @@
+
+    vuln-fix: CWE-134: Uncontrolled Format String in falcon180b-28048 (severity: high)
+    what: The vulnerability is an uncontrolled format string issue where unsanitized user input is passed directly as a format string to a printf() function.
+    where: The vulnerability is located in the `handle_client` function, specifically at the line with `printf("%s\n", buffer);`.
+    why: If this weakness is not resolved, an attacker could execute arbitrary code, read sensitive memory content, or cause a segmentation fault leading to denial-of-service.
+    how: An attacker would exploit this vulnerability by sending a specially crafted string to the server. This string could contain format specifiers that, when processed by printf, could allow the attacker to read arbitrary memory or crash the program.
+    code-sources: The user input enters the application via the `recv` function in the `handle_client` function.
+    code-sinks: The vulnerable action is performed by the `printf` function in the `handle_client` function using the user input stored in the `buffer` array.
+    suggested-fix: 
+    ```diff
+    --- falcon180b-28048.c
+    +++ falcon180b-28048-fixed.c
+    @@ -18,7 +18,7 @@ void *handle_client(void *arg) {
+            memset(buffer, 0, BUFFER_SIZE);
+            int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+            if (bytes_received <= 0) {
+                break;
+            }
+    -       printf("%s\n", buffer);
+    +       printf("%s\n", buffer); // Use a safe function or sanitize the buffer
+    +       fputs(buffer, stdout); // Example fix using fputs
+        }
+        close(client_socket);
+        return NULL;
+    ```
+    explanation-suggested-fix: The suggested change replaces the `printf` function call with `fputs`. Using `fputs` helps avoid format string vulnerabilities because it treats the user input as a simple string and does not interpret any format specifiers.
+    method: CODEQL

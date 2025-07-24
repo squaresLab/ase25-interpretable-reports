@@ -1,0 +1,74 @@
+
+vuln-fix: CWE-787: Out-of-Bounds Write in gpt35-40226 (severity: High)
+what: The vulnerability occurs due to a potential out-of-bounds write when accessing device and room arrays without proper bounds checking.
+where: Lines pertaining to `toggle_device` function, specifically the following loops:
+```c
+for (int i = 0; i < h->n_rooms; i++) {
+    if (strcmp(h->rooms[i].name, room_name) == 0) {
+        for (int j = 0; j < h->rooms[i].n_devices; j++) {
+            if (strcmp(h->rooms[i].devices[j].name, device_name) == 0) {
+                h->rooms[i].devices[j].state = !h->rooms[i].devices[j].state;
+                return;
+            }
+        }
+    }
+}
+```
+why: If this weakness is not resolved, it could lead to buffer overflows, resulting in undefined behavior such as crashes, incorrect program output, or exploitation to execute arbitrary code.
+how: An attacker could exploit this vulnerability by providing a user-controlled input (e.g., a maliciously crafted room name or device name) that exceeds the predefined room or device limits, thus causing the system to write out of bounds and potentially overwrite critical memory.
+code-sources: 
+- `toggle_device(&my_house, "Living Room", "TV");`
+- `toggle_device(&my_house, "Bedroom", "Alarm");`
+code-sinks: 
+- Accessing `h->rooms[i].name` and `h->rooms[i].devices[j].name` within `toggle_device`
+
+suggested-fix: 
+```diff
+4c4
+< #include <stdio.h>
+---
+> #include <stdio.h>
+> #include <string.h>
+> #include <stdbool.h>
+12c14,15
+< void print_house(struct house h) {
+---
+> bool is_valid_input(struct house* h, char* room_name, char* device_name) {
+>     bool room_found = false;
+>     bool device_found = false;
+
+>     for (int i = 0; i < h->n_rooms; i++) {
+>         if (strcmp(h->rooms[i].name, room_name) == 0) {
+>             room_found = true;
+>             for (int j = 0; j < h->rooms[i].n_devices; j++) {
+>                 if (strcmp(h->rooms[i].devices[j].name, device_name) == 0) {
+>                     device_found = true;
+>                     break;
+>                 }
+>             }
+>             break;
+>         }
+>     }
+>     return room_found && device_found;
+> }
+
+13a17
+> 
+21c25,27
+<     for (int i = 0; i < h->n_rooms; i++) {
+---
+>     if (!is_valid_input(h, room_name, device_name)) {
+>         printf("Error: Invalid room or device name\n");
+>         return;
+>     }
+86,88c92,114
+<     toggle_device(&my_house, "Living Room", "TV");
+---
+>     toggle_device(&my_house, "Living Room", "TV"); // valid
+>     toggle_device(&my_house, "Living Room", "InvalidDevice"); // Invalid
+>     toggle_device(&my_house, "InvalidRoom", "TV"); // Invalid
+
+65a133,136
+```
+explanation-suggested-fix: This code diff introduces an `is_valid_input` function to check if the provided room and device names are valid before attempting to access and modify the device state. This function prevents potential out-of-bounds writes by ensuring that the input values correspond to existing rooms and devices in the house structure. If the input is invalid, the function returns an error message and exits early, thus preventing any further access to the arrays.
+method: UNKNOWN

@@ -1,0 +1,19 @@
+ 
+
+    client_sockets[num_clients] = client_socket;
+    num_clients++;
+
+    // Allocate memory for new client's socket
+    int *new_client_socket = malloc(sizeof(int));
+    if (!new_client_socket) {
+        printf("Memory allocation failure.\n");
+        close(client_socket);
+        continue;
+    }
+
+    *new_client_socket = client_socket;
+
+    pthread_t thread_id;
+-   pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
++   pthread_create(&thread_id, NULL, handle_client, (void *) new_client_socket);
+

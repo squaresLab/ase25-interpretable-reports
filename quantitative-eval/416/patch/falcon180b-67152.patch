@@ -1,0 +1,23 @@
+ 
+
+diff --git a/falcon180b-67152 b/falcon180b-67152
+index 6a8ef69..43d4f74 100644
+--- a/falcon180b-67152
++++ b/falcon180b-67152
+@@ -18,8 +18,11 @@ void *handle_client(void *arg) {
+ 
+     while (1) {
+         memset(message, 0, MAX_MESSAGE_LENGTH);
+-        int bytes_received = recv(client_socket, message, MAX_MESSAGE_LENGTH, 0);
++        int bytes_received = recv(client_socket, message, MAX_MESSAGE_LENGTH - 1, 0);
+
+         if (bytes_received <= 0) {
+             printf("Client %d disconnected.\n", client_socket);
+             close(client_socket);
+             return NULL;
+         }
+
++        message[MAX_MESSAGE_LENGTH - 1] = '\0'; // Ensure null-termination
+         printf("Client %d: %s", client_socket, message);
+         send(client_socket, message, strlen(message), 0);
+

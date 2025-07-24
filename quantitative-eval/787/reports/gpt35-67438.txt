@@ -1,0 +1,28 @@
+
+vuln-fix: Out-of-Bounds Write (CWE-787) in gpt35-67438 (severity: High)
+what: The function `evaluate` contains a potential out-of-bounds write vulnerability when setting the `out` variable based on the `input` array from the `Gate` structure.
+where: Line 21, 22, `c->gates[i].input[0]` and `c->gates[i].input[1]` in the `evaluate` function, file gpt35-67438
+why: An attacker can cause an out-of-bounds write which can corrupt data, crash the application, or in the worst case, lead to arbitrary code execution.
+how: An attacker controlling the `input` values of the `Circuit` object or manipulating the `vals` input to the `evaluate` function can lead to the out-of-bounds write being exploited.
+code-sources: The entry point is the `vals` array passed to the `evaluate` function from the `main` function.
+code-sinks: The risky actions occur at `c->gates[i].input[0]` and `c->gates[i].input[1]` used within the `evaluate` function.
+suggested-fix: 
+```diff
+--- vulnerable/gpt35-67438.c
++++ fixed/gpt35-67438.c
+@@ -21,6 +21,12 @@
+     for (i = 0; i < c->num_gates; i++) {
+         in[0] = in[1] = -1;
+         for (j = 0; j < c->num_gates; j++) {
++            // Add bounds check on gate inputs
++            if (c->gates[i].input[0] < 0 || c->gates[i].input[0] >= MAXWIRES || 
++                c->gates[i].input[1] < 0 || c->gates[i].input[1] >= MAXWIRES) {
++                fprintf(stderr, "Error: Gate input index out of bounds\n");
++                exit(EXIT_FAILURE);
++            }
+             for (k = 0; k < 2; k++) {
+                 if (c->gates_wired[j][k] == i) {
+                     in[k] = j;
+```
+explanation-suggested-fix: The addition of bounds checks ensures that the indices accessed in the `input` array are within valid bounds, preventing potential out-of-bounds writes.
+method: CODEQL

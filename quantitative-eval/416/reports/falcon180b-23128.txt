@@ -1,0 +1,29 @@
+
+    vuln-fix: CWE-362: Concurrent Execution using Shared Resource with Improper Synchronization in falcon180b-23128 (severity: high)
+    what: The code creates multiple threads that access and modify a shared buffer without proper synchronization. Specifically, it passes the address of the loop variable `i` to the threads, leading to race conditions.
+    where: Lines 35-37 in falcon180b-23128
+    why: If not resolved, the race condition could lead to threads corrupting each other's operations, causing undefined behavior such as inserting incorrect values into the buffer and leading to potential data corruption or crashes in real-world applications.
+    how: An attacker could exploit this vulnerability by inducing a specific timing of thread execution, causing the threads to read and use incorrect values of the loop variable `i`. This can lead to manipulation of data used within the application or cause it to crash.
+    code-sources: `pthread_create(&threads[i], NULL, thread_function, (void *) &i);`
+    code-sinks: `buffer[thread_id] = value;`, `pthread_join(threads[i], NULL);`
+    suggested-fix:
+    ```diff
+    --- falcon180b-23128-original.c
+    +++ falcon180b-23128-fixed.c
+    @@ -35,7 +35,10 @@
+        // Create the threads
+        for (int i = 0; i < NUM_THREADS; i++)
+        {
+    +        // Allocate memory for thread argument
+    +        int *thread_id = malloc(sizeof(int));
+    +        *thread_id = i;
+            // Create the thread
+    -        pthread_create(&threads[i], NULL, thread_function, (void *) &i);
+    +        pthread_create(&threads[i], NULL, thread_function, (void *) thread_id);
+        }
+
+        // Wait for the threads to finish
+        for (int i = 0; i < NUM_THREADS; i++)
+    ```
+    explanation-suggested-fix: The suggested fix involves allocating memory for a separate integer variable `thread_id` that holds each thread's unique ID. This ensures that each thread receives and uses the correct ID, avoiding race conditions caused by multiple threads accessing and modifying the same variable concurrently.
+    method: UNKNOWN

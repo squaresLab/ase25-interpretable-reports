@@ -1,0 +1,72 @@
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <semaphore.h>
+#include <unistd.h>
+
+#define MAX 100
+#define NUM_THREADS 3
+
+int top = -1;
+int shared_stack[MAX];
+int thread_stack[NUM_THREADS][MAX];
+int thread_id[NUM_THREADS];
+int thread_indexes[NUM_THREADS]; // New array to hold thread-specific indexes
+
+sem_t mutex;
+sem_t empty;
+sem_t full;
+
+void init_semaphores() {
+    sem_init(&mutex, 0, 1);
+    sem_init(&empty, 0, NUM_THREADS);
+    sem_init(&full, 0, 0);
+}
+
+void push(int value, int idx) {
+    sleep(1);
+    sem_wait(&empty);
+    sem_wait(&mutex);
+
+    shared_stack[++top] = value;
+
+    if (idx < NUM_THREADS && thread_id[idx] == value) {
+        thread_stack[idx][thread_indexes[idx]++] = value; // Use thread-specific index
+    }
+
+    sem_post(&mutex);
+    sleep(2);
+    sem_post(&full);
+}
+
+void* thread_function(void* arg) {
+    int id = *(int*) arg;
+    thread_id[id] = id;
+
+    for (int i = 0; i < MAX; i++) {
+        push(i, id);
+    }
+
+    return NULL;
+}
+
+int main() {
+    init_semaphores();
+
+    pthread_t threads[NUM_THREADS];
+
+    for (int i = 0; i < NUM_THREADS; i++) {
+        thread_indexes[i] = 0; // Initialize thread-specific index
+        thread_id[i] = i; // Initialize thread-specific id
+        pthread_create(&threads[i], NULL, thread_function, (void*) &thread_id[i]);
+    }
+
+    for (int i = 0; i < NUM_THREADS; i++) {
+        pthread_join(threads[i], NULL);
+    }
+
+    return 0;
+}
+

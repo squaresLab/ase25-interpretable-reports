@@ -1,0 +1,8 @@
+ 
+
+52c52
+<         int *light_num = &i;
+---
+>         int *light_num = malloc(sizeof(int));
+>         *light_num = i;
+

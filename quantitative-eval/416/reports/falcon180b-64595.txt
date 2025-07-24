@@ -1,0 +1,30 @@
+
+vuln-fix: CWE-787: Out-of-bounds Write in falcon180b-64595 (severity: High)
+what: The code suffers from an out-of-bounds write due to a buffer overflow vulnerability in the `handle_client` function.
+where: Lines with the `recv` function call inside the `handle_client` function in falcon180b-64595.
+why: If this weakness is not resolved, an attacker could send specially crafted data to overflow the buffer `char buffer[BUFFER_SIZE]`, potentially overwriting adjacent memory, leading to arbitrary code execution or crashing the server.
+how: An attacker could send a message that is larger than `BUFFER_SIZE-1` characters without a null-terminator, causing the buffer in the `handle_client` function to overflow.
+code-sources: The `recv` function call in the `handle_client` function.
+code-sinks: The data being printed out using `printf` and subsequently used to control the execution flow within the `handle_client` function.
+suggested-fix: 
+```diff
+--- falcon180b-64595
++++ falcon180b-64595
+@@ -12,12 +12,12 @@
+ void *handle_client(void *arg) {
+     int client_socket = *(int *)arg;
+     char buffer[BUFFER_SIZE];
+ 
+     while (1) {
+         memset(buffer, 0, BUFFER_SIZE);
+-        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
++        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE - 1, 0);
+ 
+         if (bytes_received <= 0) {
+             break;
+         }
+
+         buffer[bytes_received] = '\0'; // Ensure null-termination
+```
+explanation-suggested-fix: The code diff reduces the buffer size by 1 in the `recv` function call to leave room for a null-terminator. After receiving the data, the buffer is expressly null-terminated to prevent out-of-bounds memory access or overwrite.
+method: UNKNOWN

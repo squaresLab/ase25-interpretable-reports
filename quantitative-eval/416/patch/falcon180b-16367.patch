@@ -1,0 +1,17 @@
+ 
+    
+    --- falcon180b-16367
+    +++ falcon180b-16367
+    @@ -19,7 +19,8 @@
+             break;
+         }
+     
+    -    printf("Client %d sent: %s\n", client_socket, buffer);
+    +    buffer[sizeof(buffer) - 1] = '\0';  // Ensure null termination
+    +    printf("Client %d sent: %s\n", client_socket, buffer);
+     }
+     
+     return NULL;
+    
+
+    

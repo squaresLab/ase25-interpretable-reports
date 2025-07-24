@@ -1,0 +1,99 @@
+
+vuln-fix: CWE-362: Concurrent Execution using Shared Resource with Improper Synchronization ('Race Condition') in falcon180b-30813 (severity: High)
+what: The vulnerability arises from the improper use of a shared resource without appropriate synchronization mechanisms.
+where: In the `handle_client` function in falcon180b-30813.
+why: One possible consequence of not resolving this weakness is that multiple threads may simultaneously modify the shared resource `num_clients`, which can lead to inconsistent state and potentially crash the application.
+how: An attacker could exploit this race condition by rapidly connecting and disconnecting multiple clients, causing an inconsistent state of the `num_clients` variable, which would lead to improper handling of the client connections.
+code-sources: The `accept()` call in the `accept_connections` function, where a new client connection is accepted.
+code-sinks: Modifications of the `num_clients` variable in the `handle_client` function.
+suggested-fix: 
+```diff
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <pthread.h>
+
+#define PORT 8080
+#define BACKLOG 10
+#define MAX_CLIENTS 10
+#define MAX_REQUEST_SIZE 1024
+
+int server_socket;
+int client_sockets[MAX_CLIENTS];
+int num_clients = 0;
+pthread_mutex_t num_clients_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+void *handle_client(void *arg) {
+    int client_socket = *(int *) arg;
+    char request[MAX_REQUEST_SIZE];
+    memset(request, 0, MAX_REQUEST_SIZE);
+
+    while (1) {
+        int bytes_received = recv(client_socket, request, MAX_REQUEST_SIZE, 0);
+        if (bytes_received <= 0) {
+            break;
+        }
+
+        printf("Client %d sent request: %s\n", client_socket, request);
+
+        char response[MAX_REQUEST_SIZE];
+        strcpy(response, "Server received your request!");
+        send(client_socket, response, strlen(response), 0);
+    }
+
+    close(client_socket);
+    pthread_mutex_lock(&num_clients_mutex);
+    num_clients--;
+    pthread_mutex_unlock(&num_clients_mutex);
+}
+
+void accept_connections() {
+    while (num_clients < MAX_CLIENTS) {
+        int client_socket = accept(server_socket, NULL, NULL);
+        if (client_socket == -1) {
+            perror("accept");
+            continue;
+        }
+
+        printf("Client %d connected\n", client_socket);
+        pthread_mutex_lock(&num_clients_mutex);
+        client_sockets[num_clients++] = client_socket;
+        pthread_mutex_unlock(&num_clients_mutex);
+
+        pthread_t thread_id;
+        pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+    }
+}
+
+int main() {
+    int opt = 1;
+    setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+
+    struct sockaddr_in server_addr;
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.s_addr = INADDR_ANY;
+    server_addr.sin_port = htons(PORT);
+
+    if (bind(server_socket, (struct sockaddr *) &server_addr, sizeof(server_addr)) == -1) {
+        perror("bind");
+        exit(1);
+    }
+
+    if (listen(server_socket, BACKLOG) == -1) {
+        perror("listen");
+        exit(1);
+    }
+
+    printf("Server started on port %d\n", PORT);
+
+    accept_connections();
+
+    return 0;
+}
+```
+explanation-suggested-fix: The suggested code diff resolves the vulnerability by adding a `pthread_mutex_t` named `num_clients_mutex` to protect the critical section where the `num_clients` variable is accessed and modified. The `pthread_mutex_lock()` and `pthread_mutex_unlock()` functions are used to ensure that only one thread can modify `num_clients` at a time, preventing race conditions.
+method: UNKNOWN

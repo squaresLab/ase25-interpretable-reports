@@ -1,0 +1,20 @@
+
+
+--- falcon180b-49570.c
++++ falcon180b-49570.c
+@@ -27,7 +27,12 @@
+         if (bytes_received <= 0) {
+             break;
+         }
+
++        // Ensure data to be sent does not exceed buffer size
++        if (bytes_received > BUFFER_SIZE) {
++            bytes_received = BUFFER_SIZE;
++        }
++
+         for (int i = 0; i < num_clients; i++) {
+             if (clients[i]!= client_socket) {
+                 send(clients[i], buffer, bytes_received, 0);
+             }
+         }
+

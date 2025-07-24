@@ -1,0 +1,42 @@
+ 
+
+--- falcon180b-21614.c
++++ falcon180b-21614_fixed.c
+@@ -2,6 +2,7 @@
+ #include <stdlib.h>
+ #include <string.h>
+ #include <unistd.h>
++#include <pthread.h>
+ #include <sys/socket.h>
+ #include <arpa/inet.h>
+ #include <pthread.h>
+@@ -12,6 +13,9 @@
+ #define BUFFER_SIZE 1024 
+
+ int client_sockets[MAX_CLIENTS];
+ int num_clients = 0;
++pthread_mutex_t client_lock;
++
++void initialize() { pthread_mutex_init(&client_lock, NULL); }
+
+ void *handle_client(void *arg) {
+     int client_socket = *(int *)arg;
+@@ -52,6 +56,7 @@
+         int client_socket = accept(server_socket, NULL, NULL);
+
+         if (num_clients >= MAX_CLIENTS) {
++            pthread_mutex_lock(&client_lock);
+             close(client_socket);
+             printf("Server is full!\n");
++            pthread_mutex_unlock(&client_lock);
+             continue;
+         }
+
++        pthread_mutex_lock(&client_lock);
+         client_sockets[num_clients] = client_socket;
+         num_clients++;
++        pthread_mutex_unlock(&client_lock);
+         pthread_t thread_id;
+         pthread_create(&thread_id, NULL, handle_client, (void *)&client_socket);
+     }
+

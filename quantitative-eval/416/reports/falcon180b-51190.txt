@@ -1,0 +1,91 @@
+
+vuln-fix: CWE-842 Incorrect Handling of Incomplete Internal State in falcon180b-51190 (severity: Medium)
+what: The server application fails to handle the case where the `client_socket` might be closed or set to invalid state while being passed to a new thread, which could lead to undefined behavior or crashes.
+where: Lines involving the creation of threads and passing `client_socket` in the function `handle_client` in the file `falcon180b-51190`.
+why: If this weakness is not resolved, it could allow an attacker to disrupt the service by causing undefined behavior, crashes, or even hijacking the communication passed to the thread.
+how: An attacker may flood the server with connections, causing the server to recycle socket file descriptors rapidly. This could lead to scenarios where an invalid socket descriptor is passed to the thread.
+code-sources: Entry points include the `accept` function call, which creates new `client_socket` for each client connection.
+code-sinks: The `client_socket` is used in the thread function `handle_client` where it performs the `recv` and `printf` operations.
+suggested-fix:
+```diff
+--- falcon180b-51190.orig.c	2023-10-04
++++ falcon180b-51190.fixed.c	2023-10-04
+@@ -15,26 +15,27 @@
+ 
+ void *handle_client(void *socket) {
+     int client_socket = *(int *)socket;
+     char data[MAX_DATA_SIZE];
+     int bytes_received;
+
++    free(socket);
++
+     while ((bytes_received = recv(client_socket, data, MAX_DATA_SIZE, 0)) > 0) {
+         printf("Client %d sent data: %s\n", client_socket, data);
+     }
+
+     close(client_socket);
+ }
+
+ int main() {
+     int server_socket;
+     int opt = 1;
+     struct sockaddr_in server_addr;
+
+     if ((server_socket = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
+         printf("Error creating socket\n");
+         exit(1);
+     }
+
+     setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+
+     server_addr.sin_family = AF_INET;
+     server_addr.sin_addr.s_addr = INADDR_ANY;
+     server_addr.sin_port = htons(PORT);
+
+     if (bind(server_socket, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
+         printf("Error binding socket\n");
+         exit(1);
+     }
+
+     if (listen(server_socket, MAX_CLIENTS) < 0) {
+         printf("Error listening on socket\n");
+         exit(1);
+     }
+
+     printf("Server listening on port %d\n", PORT);
+
+     while (1) {
+         int client_socket;
+         socklen_t client_size;
+
+         if ((client_socket = accept(server_socket, (struct sockaddr *)&server_addr, &client_size)) < 0) {
+             printf("Error accepting client connection\n");
+             exit(1);
+         }
+
+         if (num_clients >= MAX_CLIENTS) {
+             printf("Maximum clients reached\n");
+             close(client_socket);
+             continue;
+         }
+
+-        clients[num_clients] = client_socket;
++        int *pclient = malloc(sizeof(int));
++        *pclient = client_socket;
++
+         num_clients++;
++
+         pthread_t thread_id;
+-        if (pthread_create(&thread_id, NULL, handle_client, (void *)&client_socket) < 0) {
++        if (pthread_create(&thread_id, NULL, handle_client, pclient) < 0) {
+             printf("Error creating thread\n");
+             exit(1);
+         }
+     }
+
+     return 0;
+ }
+```
+```
+explanation-suggested-fix: This fix ensures that each thread gets its own copy of the `client_socket` value. Allocating memory for the `client_socket` and copying the value prevents the main thread from overwriting this value. Freeing this allocated memory in the `handle_client` function ensures there are no memory leaks.
+method: UNKNOWN 

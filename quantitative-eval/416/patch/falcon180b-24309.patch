@@ -1,0 +1,24 @@
+
+
+--- falcon180b-24309.old.c
++++ falcon180b-24309.new.c
+@@ -41,7 +41,10 @@
+         printf("Client %d connected\n", client_socket);
+
+         clients[client_count] = client_socket;
+-        client_count++;
++        
+         int *new_client_socket = malloc(sizeof(int));
+         *new_client_socket = client_socket;
+
+         pthread_t thread_id;
+-        pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
++        pthread_create(&thread_id, NULL, handle_client, (void *) new_client_socket);
+
++        client_count++;
+     }
++
++    close(server_socket);
+     return 0;
+ }
+

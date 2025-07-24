@@ -1,0 +1,44 @@
+
+    vuln-fix: cpp/return-stack-allocated-memory (CWE-825) and cpp/unbounded-write (CWE-120, CWE-787, CWE-805) in gemini_pro-21731: Lines 75 and 101 (severity: High)
+    what: A function returns a pointer to a stack-allocated region of memory; this memory is deallocated at the end of the function, which may lead the caller to dereference a dangling pointer. Additionally, buffer write operations that do not control the length of data written may overflow.
+    where: cpp/return-stack-allocated-memory at gemini_pro-21731: Line 75; cpp/unbounded-write at gemini_pro-21731: Line 101
+    why: Not resolving these weaknesses can lead to critical security issues. The dangling pointer may cause undefined behavior or crashes, and the buffer overflow can lead to remote code execution or corruption of data.
+    how: An attacker could exploit the dangling pointer vulnerability to cause a program crash or execute arbitrary code. The buffer overflow can be exploited by sending overly long input, leading to memory corruption and possible control over the system.
+    code-sources: User input is received in the function `receive_data()` and stored in the buffer on line 101.
+    code-sinks: The unbounded data is written to the `buffer` on line 101 without any length check.
+    suggested-fix: 
+    ```diff
+    --- gemini_pro-21731
+    +++ gemini_pro-21731
+    @@ -70,11 +70,11 @@
+     
+     // Receive data from a client
+     char *receive_data(int sockfd) {
+    -  char buffer[256];
+    +  static char buffer[256];
+       if (recv(sockfd, buffer, sizeof(buffer), 0) < 0) {
+         perror("Error receiving data");
+         exit(EXIT_FAILURE);
+       }
+    -  return buffer;
+    +  return strdup(buffer);
+     }
+ 
+     // Close a socket
+     
+    @@ -95,7 +95,7 @@
+       newsockfd = accept_connection(sockfd);
+     
+       // Receive data from the client
+    -  strcpy(buffer, receive_data(newsockfd));
+    +  strncpy(buffer, receive_data(newsockfd), sizeof(buffer)-1);
+       buffer[sizeof(buffer)-1] = '\0'; // Ensure null termination
+
+       // Print the data received from the client
+       printf("Received data from the client: %s\n", buffer);
+    ```
+    explanation-suggested-fix: 
+    The suggested fix addresses the vulnerability in two main ways:
+    1. To avoid returning a pointer to stack-allocated memory, the `receive_data` function now returns a dynamically allocated copy of the buffer using `strdup`. This ensures that the memory remains valid after the function returns.
+    2. To prevent buffer overflow, `strncpy` is used instead of `strcpy` to ensure that no more than the allocated size is copied, and an explicit null terminator is added to prevent potential overflow issues.
+    method: CODEQL (Taint Tracking Information Applied)

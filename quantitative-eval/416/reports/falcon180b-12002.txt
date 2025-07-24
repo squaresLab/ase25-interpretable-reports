@@ -1,0 +1,56 @@
+
+    vuln-fix: CWE-122 Heap-based Buffer Overflow in falcon180b-12002 (severity: High)
+    what: The vulnerability is a potential heap-based buffer overflow in the `handle_client` function due to the lack of proper bounds checking on the buffer used for receiving data from the client.
+    where: The vulnerability is located in the `handle_client` function:
+        ```c
+        void *handle_client(void *arg) {
+            int client_socket = *(int *)arg;
+            char buffer[BUFFER_SIZE];
+
+            while (1) {
+                bzero(buffer, BUFFER_SIZE);
+                int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+
+                if (bytes_received <= 0) {
+                    close(client_socket);
+                    pthread_exit(0);
+                }
+
+                send(client_socket, buffer, bytes_received, 0);
+            }
+        }
+        ```
+    why: If this vulnerability is not resolved, an attacker could exploit it to execute arbitrary code, potentially taking control of the server or causing it to crash, leading to Denial of Service (DoS).
+    how: An attacker could exploit this vulnerability by sending a crafted payload to overflow the buffer, which may overwrite adjacent memory and corrupt the execution of the program.
+    code-sources: 
+        - `recv(client_socket, buffer, BUFFER_SIZE, 0);` in `handle_client` function.
+    code-sinks: 
+        - `send(client_socket, buffer, bytes_received, 0);` in `handle_client` function.
+        - `send(client_sockets[i], message, strlen(message), 0);` in `broadcast` function.
+    suggested-fix: 
+    ```diff
+    --- original/falcon180b-12002.c
+    +++ fixed/falcon180b-12002.c
+    @@ -16,10 +16,16 @@
+         bzero(buffer, BUFFER_SIZE);
+         int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+
+    -    if (bytes_received <= 0) {
+    +    if (bytes_received < 0) {
+             close(client_socket);
+             pthread_exit(0);
+         }
+    +    if (bytes_received == 0) {
+    +        close(client_socket);
+    +        pthread_exit(0);
+    +    }
+    +    buffer[bytes_received] = '\0'; // Null-terminate the buffer to prevent overflow
+    +
+         send(client_socket, buffer, bytes_received, 0);
+     }
+     }
+    ```
+    explanation-suggested-fix: The proposed fix addresses the vulnerability by:
+    - Adding a null terminator after receiving data to ensure that the buffer does not overflow.
+    - Handling the specific case where `recv` returns 0 (connection closed) separately to ensure proper resource deallocation.
+    method: UNKNOWN

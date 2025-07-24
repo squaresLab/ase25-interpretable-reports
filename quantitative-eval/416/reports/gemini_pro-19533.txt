@@ -1,0 +1,31 @@
+
+    vuln-fix: CWE-362: Concurrent Execution using Shared Resource with Improper Synchronization in gemini_pro-19533 (severity: High)
+    what: The vulnerable code contains a race condition due to the reuse of the loop index variable \`i\` as an argument to \`pthread_create\`. The variable \`i\` is shared across the created threads and since it continues to change during the lifetime of the loop, threads may not receive the intended candidate ID.
+    where: 
+    - Line(s): 34 in \`gemini_pro-19533\` (pthread_create(&thread_ids[i], NULL, cast_vote, &i))
+    why: If not resolved, this race condition can cause multiple threads to increment the vote count for the wrong candidates, resulting in incorrect and unpredictable election results.
+    how: An attacker could exploit this vulnerability by initiating concurrent votes, leading to race conditions that cause incorrect vote tallying, thus corrupting the integrity of the voting process.
+    code-sources: Loop counter \`i\` in the \`main()\` function.
+    code-sinks: Argument to \`pthread_create\` in the \`main()\` function.
+    suggested-fix: 
+    ```diff
+    --- gemini_pro-19533.c
+    +++ gemini_pro-19533-fixed.c
+    @@ -31,12 +31,14 @@
+         // Create an array of thread IDs
+         pthread_t thread_ids[NUM_CANDIDATES];
+     
+    +    // Create an array to hold candidate IDs
+    +    int candidate_ids[NUM_CANDIDATES];
+    +
+         // Create a thread for each candidate
+         for (int i = 0; i < NUM_CANDIDATES; i++) {
+    +        candidate_ids[i] = i;
+             pthread_create(&thread_ids[i], NULL, cast_vote, &candidate_ids[i]);
+         }
+     
+         // Join all the threads
+         for (int i = 0; i < NUM_CANDIDATES; i++) {
+    ```
+    explanation-suggested-fix: The suggested code change creates a separate array \`candidate_ids\` to ensure each thread receives a unique and immutable candidate ID. This prevents the race condition, ensuring all votes are correctly incremented for their respective candidates.
+    method: UNKNOWN

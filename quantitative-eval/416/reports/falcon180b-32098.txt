@@ -1,0 +1,32 @@
+ 
+vuln-fix: Heap-based Buffer Overflow (CWE-122) in falcon180b-32098 (severity: High)
+what: The buffer `buffer` within the `handle_client` function may be subject to a heap-based buffer overflow. The `recv` function receives data from the client socket and directly stores it into the `buffer` array without proper bounds checking.
+where: Lines 15-20 in the file falcon180b-32098.
+why: If this vulnerability is not resolved, an attacker can exploit it to perform arbitrary code execution, denial of service, or gain unauthorized access to the system.
+how: An attacker would proceed by sending more data than the `buffer` can handle, potentially overwriting memory areas adjacent to the buffer. This can corrupt the program's heap, leading to unpredictable behavior or system compromise. 
+code-sources: The `recv` function call receives data from the client socket, where the user input originates.
+code-sinks: The buffer `buffer` in the `handle_client` function is the sink where the user input is stored.
+suggested-fix: 
+```diff
+--- falcon180b-32098
++++ falcon180b-32098
+@@ -15,9 +15,13 @@
+ void *handle_client(void *arg) {
+     int client_socket = *(int *) arg;
+     char buffer[BUFFER_SIZE];
+
++    int bytes_received;
+     while (1) {
+         memset(buffer, 0, BUFFER_SIZE);
+-        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
++        bytes_received = recv(client_socket, buffer, BUFFER_SIZE - 1, 0);
++
++        if (bytes_received < 0) {
++            break;
++        }
+
+         buffer[bytes_received] = '\0'; // Null-terminate the buffer
+
+         if (bytes_received <= 0) {
+explanation-suggested-fix: The suggested code fix changes the `recv` function to ensure that at most `BUFFER_SIZE - 1` bytes are received, leaving space for a null terminator. This eliminates the potential for buffer overflow by ensuring that any received data fits within the `buffer`. Moreover, an additional check is added to break out of the loop in case `recv` returns a negative value, which indicates a reception error.
+method: UNKNOWN 

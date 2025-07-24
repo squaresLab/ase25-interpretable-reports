@@ -1,0 +1,30 @@
+
+vuln-fix: CWE-362: Race Condition in gpt35-20819, lines 64-80 (severity: High)
+what: The vulnerability is a race condition where the `client_socket` variable, which is shared among threads, can be overwritten before being processed, leading to potential undefined behavior or crash.
+where: The vulnerability is located in the `main` function at lines 64-80 in file gpt35-20819.
+why: One possible consequence of not resolving this issue is that multiple clients may interfere with each other's connections, leading to undefined behavior, application crashes, or data corruption.
+how: An attacker would proceed by rapidly connecting and disconnecting multiple clients, exploiting the race condition to cause collisions or unexpected behavior in the connection handling.
+code-sources: The entry point for user input is the `accept()` function at line 64, which accepts client connections.
+code-sinks: The critical actions performed using the user input are the assignment to `client_sockets` and the creation of the thread using `pthread_create()` at lines 68-75.
+suggested-fix: 
+```diff
+--- gpt35-20819-cv.c	2023-10-04 10:57:19.000000000 -0600
++++ gpt35-20819-fixed.c	2023-10-04 11:35:52.000000000 -0600
+@@ -67,12 +67,14 @@
+         client_sockets[client_count++] = client_socket;
+         printf("New client connected: %s:%d\n", inet_ntoa(client_address.sin_addr), ntohs(client_address.sin_port));
+         pthread_t thread;
+-        if(pthread_create(&thread, NULL, handle_client, &client_socket) < 0) {
++        int* new_client_socket = malloc(sizeof(int));
++        *new_client_socket = client_socket;
++        if(pthread_create(&thread, NULL, handle_client, new_client_socket) < 0) {
+             perror("pthread_create() failed");
+             exit(1);
+         }
+         pthread_detach(thread);
+     }
+     return 0;
+ }
+```
+explanation-suggested-fix: The suggested code diff resolves the vulnerability by allocating a new memory block for each `client_socket` pointer passed to the `pthread_create` function. This prevents the shared access issue by ensuring each thread operates on its own distinct `client_socket` variable, thus avoiding race conditions.
+method: CODEQL

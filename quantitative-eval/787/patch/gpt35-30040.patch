@@ -1,0 +1,8 @@
+ 
+
+36c36
+<         sprintf(e->name, "%s", name);
+---
+>         strncpy(e->name, name, sizeof(e->name) - 1);
+>         e->name[sizeof(e->name) - 1] = '\0';
+

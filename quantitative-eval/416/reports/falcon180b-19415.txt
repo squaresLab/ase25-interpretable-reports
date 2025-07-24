@@ -1,0 +1,36 @@
+
+vuln-fix: CWE-415 Double Free in falcon180b-19415 (severity: High)
+what: The vulnerability is caused by a double free in the server code. When handling a new client, the server creates a thread and passes the client socket to it. If the server reaches the maximum number of clients, it closes the client socket, which could still be used by the thread. As a result, both the main thread and the handler thread attempt to close the same socket, causing a double free.
+where: The vulnerability is located in falcon180b-19415:
+- Potential close in main thread: lines 61-67
+- Close in handler thread: lines 19-24
+why: A double free vulnerability can lead to undefined behavior, including crashes, memory corruption, or potential arbitrary code execution by an attacker.
+how: An attacker could exploit this vulnerability by causing a maximum number of clients to connect to the server. When the server tries to handle more than the maximum allowed clients, it will result in simultaneous handling of the same client socket by multiple threads, causing a double free scenario.
+code-sources: The entry points where user input enters the application are at the `recv` function call in `thread_handler` function (line 14).
+code-sinks: The application actions performed by using user input from a source occur at the `send` function calls in the `thread_handler` function (line 20, 66).
+suggested-fix:
+```diff
+diff --git a/falcon180b-19415 b/falcon180b-19415
+index 3a80c6f..b2e906f 100644
+--- a/falcon180b-19415
++++ b/falcon180b-19415
+@@ -61,7 +61,7 @@ int main() {
+         if(num_clients >= MAX_CLIENTS) {
+             send(client_socket, "Server is full. Please try again later. ", 46, 0);
+             close(client_socket);
+-            continue;
++            continue; // Ensure not to pass client_socket to thread_handler
+         }
+
+         clients[num_clients] = client_socket;
+@@ -69,10 +69,10 @@ int main() {
+         pthread_create(&thread_id, NULL, thread_handler, (void *)&clients[num_clients-1]);
+     }
+
+-    return 0;
++ close(server_socket);
+     return 0;
+ }
+ ```
+explanation-suggested-fix: The suggested code diff ensures that when the maximum number of clients is reached, the server handles and properly closes the client socket without passing it to the `thread_handler`. This avoids the double free issue by ensuring that the socket is closed only once. Also, it moves the reference to the client socket into the `clients[]` array before passing it to the thread, thus keeping consistent references.
+method: UNKNOWN

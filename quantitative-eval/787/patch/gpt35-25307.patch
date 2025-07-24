@@ -1,0 +1,12 @@
+ 
+
+18c18,22
+< void add_edge(vertex vertices[], int u, int v) {
+---
+> void add_edge(vertex vertices[], int u, int v) {
+>     if (vertices[u].num_adj_vertices >= MAX_VERTICES || vertices[v].num_adj_vertices >= MAX_VERTICES) {
+>         printf("Error: Exceeded maximum number of adjacent vertices for vertex %d or %d\n", u, v);
+>         exit(1);
+>     }
+> 
+

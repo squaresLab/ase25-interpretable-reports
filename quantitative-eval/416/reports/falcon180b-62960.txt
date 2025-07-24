@@ -1,0 +1,61 @@
+
+vuln-fix: CWE-459 Incomplete Cleanup in falcon180b-62960 (severity: High)
+what: The code does not properly remove a client socket from the `client_sockets` array when a client disconnects, leading to a potential overrun of the array and incorrect handling of client sockets.
+where: The vulnerability occurs in the `handle_client` function towards the end where the client socket is closed without removing it from the `client_sockets` array.
+why: If this vulnerability is not resolved, it could lead to resource exhaustion as more clients connect and disconnect, leading to server instability or crash.
+how: An attacker can exploit this vulnerability by repeatedly connecting and disconnecting, eventually causing the server to run out of available socket slots.
+code-sources: 
+```c
+recv(client_socket, buffer, BUFFER_SIZE, 0);
+accept(server_socket, (struct sockaddr *) &client_addr, &addr_len);
+```
+code-sinks: 
+```c
+send(client_sockets[i], buffer, strlen(buffer), 0);
+```
+suggested-fix:
+```diff
+--- falcon180b-62960.c	2023-10-03 12:00:00.000000000 +0000
++++ falcon180b-62960-fixed.c	2023-10-03 12:05:00.000000000 +0000
+@@ -12,6 +12,7 @@
+ 
+ void *handle_client(void *arg) {
+     int client_socket = *(int *) arg;
++    int client_index = -1;
+     char buffer[BUFFER_SIZE];
+ 
+     while (1) {
+@@ -21,6 +22,7 @@
+             break;
+         }
+ 
++        for (int i = 0; i < num_clients; i++) if (client_sockets[i] == client_socket) client_index = i;
+         printf("Client %d: %s\n", client_socket, buffer);
+ 
+         for (int i = 0; i < num_clients; i++) {
+@@ -29,6 +31,8 @@
+         }
+     }
+ 
++    if (client_index != -1) client_sockets[client_index] = -1;
++    num_clients--;
+     close(client_socket);
+     return NULL;
+ }
+@@ -50,8 +54,12 @@
+         client_sockets[num_clients] = client_socket;
+         num_clients++;
+ 
++        for (int i = 0; i < num_clients; i++) {
++            if (client_sockets[i] == -1) {
++                client_sockets[i] = client_socket;
++                break;
++            }
++        }
+         pthread_t thread_id;
+         pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+     }
+ }
+```
+explanation-suggested-fix: The suggested fix involves identifying the index of the client socket in the `client_sockets` array within the `handle_client` function. Upon client disconnection, the socket is set to `-1` in the array and the total client count (`num_clients`) is decremented. In the `main` function, new client sockets are assigned to any free slots (indicated by `-1`) in the `client_sockets` array, ensuring no overruns or invalid slot references.
+method: UNKNOWN

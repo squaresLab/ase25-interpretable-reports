@@ -1,0 +1,27 @@
+
+
+diff --git a/falcon180b-70128 b/falcon180b-70128
+index 1234567..89abcde 100644
+--- a/falcon180b-70128
++++ b/falcon180b-70128
+@@ -66,12 +66,14 @@ int main() {
+         if(clientSocket == -1) {
+             printf("Error accepting connection\n");
+             continue;
+         }
+
++        int *newSocket = malloc(sizeof(int));
++        *newSocket = clientSocket;
++
+         pthread_mutex_lock(&mutex);
+         activeThreads++;
+         pthread_mutex_unlock(&mutex);
+
+         pthread_t threadId;
+-        pthread_create(&threadId, NULL, threadFunction, (void *)&clientSocket);
++        pthread_create(&threadId, NULL, threadFunction, (void *)newSocket);
+     }
+
+     close(serverSocket);
+     return 0;
+

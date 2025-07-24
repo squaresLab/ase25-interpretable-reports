@@ -1,0 +1,3052 @@
+,filename,original_filepath,patch_filepath,is_applicable,category,esbmc
+0,gpt35-59361,dataset/787/gpt35-59361.c,results/787/patch/gpt35-59361.patch,True,NOT-DIFF,"ESBMC version 7.5.0 64-bit x86_64 linux
+Target: 64-bit little-endian x86_64-unknown-linux with esbmclibc
+Parsing results/787/applied-patches/gpt35-59361.c
+Converting
+Generating GOTO Program
+GOTO program creation time: 0.155s
+GOTO program processing time: 0.003s
+Starting Bounded Model Checking
+WARNING: no body for function srand
+Not unwinding loop 13 iteration 1   file string.c line 40 column 3 function strncpy
+Not unwinding loop 14 iteration 1   file string.c line 44 column 5 function strncpy
+Symex completed in: 0.003s (40 assignments)
+Slicing time: 0.000s (removed 35 assignments)
+Generated 4 VCC(s), 0 remaining after simplification (5 assignments)
+BMC program time: 0.003s
+
+VERIFICATION SUCCESSFUL
+"
+1,gemma7b-44190,dataset/787/gemma7b-44190.c,results/787/patch/gemma7b-44190.patch,False,DIFF,not diff or not applicable
+2,falcon180b-19957,dataset/787/falcon180b-19957.c,results/787/patch/falcon180b-19957.patch,False,DIFF,not diff or not applicable
+3,gemini_pro-11823,dataset/787/gemini_pro-11823.c,results/787/patch/gemini_pro-11823.patch,False,DIFF,not diff or not applicable
+4,gemini_pro-9135,dataset/787/gemini_pro-9135.c,results/787/patch/gemini_pro-9135.patch,True,DIFF,"ESBMC version 7.5.0 64-bit x86_64 linux
+Target: 64-bit little-endian x86_64-unknown-linux with esbmclibc
+Parsing dataset/787/gemini_pro-9135.c
+dataset/787/gemini_pro-9135.c:113:10: warning: implicit declaration of function 'is_valid_hostname' is invalid in C99 [-Wimplicit-function-declaration]
+    if (!is_valid_hostname(hostname) || inet_aton(hostname, &addr.sin_addr) == 0) {
+         ^
+dataset/787/gemini_pro-9135.c:132:9: warning: implicit declaration of function 'gettimeofday' is invalid in C99 [-Wimplicit-function-declaration]
+        gettimeofday(&start, NULL);
+        ^
+Converting
+Generating GOTO Program
+GOTO program creation time: 0.170s
+GOTO program processing time: 0.003s
+Starting Bounded Model Checking
+Not unwinding loop 4 iteration 1   file stdlib.c line 197 column 1 function atoi
+Not unwinding loop 5 iteration 1   file stdlib.c line 197 column 1 function atoi
+WARNING: no body for function socket
+WARNING: no body for function perror
+WARNING: no body for function is_valid_hostname
+WARNING: no body for function inet_aton
+WARNING: no body for function getpid
+Not unwinding loop 35 iteration 1   file gemini_pro-9135.c line 31 column 5 function calculate_checksum
+Symex completed in: 0.004s (152 assignments)
+Slicing time: 0.002s (removed 88 assignments)
+Generated 29 VCC(s), 26 remaining after simplification (64 assignments)
+No solver specified; defaulting to Boolector
+Slicing time: 0.002s (removed 88 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.002s
+Solving claim '!overflow(""+"", i, 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 88 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.002s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.049s
+
+[Counterexample]
+
+
+State 3  thread 0
+----------------------------------------------------
+  argv[3] = 0
+
+State 4 file gemini_pro-9135.c line 107 column 19 function ping thread 0
+----------------------------------------------------
+  sockfd = 0 (00000000 00000000 00000000 00000000)
+
+State 5 file gemini_pro-9135.c line 32 column 9 function calculate_checksum thread 0
+----------------------------------------------------
+Violated property:
+  file gemini_pro-9135.c line 32 column 9 function calculate_checksum
+  dereference failure: Oversized field offset
+
+Slicing time: 0.000s (removed 88 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.003s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 88 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.002s
+Solving claim '!overflow(""unary-"", 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 88 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.002s
+Solving claim '!overflow(""unary-"", 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.002s
+Slicing time: 0.000s (removed 88 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.003s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 88 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.002s
+Solving claim '(_Bool)neg => !overflow(""-"", -2147483647, 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 88 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.002s
+Solving claim '(_Bool)neg => !overflow(""unary-"", 2147483647)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 88 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.002s
+Solving claim '!overflow(""/"", 2147483647 - (signed int)c, 10)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 88 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.002s
+Solving claim '!overflow(""-"", 2147483647, (signed int)c)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 88 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.003s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.097s
+
+[Counterexample]
+
+
+State 3  thread 0
+----------------------------------------------------
+  argv[3] = 0
+
+State 4 file stdlib.c line 197 column 1 function atoi thread 0
+----------------------------------------------------
+Violated property:
+  file stdlib.c line 197 column 1 function atoi
+  dereference failure: invalid pointer
+
+Slicing time: 0.000s (removed 88 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.002s
+Solving claim '(signed long int)((unsigned char)(*s)) < 256' with solver Boolector 3.2.3
+Runtime decision procedure: 0.002s
+Slicing time: 0.002s (removed 88 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.002s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.004s
+Slicing time: 0.002s (removed 88 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.002s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.002s
+Slicing time: 0.000s (removed 88 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.002s
+Solving claim '!((signed int)(*s) == 45)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.097s
+
+[Counterexample]
+
+
+State 3  thread 0
+----------------------------------------------------
+  argv[3] = 0
+
+State 4 file stdlib.c line 197 column 1 function atoi thread 0
+----------------------------------------------------
+Violated property:
+  file stdlib.c line 197 column 1 function atoi
+  dereference failure: invalid pointer
+
+Slicing time: 0.002s (removed 88 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.002s
+Solving claim '!((signed int)(*s) == 43)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.096s
+
+[Counterexample]
+
+
+State 3  thread 0
+----------------------------------------------------
+  argv[3] = 0
+
+State 4 file stdlib.c line 197 column 1 function atoi thread 0
+----------------------------------------------------
+Violated property:
+  file stdlib.c line 197 column 1 function atoi
+  dereference failure: NULL pointer
+
+Slicing time: 0.002s (removed 88 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.002s
+Solving claim '(signed long int)((unsigned char)(*s)) >= 0' with solver Boolector 3.2.3
+Runtime decision procedure: 0.097s
+
+[Counterexample]
+
+
+State 3  thread 0
+----------------------------------------------------
+  argv[3] = 0
+
+State 4 file stdlib.c line 197 column 1 function atoi thread 0
+----------------------------------------------------
+Violated property:
+  file stdlib.c line 197 column 1 function atoi
+  dereference failure: NULL pointer
+  (signed long int)((unsigned char)(*s)) >= 0
+
+Slicing time: 0.000s (removed 88 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.002s
+Solving claim '(signed long int)((unsigned char)(*s)) < 256' with solver Boolector 3.2.3
+Runtime decision procedure: 0.096s
+
+[Counterexample]
+
+
+State 3  thread 0
+----------------------------------------------------
+  argv[3] = 0
+
+State 4 file stdlib.c line 197 column 1 function atoi thread 0
+----------------------------------------------------
+Violated property:
+  file stdlib.c line 197 column 1 function atoi
+  dereference failure: NULL pointer
+  (signed long int)((unsigned char)(*s)) < 256
+
+
+VERIFICATION FAILED
+"
+5,gemini_pro-12375,dataset/787/gemini_pro-12375.c,results/787/patch/gemini_pro-12375.patch,True,DIFF,"ESBMC version 7.5.0 64-bit x86_64 linux
+Target: 64-bit little-endian x86_64-unknown-linux with esbmclibc
+Parsing dataset/787/gemini_pro-12375.c
+dataset/787/gemini_pro-12375.c:56:39: error: use of undeclared identifier 'SIZE_MAX'
+            if (reader->num_fields >= SIZE_MAX / sizeof(char*)) {
+                                      ^
+dataset/787/gemini_pro-12375.c:75:58: error: function definition is not allowed here
+char* csv_reader_get_field(CSVReader *reader, int index) {
+                                                         ^
+dataset/787/gemini_pro-12375.c:81:47: error: function definition is not allowed here
+void csv_reader_print_line(CSVReader *reader) {
+                                              ^
+dataset/787/gemini_pro-12375.c:90:12: error: function definition is not allowed here
+int main() {
+           ^
+dataset/787/gemini_pro-12375.c:110:2: error: expected '}'
+}
+ ^
+dataset/787/gemini_pro-12375.c:34:45: note: to match this '{'
+int csv_reader_next_line(CSVReader *reader) {
+                                            ^
+ERROR: PARSING ERROR
+"
+6,gpt35-29981,dataset/787/gpt35-29981.c,results/787/patch/gpt35-29981.patch,False,DIFF,not diff or not applicable
+7,falcon180b-59800,dataset/787/falcon180b-59800.c,results/787/patch/falcon180b-59800.patch,True,DIFF,"ESBMC version 7.5.0 64-bit x86_64 linux
+Target: 64-bit little-endian x86_64-unknown-linux with esbmclibc
+Parsing dataset/787/falcon180b-59800.c
+dataset/787/falcon180b-59800.c:54:45: warning: incompatible pointer types passing 'WordCount [50]' to parameter of type 'char **' [-Wincompatible-pointer-types]
+        totalWords += getLineWords(logLine, wordsCount);
+                                            ^~~~~~~~~~
+dataset/787/falcon180b-59800.c:22:36: note: passing argument to parameter 'words' here
+int getLineWords(char *line, char *words[]) {
+                                   ^
+Converting
+Generating GOTO Program
+GOTO program creation time: 0.146s
+GOTO program processing time: 0.002s
+Starting Bounded Model Checking
+Not unwinding loop 2 iteration 1   file io.c line 133 column 3 function fgets
+Not unwinding loop 22 iteration 1   file string.c line 165 column 5 function strspn
+Not unwinding loop 23 iteration 1   file string.c line 163 column 3 function strspn
+Not unwinding loop 20 iteration 1   file string.c line 127 column 3 function strchr
+Not unwinding loop 24 iteration 1   file string.c line 182 column 3 function strcspn
+Not unwinding loop 22 iteration 1   file string.c line 165 column 5 function strspn
+Not unwinding loop 23 iteration 1   file string.c line 163 column 3 function strspn
+Not unwinding loop 20 iteration 1   file string.c line 127 column 3 function strchr
+Not unwinding loop 24 iteration 1   file string.c line 182 column 3 function strcspn
+Not unwinding loop 34 iteration 1   file falcon180b-59800.c line 27 column 5 function getLineWords
+Not unwinding loop 35 iteration 1   file falcon180b-59800.c line 52 column 5 function main
+WARNING: no body for function qsort
+Symex completed in: 0.008s (277 assignments)
+Slicing time: 0.000s (removed 182 assignments)
+Generated 49 VCC(s), 18 remaining after simplification (95 assignments)
+No solver specified; defaulting to Boolector
+Slicing time: 0.000s (removed 182 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.003s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 182 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.002s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.002s
+Slicing time: 0.002s (removed 182 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.002s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 182 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.002s
+Solving claim '!overflow(""+"", totalWords, return_value$_getLineWords$2)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 182 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.002s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.002s
+Slicing time: 0.000s (removed 182 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.002s
+Solving claim '(_Bool)(stream == stdin || stream != 0)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 182 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.002s
+Solving claim '!overflow(""-"", size, 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 182 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.002s
+Solving claim '!overflow(""unary-"", 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 182 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.002s
+Solving claim '!overflow(""+"", i, 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 182 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.002s
+Solving claim '!overflow(""-"", size, 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 182 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.002s
+Solving claim '!overflow(""+"", i, 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 182 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.002s
+Solving claim '!overflow(""+"", lineCount, 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 182 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.002s
+Solving claim '!overflow(""+"", count, 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 182 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.002s
+Solving claim '!((signed int)(*p) != 0)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 182 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.002s
+Solving claim '(signed int)(*p) == (signed int)(*a)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 182 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.002s
+Solving claim '!((signed int)(*s) != 0)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 182 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.002s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 182 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.002s
+Solving claim '!((_Bool)((signed int)(*p)))' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+BMC program time: 0.048s
+
+VERIFICATION SUCCESSFUL
+"
+8,gemini_pro-6589,dataset/787/gemini_pro-6589.c,results/787/patch/gemini_pro-6589.patch,False,NOT-DIFF,not diff or not applicable
+9,gemini_pro-4687,dataset/787/gemini_pro-4687.c,results/787/patch/gemini_pro-4687.patch,True,NOT-DIFF,"ESBMC version 7.5.0 64-bit x86_64 linux
+Target: 64-bit little-endian x86_64-unknown-linux with esbmclibc
+Parsing results/787/applied-patches/gemini_pro-4687.c
+Converting
+Generating GOTO Program
+GOTO program creation time: 0.141s
+GOTO program processing time: 0.003s
+Starting Bounded Model Checking
+Not unwinding loop 34 iteration 1   file gemini_pro-4687.c line 32 column 9 function init_game
+Symex completed in: 0.002s (19 assignments)
+Slicing time: 0.000s (removed 17 assignments)
+Generated 3 VCC(s), 1 remaining after simplification (2 assignments)
+No solver specified; defaulting to Boolector
+Slicing time: 0.000s (removed 17 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.000s
+Solving claim '!overflow(""+"", j, 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+BMC program time: 0.002s
+
+VERIFICATION SUCCESSFUL
+"
+10,gemma7b-2760,dataset/787/gemma7b-2760.c,results/787/patch/gemma7b-2760.patch,False,DIFF,not diff or not applicable
+11,falcon180b-33596,dataset/787/falcon180b-33596.c,results/787/patch/falcon180b-33596.patch,True,DIFF,"ESBMC version 7.5.0 64-bit x86_64 linux
+Target: 64-bit little-endian x86_64-unknown-linux with esbmclibc
+Parsing dataset/787/falcon180b-33596.c
+dataset/787/falcon180b-33596.c:71:2: error: expected '}'
+}
+ ^
+dataset/787/falcon180b-33596.c:54:12: note: to match this '{'
+int main() {
+           ^
+ERROR: PARSING ERROR
+"
+12,gpt35-59184,dataset/787/gpt35-59184.c,results/787/patch/gpt35-59184.patch,False,NOT-DIFF,not diff or not applicable
+13,gpt35-61822,dataset/787/gpt35-61822.c,results/787/patch/gpt35-61822.patch,False,DIFF,not diff or not applicable
+14,falcon180b-6553,dataset/787/falcon180b-6553.c,results/787/patch/falcon180b-6553.patch,True,DIFF,"ESBMC version 7.5.0 64-bit x86_64 linux
+Target: 64-bit little-endian x86_64-unknown-linux with esbmclibc
+Parsing dataset/787/falcon180b-6553.c
+Converting
+Generating GOTO Program
+GOTO program creation time: 0.144s
+GOTO program processing time: 0.002s
+Starting Bounded Model Checking
+Not unwinding loop 34 iteration 1   file falcon180b-6553.c line 32 column 13 function displayTopology
+Not unwinding loop 35 iteration 1   file falcon180b-6553.c line 27 column 5 function displayTopology
+Not unwinding loop 37 iteration 1   file falcon180b-6553.c line 92 column 12 function main
+Symex completed in: 0.046s (125 assignments)
+Slicing time: 0.002s (removed 56 assignments)
+Generated 41 VCC(s), 29 remaining after simplification (69 assignments)
+No solver specified; defaulting to Boolector
+Slicing time: 0.000s (removed 56 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 1.483s
+Solving claim '!overflow(""+"", i, 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 56 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 1.599s
+Solving claim '!overflow(""+"", j, 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 56 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 1.648s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.995s
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+
+[Counterexample]
+
+
+State 1 file falcon180b-6553.c line 54 column 5 function main thread 0
+----------------------------------------------------
+  nodes = { { .id=0, .name=nil, .num_links=2147483647, .anon_pad$3=0,
+    .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil }, 
+    { .id=0, .name=nil, .num_links=0, .anon_pad$3=0, .links=nil } }
+Enter 1 to add a node
+
+Enter 2 to add a link
+
+Enter 3 to display topology
+
+Enter 4 to exit
+
+
+State 6 file falcon180b-6553.c line 63 column 9 function main thread 0
+----------------------------------------------------
+  choice = 3 (00000000 00000000 00000000 00000011)
+Topology:
+
+Node 0: 
+
+Links:
+
+
+State 10 file falcon180b-6553.c line 33 column 17 function displayTopology thread 0
+----------------------------------------------------
+Violated property:
+  file falcon180b-6553.c line 33 column 17 function displayTopology
+  dereference failure: invalid pointer
+
+Slicing time: 0.002s (removed 56 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 1.680s
+Solving claim '!overflow(""unary-"", 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 56 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+ERROR: Timed out
+"
+15,gpt35-24384,dataset/787/gpt35-24384.c,results/787/patch/gpt35-24384.patch,True,DIFF,"ESBMC version 7.5.0 64-bit x86_64 linux
+Target: 64-bit little-endian x86_64-unknown-linux with esbmclibc
+Parsing dataset/787/gpt35-24384.c
+Converting
+Generating GOTO Program
+GOTO program creation time: 0.149s
+GOTO program processing time: 0.002s
+Starting Bounded Model Checking
+Not unwinding loop 17 iteration 1   file string.c line 78 column 3 function strlen
+Symex completed in: 0.002s (25 assignments)
+Slicing time: 0.000s (removed 24 assignments)
+Generated 1 VCC(s), 0 remaining after simplification (1 assignments)
+BMC program time: 0.002s
+
+VERIFICATION SUCCESSFUL
+"
+16,gpt35-42182,dataset/787/gpt35-42182.c,results/787/patch/gpt35-42182.patch,False,DIFF,not diff or not applicable
+17,gemma7b-20082,dataset/787/gemma7b-20082.c,results/787/patch/gemma7b-20082.patch,True,DIFF,"ESBMC version 7.5.0 64-bit x86_64 linux
+Target: 64-bit little-endian x86_64-unknown-linux with esbmclibc
+Parsing dataset/787/gemma7b-20082.c
+Converting
+Generating GOTO Program
+GOTO program creation time: 0.141s
+GOTO program processing time: 0.002s
+Starting Bounded Model Checking
+Not unwinding loop 2 iteration 1   file io.c line 133 column 3 function fgets
+Not unwinding loop 17 iteration 1   file string.c line 78 column 3 function strlen
+Not unwinding loop 34 iteration 1   file gemma7b-20082.c line 64 column 5 function main
+Symex completed in: 0.085s (311 assignments)
+Slicing time: 0.003s (removed 43 assignments)
+Generated 163 VCC(s), 160 remaining after simplification (268 assignments)
+No solver specified; defaulting to Boolector
+Slicing time: 0.004s (removed 43 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.012s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 2.598s
+Slicing time: 0.005s (removed 43 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.010s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 4.143s
+Slicing time: 0.005s (removed 43 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.011s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.006s
+Slicing time: 0.004s (removed 43 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.009s
+Solving claim '1' with solver Boolector 3.2.3
+ERROR: Timed out
+"
+18,codellama_13b-4829,dataset/787/codellama_13b-4829.c,results/787/patch/codellama_13b-4829.patch,False,NOT-DIFF,not diff or not applicable
+19,gpt35-14543,dataset/787/gpt35-14543.c,results/787/patch/gpt35-14543.patch,False,DIFF,not diff or not applicable
+20,gemma7b-17190,dataset/787/gemma7b-17190.c,results/787/patch/gemma7b-17190.patch,True,NOT-DIFF,"ESBMC version 7.5.0 64-bit x86_64 linux
+Target: 64-bit little-endian x86_64-unknown-linux with esbmclibc
+Parsing results/787/applied-patches/gemma7b-17190.c
+Converting
+Generating GOTO Program
+GOTO program creation time: 0.149s
+GOTO program processing time: 0.002s
+Starting Bounded Model Checking
+Not unwinding loop 2 iteration 1   file io.c line 133 column 3 function fgets
+Not unwinding loop 34 iteration 1   file gemma7b-17190.c line 29 column 5 function csvReader_free
+Symex completed in: 1.795s (687 assignments)
+Slicing time: 0.081s (removed 80 assignments)
+Generated 294 VCC(s), 291 remaining after simplification (607 assignments)
+No solver specified; defaulting to Boolector
+Slicing time: 0.081s (removed 80 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.111s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.037s
+Slicing time: 0.082s (removed 80 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.088s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 6.234s
+Slicing time: 0.082s (removed 80 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.091s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.039s
+Slicing time: 0.082s (removed 80 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.090s
+Solving claim '1' with solver Boolector 3.2.3
+ERROR: Timed out
+"
+21,gemma7b-39427,dataset/787/gemma7b-39427.c,results/787/patch/gemma7b-39427.patch,False,DIFF,not diff or not applicable
+22,gpt35-51720,dataset/787/gpt35-51720.c,results/787/patch/gpt35-51720.patch,True,DIFF,"ESBMC version 7.5.0 64-bit x86_64 linux
+Target: 64-bit little-endian x86_64-unknown-linux with esbmclibc
+Parsing dataset/787/gpt35-51720.c
+Converting
+Generating GOTO Program
+GOTO program creation time: 0.146s
+GOTO program processing time: 0.003s
+Starting Bounded Model Checking
+WARNING: no body for function srand
+Not unwinding loop 12 iteration 1   file gpt35-51720.c line 36 column 5 function initialize_auction
+Not unwinding loop 13 iteration 1   file gpt35-51720.c line 45 column 5 function initialize_auction
+Not unwinding loop 14 iteration 1   file gpt35-51720.c line 60 column 5 function show_auction
+Not unwinding loop 15 iteration 1   file gpt35-51720.c line 73 column 5 function show_auction
+Not unwinding loop 16 iteration 1   file gpt35-51720.c line 80 column 5 function get_bidder
+Not unwinding loop 17 iteration 1   file gpt35-51720.c line 91 column 5 function get_item
+Not unwinding loop 18 iteration 1   file gpt35-51720.c line 105 column 5 function run_auction
+Symex completed in: 0.095s (488 assignments)
+Slicing time: 0.002s (removed 393 assignments)
+Generated 196 VCC(s), 34 remaining after simplification (95 assignments)
+No solver specified; defaulting to Boolector
+Slicing time: 0.002s (removed 393 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.008s
+Solving claim '!overflow(""+"", number_of_bids, 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 393 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.008s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 393 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.008s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 393 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.008s
+Solving claim 'isinf(bidder->balance) || isinf(bid_amount) || !(isinf(IEEE_SUB(bidder->balance, bid_amount)))' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 393 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.007s
+Solving claim 'isinf(bidder->balance) || isinf(bid_amount) || !(isinf(IEEE_SUB(bidder->balance, bid_amount)))' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 393 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.007s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 393 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.007s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 393 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.007s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 393 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.007s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 393 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.007s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 393 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.007s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 393 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.007s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 393 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.007s
+Solving claim '!overflow(""+"", i, 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 393 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.007s
+Solving claim '!overflow(""+"", i, 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 393 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.007s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 393 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.007s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 393 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.008s
+Solving claim '!overflow(""+"", i, 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 393 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.008s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.236s
+
+[Counterexample]
+
+
+State 1 file gpt35-51720.c line 142 column 5 function main thread 0
+----------------------------------------------------
+  auction = { .number_of_items=0, .number_of_bidders=0, .items=nil,
+    .bidders=nil }
+
+State 2 file gpt35-51720.c line 32 column 5 function initialize_auction thread 0
+----------------------------------------------------
+  auction->number_of_items = 5 (00000000 00000000 00000000 00000101)
+
+State 3 file gpt35-51720.c line 33 column 5 function initialize_auction thread 0
+----------------------------------------------------
+  auction->number_of_bidders = 10 (00000000 00000000 00000000 00001010)
+
+State 4 file gpt35-51720.c line 38 column 9 function initialize_auction thread 0
+----------------------------------------------------
+Violated property:
+  file gpt35-51720.c line 38 column 9 function initialize_auction
+  dereference failure: Oversized field offset
+
+Slicing time: 0.002s (removed 393 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.008s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 393 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.008s
+Solving claim '!overflow(""+"", i, 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 393 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.007s
+Solving claim '!overflow(""+"", i, 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 393 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.007s
+Solving claim 'auction->number_of_bidders != 0' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 393 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.007s
+Solving claim '!overflow(""mod"", return_value$_rand$1, auction->number_of_bidders)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 393 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.008s
+Solving claim 'auction->number_of_items != 0' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 393 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.008s
+Solving claim '!overflow(""mod"", return_value$_rand$2, auction->number_of_items)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 393 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.008s
+Solving claim '!overflow(""mod"", return_value$_rand$3, 100)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 393 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.007s
+Solving claim 'isinf((double)((float)(return_value$_rand$3 % 100))) || !(isinf(IEEE_ADD((double)((float)(return_value$_rand$3 % 100)), 10.000000)))' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 393 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.008s
+Solving claim '!overflow(""+"", i, 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 393 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.008s
+Solving claim '!overflow(""+"", i, 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 393 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.007s
+Solving claim '!(bid_amount > bidder->balance)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 393 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.008s
+Solving claim '!(bid_amount <= item->highest_bid)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 393 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.008s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 393 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.007s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 393 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.008s
+Solving claim 'isinf(bidder->balance) || isinf(bid_amount) || !(isinf(IEEE_SUB(bidder->balance, bid_amount)))' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+
+VERIFICATION FAILED
+"
+23,gemma7b-14247,dataset/787/gemma7b-14247.c,results/787/patch/gemma7b-14247.patch,False,DIFF,not diff or not applicable
+24,gpt35-25307,dataset/787/gpt35-25307.c,results/787/patch/gpt35-25307.patch,True,DIFF,"ESBMC version 7.5.0 64-bit x86_64 linux
+Target: 64-bit little-endian x86_64-unknown-linux with esbmclibc
+Parsing dataset/787/gpt35-25307.c
+Converting
+Generating GOTO Program
+GOTO program creation time: 0.142s
+GOTO program processing time: 0.002s
+Starting Bounded Model Checking
+Not unwinding loop 12 iteration 1   file gpt35-25307.c line 25 column 5 function init_vertices
+Not unwinding loop 17 iteration 1   file gpt35-25307.c line 149 column 5 function main
+Not unwinding loop 13 iteration 1   file gpt35-25307.c line 93 column 5 function is_valid_color
+Not unwinding loop 14 iteration 1   file gpt35-25307.c line 105 column 9 function color_graph
+Not unwinding loop 15 iteration 1   file gpt35-25307.c line 104 column 5 function color_graph
+Not unwinding loop 16 iteration 1   file gpt35-25307.c line 122 column 5 function print_colors
+Symex completed in: 0.158s (397 assignments)
+Slicing time: 0.007s (removed 127 assignments)
+Generated 193 VCC(s), 170 remaining after simplification (270 assignments)
+No solver specified; defaulting to Boolector
+Slicing time: 0.007s (removed 127 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.011s
+Solving claim '!overflow(""+"", i, 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.007s (removed 127 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.008s
+Solving claim '(unsigned int)(vertices + (signed long int)i)->color == 3' with solver Boolector 3.2.3
+Runtime decision procedure: 0.005s
+Slicing time: 0.006s (removed 127 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.008s
+Solving claim '(unsigned int)(vertices + (signed long int)i)->color == 2' with solver Boolector 3.2.3
+Runtime decision procedure: 0.005s
+Slicing time: 0.007s (removed 127 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.009s
+Solving claim '(unsigned int)(vertices + (signed long int)i)->color == 1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.005s
+Slicing time: 0.007s (removed 127 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.008s
+Solving claim '(unsigned int)(vertices + (signed long int)i)->color == 0' with solver Boolector 3.2.3
+Runtime decision procedure: 0.005s
+Slicing time: 0.007s (removed 127 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.009s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.004s
+Slicing time: 0.007s (removed 127 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.009s
+Solving claim '!overflow(""+"", i, 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.007s (removed 127 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.009s
+Solving claim '!overflow(""+"", j, 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.007s (removed 127 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.008s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.006s
+Slicing time: 0.006s (removed 127 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.008s
+Solving claim '!overflow(""+"", i, 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.007s (removed 127 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.008s
+Solving claim '!overflow(""unary-"", 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.007s (removed 127 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.009s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.005s
+Slicing time: 0.007s (removed 127 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.009s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.005s
+Slicing time: 0.007s (removed 127 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.009s
+Solving claim '!overflow(""+"", i, 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.007s (removed 127 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.009s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.091s
+Slicing time: 0.008s (removed 127 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.009s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.089s
+Slicing time: 0.008s (removed 127 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.009s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 3.781s
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+WARNING: Fetching array elements inside tuples currently unimplemented, returning empty expression...
+
+[Counterexample]
+
+
+State 1 file gpt35-25307.c line 142 column 5 function main thread 0
+----------------------------------------------------
+  u = 0 (00000000 00000000 00000000 00000000)
+
+State 2 file gpt35-25307.c line 142 column 5 function main thread 0
+----------------------------------------------------
+  v = 0 (00000000 00000000 00000000 00000000)
+Enter the number of vertices: 
+
+State 4 file gpt35-25307.c line 144 column 5 function main thread 0
+----------------------------------------------------
+  num_vertices = 0 (00000000 00000000 00000000 00000000)
+
+State 5 file gpt35-25307.c line 145 column 5 function main thread 0
+----------------------------------------------------
+  vertices = { { .name=4, .anon_pad$1=8650756, .color=-4254968, .num_adj_vertices=-2147483648,
+    .adj_vertices=nil }, 
+    nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil }
+Enter the number of edges: 
+
+State 7 file gpt35-25307.c line 148 column 5 function main thread 0
+----------------------------------------------------
+  num_edges = 1073741824 (01000000 00000000 00000000 00000000)
+Enter the indices of edge 1: 
+
+State 9 file gpt35-25307.c line 151 column 9 function main thread 0
+----------------------------------------------------
+  u = -1693106057 (10011011 00010101 01000000 01110111)
+
+State 10 file gpt35-25307.c line 151 column 9 function main thread 0
+----------------------------------------------------
+  v = -1702745694 (10011010 10000010 00101001 10100010)
+
+State 11 file gpt35-25307.c line 87 column 30 function add_edge thread 0
+----------------------------------------------------
+  (vertices + (signed long int)u)->num_adj_vertices = { { .name=4, .anon_pad$1=8650756, .color=-4254968, .num_adj_vertices=-2147483648,
+    .adj_vertices=nil }, 
+    nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil }
+
+State 12 file gpt35-25307.c line 87 column 5 function add_edge thread 0
+----------------------------------------------------
+  (vertices + (signed long int)u)->adj_vertices[-992882697] = 2592221602 (10011010 10000010 00101001 10100010)
+
+State 13 file gpt35-25307.c line 87 column 5 function add_edge thread 0
+----------------------------------------------------
+  (vertices + (signed long int)u)->adj_vertices[-992882697] = 2592221602 (10011010 10000010 00101001 10100010)
+
+State 14 file gpt35-25307.c line 87 column 5 function add_edge thread 0
+----------------------------------------------------
+  (vertices + (signed long int)u)->adj_vertices[-992882697] = 2592221602 (10011010 10000010 00101001 10100010)
+
+State 15 file gpt35-25307.c line 87 column 5 function add_edge thread 0
+----------------------------------------------------
+  (vertices + (signed long int)u)->adj_vertices[-992882697] = 2592221602 (10011010 10000010 00101001 10100010)
+
+State 16 file gpt35-25307.c line 88 column 5 function add_edge thread 0
+----------------------------------------------------
+Violated property:
+  file gpt35-25307.c line 88 column 5 function add_edge
+  dereference failure: Oversized field offset
+
+Slicing time: 0.008s (removed 127 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.010s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.030s
+Slicing time: 0.008s (removed 127 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.009s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.018s
+Slicing time: 0.008s (removed 127 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.009s
+Solving claim '1' with solver Boolector 3.2.3
+ERROR: Timed out
+"
+25,gpt35-48884,dataset/787/gpt35-48884.c,results/787/patch/gpt35-48884.patch,False,NOT-DIFF,not diff or not applicable
+26,falcon180b-14057,dataset/787/falcon180b-14057.c,results/787/patch/falcon180b-14057.patch,False,DIFF,not diff or not applicable
+27,gemma7b-26983,dataset/787/gemma7b-26983.c,results/787/patch/gemma7b-26983.patch,True,DIFF,compilation failed
+28,gpt35-25058,dataset/787/gpt35-25058.c,results/787/patch/gpt35-25058.patch,False,DIFF,not diff or not applicable
+29,gemma7b-34762,dataset/787/gemma7b-34762.c,results/787/patch/gemma7b-34762.patch,False,DIFF,not diff or not applicable
+30,gemini_pro-20707,dataset/787/gemini_pro-20707.c,results/787/patch/gemini_pro-20707.patch,True,NOT-DIFF,"ESBMC version 7.5.0 64-bit x86_64 linux
+Target: 64-bit little-endian x86_64-unknown-linux with esbmclibc
+Parsing results/787/applied-patches/gemini_pro-20707.c
+Converting
+Generating GOTO Program
+GOTO program creation time: 0.151s
+GOTO program processing time: 0.003s
+Starting Bounded Model Checking
+Not unwinding loop 34 iteration 1   file gemini_pro-20707.c line 33 column 5 function initialize_game
+Symex completed in: 0.005s (34 assignments)
+Slicing time: 0.000s (removed 31 assignments)
+Generated 9 VCC(s), 2 remaining after simplification (3 assignments)
+No solver specified; defaulting to Boolector
+Slicing time: 0.000s (removed 31 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.000s
+Solving claim '!overflow(""+"", i, 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 31 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.000s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.002s
+
+[Counterexample]
+
+
+State 1 file gemini_pro-20707.c line 34 column 9 function initialize_game thread 0
+----------------------------------------------------
+Violated property:
+  file gemini_pro-20707.c line 34 column 9 function initialize_game
+  dereference failure: Oversized field offset
+
+
+VERIFICATION FAILED
+"
+31,llama2-13B_2121,dataset/787/llama2-13B_2121.c,results/787/patch/llama2-13B_2121.patch,False,NOT-DIFF,not diff or not applicable
+32,gpt35-41833,dataset/787/gpt35-41833.c,results/787/patch/gpt35-41833.patch,True,NOT-DIFF,"ESBMC version 7.5.0 64-bit x86_64 linux
+Target: 64-bit little-endian x86_64-unknown-linux with esbmclibc
+Parsing results/787/applied-patches/gpt35-41833.c
+Converting
+Generating GOTO Program
+GOTO program creation time: 0.162s
+GOTO program processing time: 0.003s
+Starting Bounded Model Checking
+WARNING: no body for function socket
+WARNING: no body for function perror
+WARNING: no body for function setsockopt
+WARNING: no body for function perror
+WARNING: no body for function inet_addr
+WARNING: no body for function inet_addr
+Not unwinding loop 34 iteration 1   file gpt35-41833.c line 62 column 5 function main
+Symex completed in: 0.003s (69 assignments)
+Slicing time: 0.000s (removed 51 assignments)
+Generated 10 VCC(s), 5 remaining after simplification (18 assignments)
+No solver specified; defaulting to Boolector
+Slicing time: 0.000s (removed 51 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.002s
+Solving claim '!overflow(""+"", i, 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 51 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.000s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.054s
+
+[Counterexample]
+
+
+State 3 file gpt35-41833.c line 32 column 5 function main thread 0
+----------------------------------------------------
+  sock_fd = 0 (00000000 00000000 00000000 00000000)
+
+State 4 file gpt35-41833.c line 63 column 9 function main thread 0
+----------------------------------------------------
+Violated property:
+  file gpt35-41833.c line 63 column 9 function main
+  dereference failure: Oversized field offset
+
+Slicing time: 0.000s (removed 51 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.002s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.005s
+Slicing time: 0.000s (removed 51 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.002s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 51 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.000s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.002s
+
+VERIFICATION FAILED
+"
+33,gemini_pro-36214,dataset/787/gemini_pro-36214.c,results/787/patch/gemini_pro-36214.patch,False,DIFF,not diff or not applicable
+34,gpt35-33841,dataset/787/gpt35-33841.c,results/787/patch/gpt35-33841.patch,True,DIFF,"ESBMC version 7.5.0 64-bit x86_64 linux
+Target: 64-bit little-endian x86_64-unknown-linux with esbmclibc
+Parsing dataset/787/gpt35-33841.c
+Converting
+Generating GOTO Program
+GOTO program creation time: 0.151s
+GOTO program processing time: 0.003s
+Starting Bounded Model Checking
+Not unwinding loop 34 iteration 1   file gpt35-33841.c line 26 column 5 function create_file_system
+Symex completed in: 0.008s (64 assignments)
+Slicing time: 0.000s (removed 59 assignments)
+Generated 15 VCC(s), 4 remaining after simplification (5 assignments)
+No solver specified; defaulting to Boolector
+Slicing time: 0.000s (removed 59 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.000s
+Solving claim '!overflow(""+"", i, 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 59 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.000s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+
+[Counterexample]
+
+
+State 1 file gpt35-33841.c line 27 column 9 function create_file_system thread 0
+----------------------------------------------------
+Violated property:
+  file gpt35-33841.c line 27 column 9 function create_file_system
+  dereference failure: Oversized field offset
+
+Slicing time: 0.000s (removed 59 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.000s
+Solving claim '!overflow(""/"", 1024 * 1024, 1024)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 59 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.000s
+Solving claim '!overflow(""*"", 1024, 1024)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+
+VERIFICATION FAILED
+"
+35,gemini_pro-21547,dataset/787/gemini_pro-21547.c,results/787/patch/gemini_pro-21547.patch,False,DIFF,not diff or not applicable
+36,gpt35-27263,dataset/787/gpt35-27263.c,results/787/patch/gpt35-27263.patch,True,DIFF,"ESBMC version 7.5.0 64-bit x86_64 linux
+Target: 64-bit little-endian x86_64-unknown-linux with esbmclibc
+Parsing dataset/787/gpt35-27263.c
+Converting
+Generating GOTO Program
+GOTO program creation time: 0.153s
+GOTO program processing time: 0.003s
+Starting Bounded Model Checking
+Not unwinding loop 34 iteration 1   file gpt35-27263.c line 43 column 5 function add_node
+Not unwinding loop 17 iteration 1   file string.c line 78 column 3 function strlen
+Not unwinding loop 34 iteration 1   file gpt35-27263.c line 43 column 5 function add_node
+Not unwinding loop 17 iteration 1   file string.c line 78 column 3 function strlen
+Not unwinding loop 34 iteration 1   file gpt35-27263.c line 43 column 5 function add_node
+Not unwinding loop 17 iteration 1   file string.c line 78 column 3 function strlen
+Not unwinding loop 35 iteration 1   file gpt35-27263.c line 75 column 5 function add_edge
+Not unwinding loop 35 iteration 1   file gpt35-27263.c line 75 column 5 function add_edge
+Not unwinding loop 35 iteration 1   file gpt35-27263.c line 75 column 5 function add_edge
+Not unwinding loop 37 iteration 1   file gpt35-27263.c line 123 column 5 function print_topology
+Not unwinding loop 38 iteration 1   file gpt35-27263.c line 130 column 5 function print_topology
+Not unwinding loop 39 iteration 1   file gpt35-27263.c line 139 column 9 function print_topology
+Not unwinding loop 40 iteration 1   file gpt35-27263.c line 137 column 5 function print_topology
+Unwinding recursion dfs iteration 1 (1 max)
+Not unwinding loop 41 iteration 1   file gpt35-27263.c line 157 column 9 function dfs
+Not unwinding loop 42 iteration 1   file gpt35-27263.c line 154 column 5 function dfs
+Not unwinding loop 43 iteration 1   file gpt35-27263.c line 188 column 13 function bfs
+Not unwinding loop 44 iteration 1   file gpt35-27263.c line 185 column 9 function bfs
+Not unwinding loop 45 iteration 1   file gpt35-27263.c line 181 column 5 function bfs
+Symex completed in: 0.082s (322 assignments)
+Slicing time: 0.002s (removed 163 assignments)
+Generated 182 VCC(s), 56 remaining after simplification (159 assignments)
+No solver specified; defaulting to Boolector
+Slicing time: 0.002s (removed 163 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.007s
+Solving claim '!overflow(""+"", i, 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 163 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '!overflow(""+"", j, 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 163 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '!overflow(""+"", rear, 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 163 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.007s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.004s
+Slicing time: 0.002s (removed 163 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.007s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.003s
+Slicing time: 0.002s (removed 163 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.003s
+Slicing time: 0.002s (removed 163 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.004s
+Slicing time: 0.002s (removed 163 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.003s
+Slicing time: 0.002s (removed 163 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.005s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.004s
+Slicing time: 0.002s (removed 163 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.003s
+Slicing time: 0.000s (removed 163 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.003s
+Slicing time: 0.002s (removed 163 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.003s
+Slicing time: 0.002s (removed 163 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.003s
+Slicing time: 0.002s (removed 163 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.004s
+Slicing time: 0.002s (removed 163 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.003s
+Slicing time: 0.002s (removed 163 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.005s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.004s
+Slicing time: 0.002s (removed 163 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '!(i < topology->nodes[(signed long int)curr_node].num_neighbors)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.003s
+Slicing time: 0.002s (removed 163 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '!(i < topology->nodes[(signed long int)curr_node].num_neighbors)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.003s
+Slicing time: 0.002s (removed 163 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.003s
+Slicing time: 0.002s (removed 163 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.005s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.003s
+Slicing time: 0.002s (removed 163 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '!overflow(""+"", front, 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 163 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '!overflow(""+"", rear, 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 163 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.003s
+Slicing time: 0.002s (removed 163 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '!overflow(""+"", i, 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 163 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '!overflow(""+"", j, 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 163 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.003s
+Slicing time: 0.002s (removed 163 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.004s
+Slicing time: 0.002s (removed 163 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '!overflow(""unary-"", 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 163 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '!overflow(""unary-"", 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 163 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '!overflow(""unary-"", 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 163 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '!overflow(""+"", i, 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 163 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '!overflow(""unary-"", 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 163 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '!overflow(""unary-"", 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 163 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '!overflow(""unary-"", 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 163 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '!overflow(""+"", i, 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 163 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '!overflow(""unary-"", 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 163 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '!overflow(""unary-"", 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 163 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '!overflow(""+"", i, 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 163 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '!overflow(""+"", i, 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 163 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.007s
+Solving claim '!overflow(""+"", i, 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 163 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '!overflow(""+"", i, 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 163 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '!overflow(""unary-"", 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 163 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '!overflow(""+"", i, 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 163 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.148s
+
+[Counterexample]
+
+
+State 1 file gpt35-27263.c line 202 column 5 function main thread 0
+----------------------------------------------------
+  topology = { .num_nodes=20, .num_edges=40, .nodes=nil, .edges=nil }
+
+State 2 file gpt35-27263.c line 35 column 5 function add_node thread 0
+----------------------------------------------------
+  num_nodes = topology.num_nodes
+The maximum number of nodes has already been reached!
+
+State 4 file gpt35-27263.c line 35 column 5 function add_node thread 0
+----------------------------------------------------
+  num_nodes = topology.num_nodes
+The maximum number of nodes has already been reached!
+
+State 6 file gpt35-27263.c line 35 column 5 function add_node thread 0
+----------------------------------------------------
+  num_nodes = topology.num_nodes
+The maximum number of nodes has already been reached!
+
+State 8 file gpt35-27263.c line 65 column 5 function add_edge thread 0
+----------------------------------------------------
+  num_nodes = topology.num_nodes
+
+State 9 file gpt35-27263.c line 66 column 5 function add_edge thread 0
+----------------------------------------------------
+  num_edges = topology.num_edges
+The maximum number of edges has already been reached!
+
+State 11 file gpt35-27263.c line 65 column 5 function add_edge thread 0
+----------------------------------------------------
+  num_nodes = topology.num_nodes
+
+State 12 file gpt35-27263.c line 66 column 5 function add_edge thread 0
+----------------------------------------------------
+  num_edges = topology.num_edges
+The maximum number of edges has already been reached!
+
+State 14 file gpt35-27263.c line 65 column 5 function add_edge thread 0
+----------------------------------------------------
+  num_nodes = topology.num_nodes
+
+State 15 file gpt35-27263.c line 66 column 5 function add_edge thread 0
+----------------------------------------------------
+  num_edges = topology.num_edges
+The maximum number of edges has already been reached!
+
+State 17 file gpt35-27263.c line 116 column 5 function print_topology thread 0
+----------------------------------------------------
+  num_nodes = topology.num_nodes
+
+State 18 file gpt35-27263.c line 117 column 5 function print_topology thread 0
+----------------------------------------------------
+  num_edges = topology.num_edges
+Network Topology:
+
+
+Nodes:
+
+
+State 21 file gpt35-27263.c line 124 column 9 function print_topology thread 0
+----------------------------------------------------
+Violated property:
+  file gpt35-27263.c line 124 column 9 function print_topology
+  dereference failure: Oversized field offset
+
+Slicing time: 0.002s (removed 163 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '!overflow(""+"", i, 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 163 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '!overflow(""+"", i, 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 163 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '!overflow(""+"", i, 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 163 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '!overflow(""+"", i, 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 163 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.003s
+Slicing time: 0.002s (removed 163 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.003s
+Slicing time: 0.000s (removed 163 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.003s
+Slicing time: 0.002s (removed 163 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.003s
+Slicing time: 0.000s (removed 163 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '!overflow(""+"", j, 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 163 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '!overflow(""+"", i, 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 163 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.003s
+Slicing time: 0.002s (removed 163 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.003s
+
+VERIFICATION FAILED
+"
+37,gpt35-6971,dataset/787/gpt35-6971.c,results/787/patch/gpt35-6971.patch,False,DIFF,not diff or not applicable
+38,gemma7b-5691,dataset/787/gemma7b-5691.c,results/787/patch/gemma7b-5691.patch,False,NOT-DIFF,not diff or not applicable
+39,gpt35-47711,dataset/787/gpt35-47711.c,results/787/patch/gpt35-47711.patch,True,DIFF,compilation failed
+40,gpt35-42622,dataset/787/gpt35-42622.c,results/787/patch/gpt35-42622.patch,False,DIFF,not diff or not applicable
+41,gemma7b-14423,dataset/787/gemma7b-14423.c,results/787/patch/gemma7b-14423.patch,False,NOT-DIFF,not diff or not applicable
+42,gemma7b-21480,dataset/787/gemma7b-21480.c,results/787/patch/gemma7b-21480.patch,True,DIFF,"ESBMC version 7.5.0 64-bit x86_64 linux
+Target: 64-bit little-endian x86_64-unknown-linux with esbmclibc
+Parsing dataset/787/gemma7b-21480.c
+dataset/787/gemma7b-21480.c:31:59: error: use of undeclared identifier 'SIZE_MAX'
+  size_t newBufferSize = (size_t)reader->lineNumber + 1 > SIZE_MAX / MAX_BUFFER_SIZE ? 0 : (reader->lineNumber + 1) * MAX_BUFFER_SIZE;
+                                                          ^
+ERROR: PARSING ERROR
+"
+43,gemma7b-14237,dataset/787/gemma7b-14237.c,results/787/patch/gemma7b-14237.patch,False,DIFF,not diff or not applicable
+44,gemini_pro-16893,dataset/787/gemini_pro-16893.c,results/787/patch/gemini_pro-16893.patch,True,NOT-DIFF,"ESBMC version 7.5.0 64-bit x86_64 linux
+Target: 64-bit little-endian x86_64-unknown-linux with esbmclibc
+Parsing results/787/applied-patches/gemini_pro-16893.c
+Converting
+Generating GOTO Program
+GOTO program creation time: 0.155s
+GOTO program processing time: 0.002s
+Starting Bounded Model Checking
+Not unwinding loop 13 iteration 1   file gemini_pro-16893.c line 35 column 5 function init_traffic_light_controller
+Symex completed in: 0.012s (92 assignments)
+Slicing time: 0.000s (removed 90 assignments)
+Generated 16 VCC(s), 1 remaining after simplification (2 assignments)
+No solver specified; defaulting to Boolector
+Slicing time: 0.000s (removed 90 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.000s
+Solving claim '!overflow(""+"", i, 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+BMC program time: 0.012s
+
+VERIFICATION SUCCESSFUL
+"
+45,gpt35-4002,dataset/787/gpt35-4002.c,results/787/patch/gpt35-4002.patch,False,DIFF,not diff or not applicable
+46,gemma7b-23126,dataset/787/gemma7b-23126.c,results/787/patch/gemma7b-23126.patch,True,DIFF,"ESBMC version 7.5.0 64-bit x86_64 linux
+Target: 64-bit little-endian x86_64-unknown-linux with esbmclibc
+Parsing dataset/787/gemma7b-23126.c
+Converting
+Generating GOTO Program
+GOTO program creation time: 0.144s
+GOTO program processing time: 0.002s
+Starting Bounded Model Checking
+Not unwinding loop 2 iteration 1   file io.c line 133 column 3 function fgets
+Not unwinding loop 17 iteration 1   file string.c line 78 column 3 function strlen
+Not unwinding loop 12 iteration 1   file string.c line 30 column 3 function strcpy
+Symex completed in: 1.164s (802 assignments)
+Slicing time: 0.003s (removed 529 assignments)
+Generated 177 VCC(s), 170 remaining after simplification (273 assignments)
+No solver specified; defaulting to Boolector
+Slicing time: 0.003s (removed 529 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.009s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 1.873s
+
+[Counterexample]
+
+
+State 1 file gemma7b-23126.c line 55 column 5 function main thread 0
+----------------------------------------------------
+  file = &dynamic_1_value
+
+State 2 file gemma7b-23126.c line 18 column 5 function csv_reader_init thread 0
+----------------------------------------------------
+  reader = ( struct CSVReader *)0
+
+State 3 file gemma7b-23126.c line 19 column 5 function csv_reader_init thread 0
+----------------------------------------------------
+  reader->buffer = (unsigned long int)0
+
+State 4 file gemma7b-23126.c line 19 column 5 function csv_reader_init thread 0
+----------------------------------------------------
+  reader->buffer = (unsigned long int)0
+
+State 5 file gemma7b-23126.c line 19 column 5 function csv_reader_init thread 0
+----------------------------------------------------
+  reader->buffer = (unsigned long int)0
+
+State 6 file gemma7b-23126.c line 19 column 5 function csv_reader_init thread 0
+----------------------------------------------------
+  reader->buffer = (unsigned long int)0
+
+State 7 file gemma7b-23126.c line 19 column 5 function csv_reader_init thread 0
+----------------------------------------------------
+  reader->buffer = (unsigned long int)0
+
+State 8 file gemma7b-23126.c line 19 column 5 function csv_reader_init thread 0
+----------------------------------------------------
+  reader->buffer = (unsigned long int)0
+
+State 9 file gemma7b-23126.c line 19 column 5 function csv_reader_init thread 0
+----------------------------------------------------
+  reader->buffer = (unsigned long int)0
+
+State 10 file gemma7b-23126.c line 19 column 5 function csv_reader_init thread 0
+----------------------------------------------------
+  reader->buffer = (unsigned long int)0
+
+State 11 file gemma7b-23126.c line 20 column 5 function csv_reader_init thread 0
+----------------------------------------------------
+  reader->size = 0 (00000000 00000000 00000000 00000000)
+
+State 12 file gemma7b-23126.c line 20 column 5 function csv_reader_init thread 0
+----------------------------------------------------
+  reader->size = 0 (00000000 00000000 00000000 00000000)
+
+State 13 file gemma7b-23126.c line 20 column 5 function csv_reader_init thread 0
+----------------------------------------------------
+  reader->size = 0 (00000000 00000000 00000000 00000000)
+
+State 14 file gemma7b-23126.c line 20 column 5 function csv_reader_init thread 0
+----------------------------------------------------
+  reader->size = 0 (00000000 00000000 00000000 00000000)
+
+State 15 file gemma7b-23126.c line 21 column 5 function csv_reader_init thread 0
+----------------------------------------------------
+  reader->current_row = 0 (00000000 00000000 00000000 00000000)
+
+State 16 file gemma7b-23126.c line 21 column 5 function csv_reader_init thread 0
+----------------------------------------------------
+  reader->current_row = 0 (00000000 00000000 00000000 00000000)
+
+State 17 file gemma7b-23126.c line 21 column 5 function csv_reader_init thread 0
+----------------------------------------------------
+  reader->current_row = 0 (00000000 00000000 00000000 00000000)
+
+State 18 file gemma7b-23126.c line 21 column 5 function csv_reader_init thread 0
+----------------------------------------------------
+  reader->current_row = 0 (00000000 00000000 00000000 00000000)
+
+State 19 file gemma7b-23126.c line 22 column 5 function csv_reader_init thread 0
+----------------------------------------------------
+  reader->file = (unsigned long int)(&dynamic_1_value)
+
+State 20 file gemma7b-23126.c line 22 column 5 function csv_reader_init thread 0
+----------------------------------------------------
+  reader->file = (unsigned long int)(&dynamic_1_value)
+
+State 21 file gemma7b-23126.c line 22 column 5 function csv_reader_init thread 0
+----------------------------------------------------
+  reader->file = (unsigned long int)(&dynamic_1_value)
+
+State 22 file gemma7b-23126.c line 22 column 5 function csv_reader_init thread 0
+----------------------------------------------------
+  reader->file = (unsigned long int)(&dynamic_1_value)
+
+State 23 file gemma7b-23126.c line 22 column 5 function csv_reader_init thread 0
+----------------------------------------------------
+  reader->file = (unsigned long int)(&dynamic_1_value)
+
+State 24 file gemma7b-23126.c line 22 column 5 function csv_reader_init thread 0
+----------------------------------------------------
+  reader->file = (unsigned long int)(&dynamic_1_value)
+
+State 25 file gemma7b-23126.c line 22 column 5 function csv_reader_init thread 0
+----------------------------------------------------
+  reader->file = (unsigned long int)(&dynamic_1_value)
+
+State 26 file gemma7b-23126.c line 22 column 5 function csv_reader_init thread 0
+----------------------------------------------------
+  reader->file = (unsigned long int)(&dynamic_1_value)
+
+State 27 file gemma7b-23126.c line 56 column 5 function main thread 0
+----------------------------------------------------
+  reader = 0
+
+State 28 file gemma7b-23126.c line 29 column 5 function csv_reader_read_next_row thread 0
+----------------------------------------------------
+  line = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
+
+State 29 file gemma7b-23126.c line 38 column 9 function csv_reader_read_next_row thread 0
+----------------------------------------------------
+  reader->buffer = (unsigned long int)((signed char * *)((void *)(&dynamic_1_value)))
+
+State 30 file gemma7b-23126.c line 38 column 9 function csv_reader_read_next_row thread 0
+----------------------------------------------------
+  reader->buffer = (unsigned long int)((signed char * *)((void *)(&dynamic_1_value)))
+
+State 31 file gemma7b-23126.c line 38 column 9 function csv_reader_read_next_row thread 0
+----------------------------------------------------
+  reader->buffer = (unsigned long int)((signed char * *)((void *)(&dynamic_1_value)))
+
+State 32 file gemma7b-23126.c line 38 column 9 function csv_reader_read_next_row thread 0
+----------------------------------------------------
+  reader->buffer = (unsigned long int)((signed char * *)((void *)(&dynamic_1_value)))
+
+State 33 file gemma7b-23126.c line 38 column 9 function csv_reader_read_next_row thread 0
+----------------------------------------------------
+  reader->buffer = (unsigned long int)((signed char * *)((void *)(&dynamic_1_value)))
+
+State 34 file gemma7b-23126.c line 38 column 9 function csv_reader_read_next_row thread 0
+----------------------------------------------------
+  reader->buffer = (unsigned long int)((signed char * *)((void *)(&dynamic_1_value)))
+
+State 35 file gemma7b-23126.c line 38 column 9 function csv_reader_read_next_row thread 0
+----------------------------------------------------
+  reader->buffer = (unsigned long int)((signed char * *)((void *)(&dynamic_1_value)))
+
+State 36 file gemma7b-23126.c line 38 column 9 function csv_reader_read_next_row thread 0
+----------------------------------------------------
+  reader->buffer = (unsigned long int)((signed char * *)((void *)(&dynamic_1_value)))
+
+State 37 file gemma7b-23126.c line 39 column 9 function csv_reader_read_next_row thread 0
+----------------------------------------------------
+  reader->size = 1 (00000000 00000000 00000000 00000001)
+
+State 38 file gemma7b-23126.c line 39 column 9 function csv_reader_read_next_row thread 0
+----------------------------------------------------
+  reader->size = 1 (00000000 00000000 00000000 00000001)
+
+State 39 file gemma7b-23126.c line 39 column 9 function csv_reader_read_next_row thread 0
+----------------------------------------------------
+  reader->size = 1 (00000000 00000000 00000000 00000001)
+
+State 40 file gemma7b-23126.c line 39 column 9 function csv_reader_read_next_row thread 0
+----------------------------------------------------
+  reader->size = 1 (00000000 00000000 00000000 00000001)
+
+State 41 file gemma7b-23126.c line 43 column 20 function csv_reader_read_next_row thread 0
+----------------------------------------------------
+  reader->current_row = 1 (00000000 00000000 00000000 00000001)
+
+State 42 file gemma7b-23126.c line 43 column 20 function csv_reader_read_next_row thread 0
+----------------------------------------------------
+  reader->current_row = 1 (00000000 00000000 00000000 00000001)
+
+State 43 file gemma7b-23126.c line 43 column 20 function csv_reader_read_next_row thread 0
+----------------------------------------------------
+  reader->current_row = 1 (00000000 00000000 00000000 00000001)
+
+State 44 file gemma7b-23126.c line 43 column 20 function csv_reader_read_next_row thread 0
+----------------------------------------------------
+  reader->current_row = 1 (00000000 00000000 00000000 00000001)
+
+
+
+State 46 file gemma7b-23126.c line 68 column 1 function main thread 0
+----------------------------------------------------
+Violated property:
+  file gemma7b-23126.c line 68 column 1 function main
+  dereference failure: forgotten memory: dynamic_9_array
+
+Slicing time: 0.003s (removed 529 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.007s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 1.926s
+Slicing time: 0.003s (removed 529 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.009s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 1.924s
+Slicing time: 0.003s (removed 529 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.008s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.011s
+Slicing time: 0.003s (removed 529 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.008s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.010s
+Slicing time: 0.003s (removed 529 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.008s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.010s
+Slicing time: 0.003s (removed 529 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.007s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.011s
+Slicing time: 0.002s (removed 529 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.007s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 1.887s
+Slicing time: 0.003s (removed 529 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.008s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.010s
+Slicing time: 0.003s (removed 529 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.007s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.010s
+Slicing time: 0.003s (removed 529 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.008s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.005s
+Slicing time: 0.003s (removed 529 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.008s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.005s
+Slicing time: 0.003s (removed 529 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.008s
+Solving claim '1' with solver Boolector 3.2.3
+ERROR: Timed out
+"
+47,falcon180b-11955,dataset/787/falcon180b-11955.c,results/787/patch/falcon180b-11955.patch,True,NOT-DIFF,"ESBMC version 7.5.0 64-bit x86_64 linux
+Target: 64-bit little-endian x86_64-unknown-linux with esbmclibc
+Parsing results/787/applied-patches/falcon180b-11955.c
+Converting
+Generating GOTO Program
+GOTO program creation time: 0.150s
+GOTO program processing time: 0.003s
+Starting Bounded Model Checking
+WARNING: no body for function perror
+Not unwinding loop 34 iteration 1   file falcon180b-11955.c line 40 column 9 function create_table
+Symex completed in: 0.002s (38 assignments)
+Slicing time: 0.000s (removed 26 assignments)
+Generated 2 VCC(s), 2 remaining after simplification (12 assignments)
+No solver specified; defaulting to Boolector
+Slicing time: 0.000s (removed 26 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.002s
+Solving claim '!overflow(""+"", j, 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 26 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.002s
+Solving claim '0' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+BMC program time: 0.004s
+
+VERIFICATION SUCCESSFUL
+"
+48,gemma7b-16958,dataset/787/gemma7b-16958.c,results/787/patch/gemma7b-16958.patch,False,DIFF,not diff or not applicable
+49,codellama_13b-8362,dataset/787/codellama_13b-8362.c,results/787/patch/codellama_13b-8362.patch,False,DIFF,not diff or not applicable
+50,gpt35-30040,dataset/787/gpt35-30040.c,results/787/patch/gpt35-30040.patch,True,DIFF,"ESBMC version 7.5.0 64-bit x86_64 linux
+Target: 64-bit little-endian x86_64-unknown-linux with esbmclibc
+Parsing dataset/787/gpt35-30040.c
+dataset/787/gpt35-30040.c:43:9: warning: implicitly declaring library function 'strncpy' with type 'char *(char *, const char *, unsigned long)' [-Wimplicit-function-declaration]
+        strncpy(e->name, name, sizeof(e->name) - 1);
+        ^
+dataset/787/gpt35-30040.c:43:9: note: include the header <string.h> or explicitly provide a declaration for 'strncpy'
+Converting
+Generating GOTO Program
+GOTO program creation time: 0.137s
+GOTO program processing time: 0.003s
+Starting Bounded Model Checking
+Not unwinding loop 12 iteration 1   file gpt35-30040.c line 31 column 9 function initialize_database
+Symex completed in: 0.013s (71 assignments)
+Slicing time: 0.000s (removed 68 assignments)
+Generated 21 VCC(s), 2 remaining after simplification (3 assignments)
+No solver specified; defaulting to Boolector
+Slicing time: 0.000s (removed 68 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.000s
+Solving claim '!overflow(""+"", j, 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 68 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.000s
+Solving claim '!overflow(""+"", 65, i)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+BMC program time: 0.014s
+
+VERIFICATION SUCCESSFUL
+"
+51,gpt35-31261,dataset/787/gpt35-31261.c,results/787/patch/gpt35-31261.patch,False,DIFF,not diff or not applicable
+52,gpt35-11289,dataset/787/gpt35-11289.c,results/787/patch/gpt35-11289.patch,False,DIFF,not diff or not applicable
+53,gemini_pro-14062,dataset/787/gemini_pro-14062.c,results/787/patch/gemini_pro-14062.patch,False,DIFF,not diff or not applicable
+54,gpt35-22526,dataset/787/gpt35-22526.c,results/787/patch/gpt35-22526.patch,False,NOT-DIFF,not diff or not applicable
+55,gpt35-40226,dataset/787/gpt35-40226.c,results/787/patch/gpt35-40226.patch,False,DIFF,not diff or not applicable
+56,gemini_pro-18225,dataset/787/gemini_pro-18225.c,results/787/patch/gemini_pro-18225.patch,True,DIFF,compilation failed
+57,codellama_13b-4549,dataset/787/codellama_13b-4549.c,results/787/patch/codellama_13b-4549.patch,True,NOT-DIFF,"ESBMC version 7.5.0 64-bit x86_64 linux
+Target: 64-bit little-endian x86_64-unknown-linux with esbmclibc
+Parsing results/787/applied-patches/codellama_13b-4549.c
+results/787/applied-patches/codellama_13b-4549.c:69:22: warning: array index 5 is past the end of the array (which contains 5 elements) [-Warray-bounds]
+        if (i < 5 && components[5].is_on) {  // Validation of index
+                     ^          ~
+results/787/applied-patches/codellama_13b-4549.c:53:5: note: array 'components' declared here
+    SmartComponent components[5] = {
+    ^
+Converting
+Generating GOTO Program
+GOTO program creation time: 0.154s
+GOTO program processing time: 0.003s
+Starting Bounded Model Checking
+WARNING: no body for function sleep
+Not unwinding loop 35 iteration 1   file codellama_13b-4549.c line 62 column 5 function simulate_smart_home_system
+Symex completed in: 0.028s (191 assignments)
+Slicing time: 0.002s (removed 99 assignments)
+Generated 74 VCC(s), 54 remaining after simplification (92 assignments)
+No solver specified; defaulting to Boolector
+Slicing time: 0.002s (removed 99 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '!overflow(""+"", i, 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 99 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 99 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 99 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 99 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 99 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.007s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 99 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.002s
+Slicing time: 0.002s (removed 99 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 99 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.002s
+Slicing time: 0.000s (removed 99 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 99 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 99 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 99 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 99 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 99 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.002s
+Slicing time: 0.002s (removed 99 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 99 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.002s
+Slicing time: 0.000s (removed 99 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 99 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 99 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 99 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 99 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 99 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 99 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 99 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 99 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.007s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.666s
+
+[Counterexample]
+
+
+State 1 file codellama_13b-4549.c line 37 column 5 function turn_component_on_off thread 0
+----------------------------------------------------
+  component->is_on = 0 (00000000 00000000 00000000 00000000)
+Component  is now off
+
+
+State 3 file codellama_13b-4549.c line 32 column 5 function turn_device_on_off thread 0
+----------------------------------------------------
+Violated property:
+  file codellama_13b-4549.c line 32 column 5 function turn_device_on_off
+  dereference failure: Oversized field offset
+
+Slicing time: 0.002s (removed 99 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.608s
+
+[Counterexample]
+
+
+State 1 file codellama_13b-4549.c line 37 column 5 function turn_component_on_off thread 0
+----------------------------------------------------
+  component->is_on = 0 (00000000 00000000 00000000 00000000)
+Component  is now off
+
+
+State 3 file codellama_13b-4549.c line 31 column 5 function turn_device_on_off thread 0
+----------------------------------------------------
+Violated property:
+  file codellama_13b-4549.c line 31 column 5 function turn_device_on_off
+  dereference failure: array bounds violated
+
+Slicing time: 0.000s (removed 99 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.755s
+
+[Counterexample]
+
+
+State 1 file codellama_13b-4549.c line 37 column 5 function turn_component_on_off thread 0
+----------------------------------------------------
+  component->is_on = 0 (00000000 00000000 00000000 00000000)
+Component  is now off
+
+
+State 3 file codellama_13b-4549.c line 40 column 9 function turn_component_on_off thread 0
+----------------------------------------------------
+Violated property:
+  file codellama_13b-4549.c line 40 column 9 function turn_component_on_off
+  dereference failure: array bounds violated
+
+Slicing time: 0.000s (removed 99 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '!(component->device != ( struct __anon_typedef_SmartDevice_at_codellama_13b-4549_c__10_9 *)0)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.759s
+
+[Counterexample]
+
+
+State 1 file codellama_13b-4549.c line 37 column 5 function turn_component_on_off thread 0
+----------------------------------------------------
+  component->is_on = 0 (00000000 00000000 00000000 00000000)
+Component  is now off
+
+
+State 3 file codellama_13b-4549.c line 39 column 5 function turn_component_on_off thread 0
+----------------------------------------------------
+Violated property:
+  file codellama_13b-4549.c line 39 column 5 function turn_component_on_off
+  dereference failure: array bounds violated
+
+Slicing time: 0.002s (removed 99 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.007s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.746s
+
+[Counterexample]
+
+
+State 1 file codellama_13b-4549.c line 37 column 5 function turn_component_on_off thread 0
+----------------------------------------------------
+  component->is_on = 0 (00000000 00000000 00000000 00000000)
+
+State 2 file codellama_13b-4549.c line 38 column 5 function turn_component_on_off thread 0
+----------------------------------------------------
+Violated property:
+  file codellama_13b-4549.c line 38 column 5 function turn_component_on_off
+  dereference failure: array bounds violated
+
+Slicing time: 0.000s (removed 99 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.747s
+
+[Counterexample]
+
+
+State 1 file codellama_13b-4549.c line 37 column 5 function turn_component_on_off thread 0
+----------------------------------------------------
+Violated property:
+  file codellama_13b-4549.c line 37 column 5 function turn_component_on_off
+  dereference failure: array bounds violated
+
+Slicing time: 0.002s (removed 99 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.006s
+Solving claim 'i < 5 => 0' with solver Boolector 3.2.3
+Runtime decision procedure: 0.598s
+
+[Counterexample]
+
+
+State 1 file codellama_13b-4549.c line 69 column 9 function simulate_smart_home_system thread 0
+----------------------------------------------------
+Violated property:
+  file codellama_13b-4549.c line 69 column 9 function simulate_smart_home_system
+  array bounds violated: array `components' upper bound
+  i < 5 => 0
+
+
+VERIFICATION FAILED
+"
+58,gemma7b-4471,dataset/787/gemma7b-4471.c,results/787/patch/gemma7b-4471.patch,False,DIFF,not diff or not applicable
+59,gemini_pro-12710,dataset/787/gemini_pro-12710.c,results/787/patch/gemini_pro-12710.patch,False,DIFF,not diff or not applicable
+60,gemini_pro-17786,dataset/787/gemini_pro-17786.c,results/787/patch/gemini_pro-17786.patch,False,NOT-DIFF,not diff or not applicable
+61,gemini_pro-12630,dataset/787/gemini_pro-12630.c,results/787/patch/gemini_pro-12630.patch,True,DIFF,"ESBMC version 7.5.0 64-bit x86_64 linux
+Target: 64-bit little-endian x86_64-unknown-linux with esbmclibc
+Parsing dataset/787/gemini_pro-12630.c
+dataset/787/gemini_pro-12630.c:96:88: warning: incompatible integer to pointer conversion passing 'unsigned long' to parameter of type 'socklen_t *' (aka 'unsigned int *') [-Wint-conversion]
+  if (recvfrom(sockfd, packet, sizeof(struct icmp_packet), 0, (struct sockaddr *)addr, sizeof(struct sockaddr_in)) < 0) {
+                                                                                       ^~~~~~~~~~~~~~~~~~~~~~~~~~
+/usr/include/x86_64-linux-gnu/sys/socket.h:165:27: note: passing argument to parameter '__addr_len' here
+                         socklen_t *__restrict __addr_len);
+                                               ^
+dataset/787/gemini_pro-12630.c:110:84: warning: format specifies type 'int' but the argument has type 'unsigned long' [-Wformat]
+  printf(""Ping %s (%s): bytes=%d time=%.3fms\n"", host_ip_address, host_ip_address, sizeof(struct icmp_packet), time);
+                              ~~                                                   ^~~~~~~~~~~~~~~~~~~~~~~~~~
+                              %lu
+dataset/787/gemini_pro-12630.c:159:3: warning: implicit declaration of function 'gettimeofday' is invalid in C99 [-Wimplicit-function-declaration]
+  gettimeofday(&start_time, NULL);
+  ^
+Converting
+Generating GOTO Program
+GOTO program creation time: 0.172s
+GOTO program processing time: 0.003s
+Starting Bounded Model Checking
+WARNING: no body for function socket
+WARNING: no body for function perror
+WARNING: no body for function setsockopt
+WARNING: no body for function perror
+WARNING: no body for function gethostbyname
+WARNING: no body for function perror
+Not unwinding loop 35 iteration 1   file gemini_pro-12630.c line 59 column 3 function calculate_checksum
+Symex completed in: 0.003s (74 assignments)
+Slicing time: 0.002s (removed 45 assignments)
+Generated 18 VCC(s), 7 remaining after simplification (29 assignments)
+No solver specified; defaulting to Boolector
+Slicing time: 0.000s (removed 45 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.002s
+Solving claim '!overflow(""+"", i, 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 45 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.002s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.044s
+
+[Counterexample]
+
+
+State 3 file gemini_pro-12630.c line 122 column 3 function main thread 0
+----------------------------------------------------
+  sockfd = 0 (00000000 00000000 00000000 00000000)
+
+State 4 file gemini_pro-12630.c line 136 column 3 function main thread 0
+----------------------------------------------------
+  host = 0
+
+State 5 file gemini_pro-12630.c line 60 column 5 function calculate_checksum thread 0
+----------------------------------------------------
+Violated property:
+  file gemini_pro-12630.c line 60 column 5 function calculate_checksum
+  dereference failure: Oversized field offset
+
+Slicing time: 0.000s (removed 45 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.000s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.027s
+
+[Counterexample]
+
+
+State 3 file gemini_pro-12630.c line 122 column 3 function main thread 0
+----------------------------------------------------
+  sockfd = 0 (00000000 00000000 00000000 00000000)
+
+State 4 file gemini_pro-12630.c line 136 column 3 function main thread 0
+----------------------------------------------------
+  host = 0
+
+State 5 file gemini_pro-12630.c line 148 column 3 function main thread 0
+----------------------------------------------------
+Violated property:
+  file gemini_pro-12630.c line 148 column 3 function main
+  dereference failure: invalid pointer
+
+Slicing time: 0.000s (removed 45 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.002s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.005s
+Slicing time: 0.000s (removed 45 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.002s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.002s
+
+VERIFICATION FAILED
+"
+62,gpt35-14038,dataset/787/gpt35-14038.c,results/787/patch/gpt35-14038.patch,True,DIFF,"ESBMC version 7.5.0 64-bit x86_64 linux
+Target: 64-bit little-endian x86_64-unknown-linux with esbmclibc
+Parsing dataset/787/gpt35-14038.c
+dataset/787/gpt35-14038.c:51:12: error: function definition is not allowed here
+int main() {
+           ^
+dataset/787/gpt35-14038.c:118:2: error: expected '}'
+}
+ ^
+dataset/787/gpt35-14038.c:34:57: note: to match this '{'
+void load_baggage(Baggage *baggage, Terminal *terminal) {
+                                                        ^
+ERROR: PARSING ERROR
+"
+63,gemma7b-29493,dataset/787/gemma7b-29493.c,results/787/patch/gemma7b-29493.patch,False,NOT-DIFF,not diff or not applicable
+64,gemma7b-10221,dataset/787/gemma7b-10221.c,results/787/patch/gemma7b-10221.patch,False,DIFF,not diff or not applicable
+65,gpt35-67438,dataset/787/gpt35-67438.c,results/787/patch/gpt35-67438.patch,True,DIFF,"ESBMC version 7.5.0 64-bit x86_64 linux
+Target: 64-bit little-endian x86_64-unknown-linux with esbmclibc
+Parsing dataset/787/gpt35-67438.c
+Converting
+Generating GOTO Program
+GOTO program creation time: 0.142s
+GOTO program processing time: 0.003s
+Starting Bounded Model Checking
+Not unwinding loop 12 iteration 1   file gpt35-67438.c line 32 column 13 function evaluate
+Not unwinding loop 14 iteration 1   file gpt35-67438.c line 23 column 5 function evaluate
+Not unwinding loop 15 iteration 1   file gpt35-67438.c line 53 column 5 function evaluate
+Symex completed in: 0.061s (148 assignments)
+Slicing time: 0.000s (removed 70 assignments)
+Generated 108 VCC(s), 44 remaining after simplification (78 assignments)
+No solver specified; defaulting to Boolector
+Slicing time: 0.000s (removed 70 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.004s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 70 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.004s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 70 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.003s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 70 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.004s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 70 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.003s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 70 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.003s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 70 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.004s
+Solving claim '!overflow(""-"", c->num_gates, 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 70 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.003s
+Solving claim '!overflow(""+"", i, 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 70 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.004s
+Solving claim '!overflow(""+"", i, 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 70 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.004s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 70 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.003s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 70 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.004s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 70 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.004s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 70 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.003s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 70 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.004s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 70 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.004s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 70 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.003s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 70 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.004s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 70 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.004s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 70 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.004s
+Solving claim '!(in[0] == -1) => !overflow(""unary-"", 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 70 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.003s
+Solving claim '!overflow(""unary-"", 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 70 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.003s
+Solving claim '!overflow(""+"", k, 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 70 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.004s
+Solving claim '!overflow(""unary-"", 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 70 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.003s
+Solving claim '!overflow(""unary-"", 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 70 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.004s
+Solving claim '!overflow(""unary-"", 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 70 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.003s
+Solving claim '!overflow(""unary-"", 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 70 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.003s
+Solving claim '!overflow(""unary-"", 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 70 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.004s
+Solving claim '!overflow(""unary-"", 1)' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 70 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.003s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 70 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.004s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 70 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.004s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 70 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.003s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 70 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.004s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 70 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.003s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 70 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.003s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 70 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.004s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 70 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.003s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 70 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.003s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 70 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.004s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 70 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.003s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 70 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.003s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.002s (removed 70 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.004s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 70 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.003s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+Slicing time: 0.000s (removed 70 assignments)
+No solver specified; defaulting to Boolector
+Encoding remaining VCC(s) using bit-vector/floating-point arithmetic
+Encoding to solver time: 0.004s
+Solving claim '1' with solver Boolector 3.2.3
+Runtime decision procedure: 0.000s
+BMC program time: 0.222s
+
+VERIFICATION SUCCESSFUL
+"
+66,gpt35-38507,dataset/787/gpt35-38507.c,results/787/patch/gpt35-38507.patch,False,DIFF,not diff or not applicable
+67,gpt35-57862,dataset/787/gpt35-57862.c,results/787/patch/gpt35-57862.patch,False,NOT-DIFF,not diff or not applicable

@@ -1,0 +1,32 @@
+
+vuln-fix: CWE-415: Double-Free in falcon180b-50564 (severity: High)
+what: The vulnerable code contains a potential double-free issue in the `handle_client` function. Specifically, when the socket associated with a client is closed due to a disconnection (bytes_received <= 0), the code reduces `num_clients` and sets `client_sockets[num_clients - 1] = -1`, which can result in multiple clients sharing the same array index leading to double-free when the system tries to close those sockets again.
+where: The vulnerability is located in the `handle_client` function in falcon180b-50564.
+why: If not resolved, this vulnerability can lead to double-free errors, which may cause the program to crash, resulting in denial-of-service (DoS). Additionally, it can potentially lead to security breaches if attackers exploit this to execute arbitrary code.
+how: An attacker can exploit this vulnerability by causing multiple clients to connect and disconnect in a way that triggers the double-free condition. For instance, if a client disconnects and another client connection is handled, they might end up sharing the same index in the `client_sockets` array, leading to the socket being closed multiple times.
+code-sources: User inputs enter the application via the `recv` function call, which reads data from the socket into the buffer.
+code-sinks: Actions performed using user inputs include the `send` function call, which sends data over the network.
+suggested-fix: 
+```diff
+diff --git a/falcon180b-50564 b/falcon180b-50564
+index d4c3ef9..5f2df8b 100644
+--- a/falcon180b-50564
++++ b/falcon180b-50564
+@@ -13,6 +13,7 @@
+         if (bytes_received <= 0) {
+             close(client_socket);
+             client_sockets[num_clients - 1] = -1;
++            // Find and remove the client socket correctly
++            for (int i = 0; i < num_clients; ++i) {
++                if (client_sockets[i] == client_socket) {
++                    client_sockets[i] = client_sockets[num_clients - 1];
++                    client_sockets[num_clients - 1] = -1;
++                    break;
++                }
++            }
+             num_clients--;
+             break;
+         }
+```
+explanation-suggested-fix: The suggested code diff resolves the vulnerability by correctly removing the client socket from the `client_sockets` array. The fix involves finding the index of the current socket in the array and swapping it with the last active client socket before reducing the count of current clients. This prevents the situation where multiple array indices might reference the same socket, leading to double-free issues.
+method: UNKNOWN

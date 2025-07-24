@@ -1,0 +1,38 @@
+
+    vuln-fix: Race condition (CWE-362) in gemini_pro-28035 (severity: High)
+    what: The code creates multiple threads to simulate traffic lights; however, it passes the address of the loop variable `i` to each thread. This approach introduces a race condition because all threads will reference the same variable, causing undefined behavior as the loop variable `i` changes.
+    where: Line numbers in file gemini_pro-28035:
+    ```c
+    pthread_create(&threads[i], NULL, traffic_light, (void *)&i);
+    ```
+    why: If not resolved, this race condition can cause the threads to receive incorrect indices for their respective traffic lights, leading to incorrect state transitions and ultimately unsafe traffic light operations.
+    how: An attacker could exploit this vulnerability by manipulating thread timing, potentially causing incorrect light states and leading to traffic accidents.
+    code-sources: The entry point for user input is not directly applicable here.
+    code-sinks: The vulnerable action is the creation of threads using the address of a loop variable passed to pthread_create.
+    suggested-fix: 
+    ```diff
+    --- gemini_pro-28035.c   2023-10-03 
+    +++ gemini_pro-28035.c   2023-10-03 
+    @@ -52,7 +52,10 @@
+ 
+     int main() {
+         // Initialize the traffic light states
+         for (int i = 0; i < NUM_LIGHTS; i++) {
+             light_states[i] = RED;
+         }
+
+         // Create the traffic light threads
+         +    int thread_args[NUM_LIGHTS];
+         +    for (int i = 0; i < NUM_LIGHTS; i++) {
+         +        thread_args[i] = i;
+             pthread_create(&threads[i], NULL, traffic_light, (void *)&thread_args[i]);
+         }
+
+         // Join the traffic light threads
+         for (int i = 0; i < NUM_LIGHTS; i++) {
+             pthread_join(threads[i], NULL);
+         }
+     }
+    ```
+    explanation-suggested-fix: By using an array `thread_args` to store the traffic light indices and passing the array elements to `pthread_create` instead of the address of the loop variable `i`, each thread receives its unique traffic light index, eliminating the race condition.
+    method: UNKNOWN

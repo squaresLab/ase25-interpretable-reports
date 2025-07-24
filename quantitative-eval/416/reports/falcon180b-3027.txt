@@ -1,0 +1,49 @@
+
+vuln-fix: Buffer Overflow (CWE-120) in falcon180b-3027 (severity: High)
+what: The code is susceptible to a buffer overflow due to the lack of bounds checking in the function `broadcast`, where the `send` function uses `strlen(message)` without ensuring the size does not exceed the buffer limits.
+where: `broadcast` function in falcon180b-3027
+why: Not resolving this weakness could allow an attacker to exploit the buffer overflow, potentially overwriting memory and causing the application to crash or execute arbitrary code.
+how: An attacker can exploit this vulnerability by sending a message longer than the buffer capacity to manipulate the memory layout, leading to arbitrary code execution.
+code-sources: `recv(sock, buffer, BUFFER_SIZE, 0)` in `handle_client` function
+code-sinks: `send(clients[i][0], message, strlen(message), 0)` in `broadcast` function
+suggested-fix: 
+```
+diff --git a/falcon180b-3027 b/falcon180b-3027
+index e69de29..4e237ea 100644
+--- a/falcon180b-3027
++++ b/falcon180b-3027
+@@ -10,6 +10,7 @@
+ #define PORT 8080
+ #define MAX_CLIENTS 10
+ #define BUFFER_SIZE 1024
++#define MAX_MESSAGE_SIZE 1024  
+
+ int clients[MAX_CLIENTS][2];
+ int num_clients = 0;
+@@ -23,7 +24,7 @@ void *handle_client(void *client_socket) {
+     while (1) {
+         memset(buffer, 0, BUFFER_SIZE);
+         int bytes_received = recv(sock, buffer, BUFFER_SIZE, 0);
+-        
++        
+         if (bytes_received <= 0) {
+             break;
+         }
+@@ -35,10 +36,19 @@ void broadcast(int sender_socket, char *message) {
+     for (int i = 0; i < num_clients; i++) {
+         if (clients[i][0] != sender_socket) {
+-            send(clients[i][0], message, strlen(message), 0);
++            if (strlen(message) < MAX_MESSAGE_SIZE) {
++                send(clients[i][0], message, strlen(message), 0);
++            } else {
++                char truncated_message[MAX_MESSAGE_SIZE];
++                strncpy(truncated_message, message, MAX_MESSAGE_SIZE - 1);
++                truncated_message[MAX_MESSAGE_SIZE - 1] = '\0';
++                send(clients[i][0], truncated_message, MAX_MESSAGE_SIZE - 1, 0);
++            }
+         }
+     }
+ }
+```
+explanation-suggested-fix: The code diff introduces a length check to ensure that the message size does not exceed `MAX_MESSAGE_SIZE` before sending. If the message is too long, it truncates the message to avoid overflowing buffers, thus preventing memory corruption and potential malicious exploitation.
+method: UNKNOWN

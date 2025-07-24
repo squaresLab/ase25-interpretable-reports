@@ -1,0 +1,55 @@
+ 
+
+--- gemini_pro-33682.c    2023-10-11 12:00:00.000000000 +0000
++++ gemini_pro-33682_fixed.c    2023-10-11 12:30:00.000000000 +0000
+@@ -121,14 +121,13 @@
+
+     // Handle the user's choice
+     switch (choice) {
+-        case 1:
++        case 1: {
+             // Create a new email
+             email = create_email(NULL, NULL, NULL, NULL);
+-            printf("Enter the sender: ");
++            printf("Enter the sender (max 99 characters): ");
+             fscanf(stdin, "%99s", email->sender);
+-            printf("Enter the recipient: ");
+-            scanf("%99s", email->recipient);
+-            printf("Enter the subject: ");
+-            scanf("%99s", email->subject);
++            printf("Enter the recipient (max 99 characters): ");
++            fscanf(stdin, "%99s", email->recipient);
++            printf("Enter the subject (max 99 characters): ");
++            fscanf(stdin, "%99s", email->subject);
+             printf("Enter the body (max 999 characters): ");
+             fscanf(stdin, "%999s", email->body);
+             break;
++        }
+         case 2:
+             // Send an email
+             send_email(email);
+
+@@ -137,19 +136,19 @@
+
+     // Read the sender
+-    char sender[100];
++    char sender[101];
+     fgets(sender, 100, fp);
+
+     // Read the recipient
+-    char recipient[100];
++    char recipient[101];
+     fgets(recipient, 100, fp);
+
+     // Read the subject
+-    char subject[100];
++    char subject[101];
+     fgets(subject, 100, fp);
+
+     // Read the body
+-    char body[1000];
++    char body[1001];
+     fgets(body, 1000, fp);
+
+     // Create the email
+

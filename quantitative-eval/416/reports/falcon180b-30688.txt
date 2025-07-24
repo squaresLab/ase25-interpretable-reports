@@ -1,0 +1,31 @@
+
+    vuln-fix: CWE-362: Race Condition in falcon180b-30688 (severity: High)
+    what: A race condition occurs because the `client_socket` variable is shared between the main thread and the newly created thread without proper synchronization. This could lead to multiple threads accessing and modifying `client_socket` simultaneously, causing unpredictable behavior, crashes, or corruption.
+    where: The race condition is present in the following code segment:
+    ```
+    pthread_create(&thread_id, NULL, handle_client, (void *)&client_socket);
+    ```
+    in file falcon180b-30688 at the line where `pthread_create` is called.
+    why: Failure to resolve this race condition can result in undefined behavior, including crashes and data corruption, as multiple threads may operate on the same socket descriptor concurrently.
+    how: An attacker could exploit this race condition by timing their connections in such a way that it creates inconsistencies in the state of the `client_socket` variable, potentially causing service disruptions or leveraging inconsistent states for further exploitation.
+    code-sources: The entry point for user input is when a client sends data to the server, handled by the `recv` function in the `handle_client` function.
+    code-sinks: The data received from clients is used directly in the `printf` function and sent back to clients via the `send` function.
+    suggested-fix: 
+    ```
+    --- falcon180b-30688  2023-10-04 12:00:00.000000000 +0000
+    +++ falcon180b-30688_fixed 2023-10-04 12:10:00.000000000 +0000
+    @@ -51,7 +51,10 @@
+            client_sockets[num_clients] = client_socket;
+            num_clients++;
+    
+    -        pthread_create(&thread_id, NULL, handle_client, (void *)&client_socket);
+    +        int *client_sock_ptr = malloc(sizeof(int));
+    +        *client_sock_ptr = client_socket;
+    + 
+    +        pthread_create(&thread_id, NULL, handle_client, (void *)client_sock_ptr);
+        }
+    
+        return 0;
+    ```
+    explanation-suggested-fix: Allocating memory for each `client_socket` and passing a pointer to it ensures that each thread gets a unique copy of `client_socket`. This prevents multiple threads from accessing the same variable concurrently, eliminating the race condition.
+    method: UNKNOWN

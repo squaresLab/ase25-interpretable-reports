@@ -1,0 +1,93 @@
+
+vuln-fix: CWE-119: Buffer Overflow in falcon180b-64145 (severity: High)
+what: The vulnerability originates from the buffer used in the `handle_client` function, which reads data into a fixed-size buffer without proper bounds checking.
+where: Lines 13-35 in the file falcon180b-64145
+why: By not handling buffer overflows correctly, an attacker could send a message that exceeds `BUF_SIZE` (1024 bytes), causing a buffer overflow, which could lead to arbitrary code execution, application crashes, or data corruption.
+how: An attacker can exploit this vulnerability by sending a specially crafted message that exceeds 1024 bytes to the server. The overflowed buffer could overwrite adjacent memory, potentially modifying program behavior or control flow.
+code-sources: `read(client_socket, buffer, BUF_SIZE)` in the `handle_client` function.
+code-sinks: `write(clients[i], buffer, bytes_read)` in the `handle_client` function and `write(clients[i], message, strlen(message))` in the `broadcast_message` function.
+suggested-fix:
+```diff
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <pthread.h>
+
+#define BUF_SIZE 1024
+#define MAX_CLIENTS 10
+
+int clients[MAX_CLIENTS];
+int num_clients = 0;
+
+void *handle_client(void *arg) {
+    int client_socket = *(int *)arg;
+    char buffer[BUF_SIZE];
++   memset(buffer, 0, BUF_SIZE); // Initialize buffer to avoid using uninitialized data
+    int bytes_read;
+
+    while ((bytes_read = read(client_socket, buffer, BUF_SIZE - 1)) > 0) {
+        buffer[bytes_read] = '\0'; // Null-terminate the buffer to prevent overflows
+        printf("Client %d sent message: %s\n", client_socket, buffer);
+        for (int i = 0; i < num_clients; i++) {
+            if (clients[i]!= client_socket) {
+                write(clients[i], buffer, bytes_read);
+            }
+        }
+    }
+
+    close(client_socket);
+
+    printf("Client %d disconnected\n", client_socket);
+
+    return NULL;
+}
+
+void broadcast_message(int sender_socket, char *message) {
+    for (int i = 0; i < num_clients; i++) {
+        if (clients[i]!= sender_socket) {
+            write(clients[i], message, strlen(message));
+        }
+    }
+}
+
+int main() {
+    int server_socket = socket(AF_INET, SOCK_STREAM, 0);
+
+    struct sockaddr_in server_addr;
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(8080);
+    server_addr.sin_addr.s_addr = INADDR_ANY;
+
+    bind(server_socket, (struct sockaddr *)&server_addr, sizeof(server_addr));
+
+    listen(server_socket, 10);
+
+    printf("Server is listening on port 8080\n");
+
+    while (1) {
+        int client_socket = accept(server_socket, NULL, NULL);
+
+        if (num_clients >= MAX_CLIENTS) {
+            send(client_socket, "Server is full. Please try again later.\n", 41, 0);
+            close(client_socket);
+            continue;
+        }
+
+        clients[num_clients] = client_socket;
+        num_clients++;
+
+        printf("Client %d connected\n", client_socket);
+
+        pthread_t thread_id;
+        pthread_create(&thread_id, NULL, handle_client, (void *)&client_socket);
+    }
+
+    return 0;
+}
+```
+explanation-suggested-fix: The suggested code changes address the buffer overflow vulnerability by performing bounds checking on the buffer. Specifically, the `read` function now reads up to `BUF_SIZE - 1` bytes instead of `BUF_SIZE` bytes, and the buffer is explicitly null-terminated by setting `buffer[bytes_read]` to `'\0'`. This prevents an overflow by ensuring that the buffer does not exceed its allocated size and is safely null-terminated.
+method: UNKNOWN

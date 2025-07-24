@@ -1,0 +1,185 @@
+
+vuln-fix: cpp/unbounded-write (CWE-120, CWE-787, CWE-805) in gpt35-42332 (lines: 24, 49, 55, 84, 132) (severity: High)
+what: Buffer write operations that do not control the length of data written may overflow and potentially corrupt memory.
+where: The vulnerabilities are located in gpt35-42332 on lines 24, 49, 55, 84, and 132.
+why: Not resolving these buffer overflow vulnerabilities can lead to memory corruption, application crashes, or even arbitrary code execution by attackers.
+how: An attacker could exploit this vulnerability by providing input that exceeds the allocated buffer size, allowing them to overwrite adjacent memory and potentially execute malicious code.
+code-sources: 
+- User input via `scanf("%s", filename);` on line 24.
+- User input via `scanf("%s", name);` on line 49.
+- User input via `scanf("%s", address);` on line 55.
+- User input via `scanf("%s", address);` on line 84.
+- User input via `scanf("%s", address);` on line 132.
+code-sinks: 
+- Buffer write operation in `scanf("%s", filename)` on line 24.
+- Buffer write operation in `scanf("%s", name)` on line 49.
+- Buffer write operation in `scanf("%s", address)` on line 55.
+- Buffer write operation in `scanf("%s", address)` on line 84.
+- Buffer write operation in `scanf("%s", address)` on line 132.
+suggested-fix: 
+```diff
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+typedef struct {
+    int id;
+    char name[30];
+    int age;
+    char gender;
+    char address[100];
+} Person;
+
+int main() {
+    FILE* fp;
+    char filename[100];
+    int choice;
+    int id;
+    char name[30], address[100];
+    int age;
+    char gender;
+
+    printf("Enter the name of the file to use: ");
+-    scanf("%s", filename);
++    scanf("%99s", filename);
+
+    fp = fopen(filename, "rb+");
+    if (fp == NULL) {
+        printf("Failed to open file\n");
+        exit(1);
+    }
+
+    while (1) {
+        printf("\nMENU\n");
+        printf("1. Add a person\n");
+        printf("2. Search for a person by ID\n");
+        printf("3. Search for a person by name\n");
+        printf("4. Search for a person by age\n");
+        printf("5. Search for a person by gender\n");
+        printf("6. Search for a person by address\n");
+        printf("7. Exit\n");
+        printf("Enter your choice: ");
+        scanf("%d", &choice);
+
+        switch (choice) {
+            case 1:
+                printf("Enter the person's ID: ");
+                scanf("%d", &id);
+                printf("Enter the person's name: ");
+-                scanf("%s", name);
++                scanf("%29s", name);
+                printf("Enter the person's age: ");
+                scanf("%d", &age);
+                printf("Enter the person's gender: ");
+                scanf(" %c", &gender);
+                printf("Enter the person's address: ");
+-                scanf("%s", address);
++                scanf("%99s", address);
+
+                fseek(fp, 0, SEEK_END);
+
+                Person p = { id, name, age, gender, address };
+
+                fwrite(&p, sizeof(Person), 1, fp);
+                printf("Person added successfully\n");
+                break;
+
+            case 2:
+                printf("Enter the person's ID: ");
+                scanf("%d", &id);
+                rewind(fp);
+
+                while (fread(&p, sizeof(Person), 1, fp)) {
+                    if (p.id == id) {
+                        printf("ID: %d\n", p.id);
+                        printf("Name: %s\n", p.name);
+                        printf("Age: %d\n", p.age);
+                        printf("Gender: %c\n", p.gender);
+                        printf("Address: %s\n", p.address);
+                        break;
+                    }
+                }
+                break;
+
+            case 3:
+                printf("Enter the person's name: ");
+-                scanf("%s", name);
++                scanf("%29s", name);
+                rewind(fp);
+
+                while (fread(&p, sizeof(Person), 1, fp)) {
+                    if (strcmp(p.name, name) == 0) {
+                        printf("ID: %d\n", p.id);
+                        printf("Name: %s\n", p.name);
+                        printf("Age: %d\n", p.age);
+                        printf("Gender: %c\n", p.gender);
+                        printf("Address: %s\n", p.address);
+                    }
+                }
+                break;
+
+            case 4:
+                printf("Enter the person's age: ");
+                scanf("%d", &age);
+                rewind(fp);
+
+                while (fread(&p, sizeof(Person), 1, fp)) {
+                    if (p.age == age) {
+                        printf("ID: %d\n", p.id);
+                        printf("Name: %s\n", p.name);
+                        printf("Age: %d\n", p.age);
+                        printf("Gender: %c\n", p.gender);
+                        printf("Address: %s\n", p.address);
+                    }
+                }
+                break;
+
+            case 5:
+                printf("Enter the person's gender: ");
+                scanf(" %c", &gender);
+                rewind(fp);
+
+                while (fread(&p, sizeof(Person), 1, fp)) {
+                    if (p.gender == gender) {
+                        printf("ID: %d\n", p.id);
+                        printf("Name: %s\n", p.name);
+                        printf("Age: %d\n", p.age);
+                        printf("Gender: %c\n", p.gender);
+                        printf("Address: %s\n", p.address);
+                    }
+                }
+                break;
+
+            case 6:
+                printf("Enter the person's address: ");
+-                scanf("%s", address);
++                scanf("%99s", address);
+                rewind(fp);
+
+                while (fread(&p, sizeof(Person), 1, fp)) {
+                    if (strcmp(p.address, address) == 0) {
+                        printf("ID: %d\n", p.id);
+                        printf("Name: %s\n", p.name);
+                        printf("Age: %d\n", p.age);
+                        printf("Gender: %c\n", p.gender);
+                        printf("Address: %s\n", p.address);
+                    }
+                }
+                break;
+
+            case 7:
+                return 0;
+                break;
+
+            default:
+                printf("Invalid choice\n");
+                break;
+        }
+    }
+
+    fclose(fp);
+    return 0;
+}
+```
+explanation-suggested-fix: The changes limit the input size to fit within the allocated buffers, preventing buffer overflow. `filename` is limited to 99 characters, `name` to 29 characters, and `address` to 99 characters, ensuring that the function does not write beyond the boundaries of the allocated memory.
+method: CODEQL 

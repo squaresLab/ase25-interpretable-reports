@@ -1,0 +1,52 @@
+
+vuln-fix: CWE-787 Out-of-bounds Write in falcon180b-7491 (severity: High)
+what: The vulnerable code fails to check the return value of the `recv` function, leading to a potential out-of-bounds write in the `buffer`.
+where: Lines involving `recv` in `handle_client` function, specifically in falcon180b-7491.
+why: If the vulnerability is not resolved, an attacker could send a specifically crafted payload that causes a buffer overflow, potentially leading to remote code execution or crashing the server.
+how: An attacker could send a message larger than the `BUFFER_SIZE` or malformed data to exploit the vulnerability, causing a buffer overflow and manipulate the program's memory.
+code-sources: The `recv` function call in the `handle_client` function is the entry point where user input enters the application.
+code-sinks: The `buffer` array in the `handle_client` function where `recv` stores the user input.
+suggested-fix: 
+```diff
+diff --git a/falcon180b-7491 b/falcon180b-7491
+index abcdef..123456 100644
+--- a/falcon180b-7491
++++ b/falcon180b-7491
+@@ -23,6 +23,7 @@ void *handle_client(void *args) {
+         memset(buffer, 0, BUFFER_SIZE);
+         int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+         if(bytes_received <= 0) {
++            if(bytes_received == -1) {
++                perror("recv");
++                close(client_socket);
++                pthread_exit(NULL);
++            }
+             printf("Client %d disconnected\n", client_socket);
+             close(client_socket);
+             pthread_exit(NULL);
+         }
++        if (bytes_received >= BUFFER_SIZE) {
++            perror("Buffer overflow attempt detected");
++            close(client_socket);
++            pthread_exit(NULL);
++        }
+         printf("Received message from client %d: %s", client_socket, buffer);
+     }
+ }
+ 
+int main() {
+    int opt = 1;
+    setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+ 
+    while(1) {
+        printf("Waiting for client connection...\n");
++        socklen_t addr_len = sizeof(client_addr);
+        int client_socket = accept(server_socket, (struct sockaddr *) &client_addr, &addr_len);
+        printf("Client connected with socket %d\n", client_socket);
+ 
+        pthread_t thread_id;
+        pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+    }
+```
+explanation-suggested-fix: The suggested code change adds proper error handling for the `recv` function call, ensuring that if a negative value is returned, the server properly handles the error and closes the client connection. Additionally, it checks if `bytes_received` exceeds `BUFFER_SIZE` to prevent potential buffer overflow.
+method: UNKNOWN

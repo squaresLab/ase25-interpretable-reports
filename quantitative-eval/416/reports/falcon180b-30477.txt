@@ -1,0 +1,33 @@
+
+vuln-fix: CWE-362: Race Condition in falcon180b-30477 (severity: High)
+what: The variable `client_socket` is assigned to each thread using the same memory address. If multiple clients connect simultaneously, threads can overwrite each other's `client_socket` value, creating a race condition.
+where: 
+- `pthread_create(&thread_id, NULL, handle_client, (void *)&client_socket);` in `falcon180b-30477` line 59
+why: Failure to resolve this vulnerability can allow attackers to cause undefined behavior, potentially leading to crashes, corruption of memory, or unauthorized actions.
+how: An attacker could exploit this vulnerability by rapidly opening multiple connections to the server, causing multiple threads to interfere with each other due to the shared `client_socket` variable leading to unpredictable behavior or denial of service.
+code-sources: `int client_socket = accept(server_socket, NULL, NULL);` in `falcon180b-30477` line 54
+code-sinks: `pthread_create(&thread_id, NULL, handle_client, (void *)&client_socket);` in `falcon180b-30477` line 59
+suggested-fix: 
+```diff
+--- falcon180b-30477
++++ falcon180b-30477
+@@ -51,12 +51,12 @@
+     printf("Server started on port 8080\n");
+
+     while (1) {
+-        int client_socket = accept(server_socket, NULL, NULL);
++        int *client_socket = malloc(sizeof(int));
++        *client_socket = accept(server_socket, NULL, NULL);
+         if (client_socket != -1) {
+-            client_sockets[num_clients] = client_socket;
+-            num_clients++;
+             pthread_t thread_id;
+-            pthread_create(&thread_id, NULL, handle_client, (void *)&client_socket);
++            pthread_create(&thread_id, NULL, handle_client, (void *)client_socket);
++            num_clients++;
+         }
+     }
+
+```
+explanation-suggested-fix: The suggested code fix allocates memory for each `client_socket` independently, preventing multiple threads from interfering with each other's `client_socket` variable. Each thread receives a pointer to its own `client_socket`, ensuring thread safety.
+method: UNKNOWN

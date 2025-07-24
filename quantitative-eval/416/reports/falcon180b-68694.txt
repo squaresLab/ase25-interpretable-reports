@@ -1,0 +1,99 @@
+
+vuln-fix: Buffer Overflow (CWE-120) in falcon180b-68694 (severity: Medium)
+what: The `buffer` used in the `handle_client` function has a fixed size of 65536 bytes (BUFFER_SIZE). If the received message exceeds this size, it could lead to buffer overflow.
+where: 
+- File: falcon180b-68694
+- Lines: `char buffer[BUFFER_SIZE];` and `int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);`
+why: Buffer overflow can corrupt memory, leading to program crashes, incorrect program behavior, or potential execution of malicious code.
+how: An attacker can send a payload larger than 65536 bytes to the server. Since the program does not check the received message length against the buffer size, the attacker can overflow the buffer, potentially overwriting adjacent memory.
+code-sources: `int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);`
+code-sinks: `printf("Client %d sent: %s\n", client_socket, buffer);`
+suggested-fix: 
+```diff
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <pthread.h>
+
+#define BUFFER_SIZE 65536
+#define MAX_CLIENTS 10
+
+int sock;
+int clients[MAX_CLIENTS];
+int num_clients = 0;
+
+void *handle_client(void *arg) {
+    int client_socket = *(int *) arg;
+    char buffer[BUFFER_SIZE];
+
+    while (1) {
+        memset(buffer, 0, BUFFER_SIZE);
+        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE - 1, 0); // Reduce read size to leave space for null terminator
+
+        if (bytes_received <= 0) {
+            close(client_socket);
+            pthread_exit(0);
+        }
+
+        buffer[bytes_received] = '\0'; // Ensure null-termination
+        printf("Client %d sent: %s\n", client_socket, buffer);
+    }
+}
+
+int main() {
+    int server_socket;
+    struct sockaddr_in server_addr;
+
+    if ((server_socket = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
+        printf("Error creating socket\n");
+        exit(1);
+    }
+
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(8080);
+    server_addr.sin_addr.s_addr = INADDR_ANY;
+
+    if (bind(server_socket, (struct sockaddr *) &server_addr, sizeof(server_addr)) == -1) {
+        printf("Error binding socket\n");
+        exit(1);
+    }
+
+    if (listen(server_socket, MAX_CLIENTS) == -1) {
+        printf("Error listening on socket\n");
+        exit(1);
+    }
+
+    printf("Server started on port 8080\n");
+
+    while (1) {
+        int client_socket;
+        socklen_t client_size;
+
+        if ((client_socket = accept(server_socket, (struct sockaddr *) &server_addr, &client_size)) == -1) {
+            printf("Error accepting connection\n");
+            exit(1);
+        }
+
+        if (num_clients >= MAX_CLIENTS) {
+            printf("Maximum number of clients reached\n");
+            close(client_socket);
+            continue;
+        }
+
+        clients[num_clients] = client_socket;
+        num_clients++;
+
+        pthread_t thread_id;
+        pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+    }
+
+    return 0;
+}
+```
+explanation-suggested-fix: The suggested code fix ensures that the read size from `recv` is limited to `BUFFER_SIZE - 1`, reserving one byte for the null terminator. This change prevents the buffer overflow by ensuring that the buffer always remains null-terminated with no possibility of overflow.
+method: UNKNOWN

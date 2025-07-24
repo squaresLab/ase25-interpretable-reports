@@ -1,0 +1,43 @@
+
+vuln-fix: CWE-839: Buffer Overflow in falcon180b-60732 (severity: High)
+what: The vulnerability is an attempt to access the `clients` array without bounds checking, potentially causing a buffer overflow when an index beyond the size of the array is accessed.
+where: Line 66 in falcon180b-60732
+why: If not resolved, this vulnerability could result in undefined behavior including potential corruption of adjacent memory, leading to crashes or more severe exploits such as arbitrary code execution.
+how: An attacker could exploit this by forcing multiple connections until the `clients` array is accessed beyond its valid range. This could lead to writing outside its boundary, thus potentially allowing for memory corruption.
+code-sources: Network input from client connections via the `accept` function in the main loop.
+code-sinks: The assignment `clients[i] = client_socket_fd;` at Line 66 where the array index could overflow.
+suggested-fix: 
+```diff
+--- falcon180b-60732-original.c
++++ falcon180b-60732-fixed.c
+@@ -64,8 +64,10 @@
+ 
+         lock_semaphore();
+ 
+-        int i = 0;
+-        while (clients[i] != 0) {
++        int i;
++        for (i = 0; i < MAX_CLIENTS && clients[i] != 0; i++);
++
++        if (i < MAX_CLIENTS) {
+             i++;
+         }
+ 
++        clients[i] = client_socket_fd;
+-        printf("Client %d connected\n", client_socket_fd);
++        printf("Client %d connected\n", client_socket_fd);
++
++        unlock_semaphore();
++
++        pthread_t thread_id;
++        pthread_create(&thread_id, NULL, handle_client, &client_socket_fd);
++    }
++
++    close(server_socket_fd);
++    sem_destroy(&mutex);
++
++    return 0;
++}
+```
+explanation-suggested-fix: The suggested fix includes bounds checking on the `clients` array index before assigning a new client socket. This check ensures the loop does not go out of bounds and attempts to access or modify invalid memory locations.
+method: UNKNOWN

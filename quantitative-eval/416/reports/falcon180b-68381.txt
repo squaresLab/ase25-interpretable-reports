@@ -1,0 +1,102 @@
+
+vuln-fix: CWE-362: Race Condition in falcon180b-68381 (severity: High)
+what: The vulnerable code contains a race condition in the handling of client connections and the modification of the `clients` array in the `accept_connections` function and the `handle_client` function.
+where: 
+- `clients[num_clients] = client_socket;` in `accept_connections` function
+- `num_clients++;` in `accept_connections` function
+- `for (int i = 0; i < num_clients; i++) {` loop in `handle_client` function.
+why: If the race condition is not resolved, it could lead to undefined behavior, including data corruption, security vulnerabilities, and crashes. Specifically, concurrent modifications to the `clients` array without proper synchronization could result in multiple threads trying to access and modify the same data simultaneously, causing inconsistencies.
+how: An attacker could exploit this vulnerability by overwhelming the server with connection requests, causing simultaneous execution of `accept_connections` and `handle_client`. This could lead to the `clients` array and `num_clients` being in an inconsistent state, potentially leading to crashes or undefined behavior.
+code-sources: 
+- `recv(client_socket, buffer, BUFFER_SIZE, 0);` in `handle_client` function
+- `accept(server_socket, NULL, NULL);` in `accept_connections` function
+code-sinks: 
+- `send(clients[i], buffer, bytes_received, 0);` in `handle_client` function
+- `send(client_socket, "Server is full.\r\n", 16, 0);` in `accept_connections` function
+suggested-fix: 
+```diff
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+- #include <pthread.h>
++ #include <pthread.h>
++ #include <semaphore.h>
+
+#define BUFFER_SIZE 1024
+#define MAX_CLIENTS 10
+#define PORT "8080"
+
+int clients[MAX_CLIENTS];
+int num_clients = 0;
++ pthread_mutex_t clients_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+void *handle_client(void *arg) {
+    int client_socket = *(int *) arg;
+    char buffer[BUFFER_SIZE];
+
+    while(1) {
+        memset(buffer, 0, BUFFER_SIZE);
+        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+
+        if(bytes_received <= 0) {
+            break;
+        }
+
++       pthread_mutex_lock(&clients_mutex);
+        for(int i=0; i<num_clients; i++) {
+            if(clients[i] != client_socket) {
+                send(clients[i], buffer, bytes_received, 0);
+            }
+        }
++       pthread_mutex_unlock(&clients_mutex);
+    }
+
+    close(client_socket);
+    return NULL;
+}
+
+void accept_connections() {
+    int server_socket = socket(AF_INET, SOCK_STREAM, 0);
+
+    struct sockaddr_in server_addr;
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(atoi(PORT));
+    server_addr.sin_addr.s_addr = INADDR_ANY;
+
+    bind(server_socket, (struct sockaddr *) &server_addr, sizeof(server_addr));
+    listen(server_socket, 10);
+
+    while(1) {
+        int client_socket = accept(server_socket, NULL, NULL);
+
+        if(num_clients >= MAX_CLIENTS) {
+            send(client_socket, "Server is full.\r\n", 16, 0);
+            close(client_socket);
+            continue;
+        }
+
++       pthread_mutex_lock(&clients_mutex);
+        clients[num_clients] = client_socket;
+        num_clients++;
+
+        pthread_t thread_id;
+        pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
++       pthread_mutex_unlock(&clients_mutex);
+    }
+}
+
+int main() {
+    accept_connections();
+    return 0;
+}
+```
+explanation-suggested-fix: The suggested fix introduces a `pthread_mutex_t` named `clients_mutex` to protect critical sections in the code that modify the `clients` array and the `num_clients` variable. By locking the mutex before modifying these shared resources and unlocking it after, we ensure that only one thread can execute these critical sections at a time, preventing race conditions and ensuring data consistency.
+method: UNKNOWN

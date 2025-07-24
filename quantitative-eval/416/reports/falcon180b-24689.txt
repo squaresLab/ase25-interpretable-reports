@@ -1,0 +1,69 @@
+
+    vuln-fix: Command Injection (CWE-78) in falcon180b-24689 (severity: Critical)
+    what: The code directly uses user input as arguments to the `system()` function calls without validation or sanitization, making it susceptible to command injection attacks.
+    where: The vulnerability is located in the `handle_client` function within the `falcon180b-24689` file, specifically at lines where `system()` function is called:
+        - system("echo 1 > /sys/class/leds/led0/brightness");
+        - system("echo 0 > /sys/class/leds/led0/brightness");
+        - system("echo 50 > /sys/class/leds/led0/brightness");
+    why: If not resolved, an attacker could inject arbitrary commands via the input, potentially leading to remote code execution, unauthorized access, and control over the system running the server.
+    how: An attacker would send specially crafted commands to the server, exploiting the input that gets directly in `system()` calls. For example, sending "ON; rm -rf /" could delete critical files.
+    code-sources: The entry points for user input are:
+        - `recv(client_socket, buffer, MAX_COMMAND_LENGTH, 0)` in `handle_client` function.
+    code-sinks: The actions performed using user input are:
+        - `system("echo 1 > /sys/class/leds/led0/brightness");`
+        - `system("echo 0 > /sys/class/leds/led0/brightness");`
+        - `system("echo 50 > /sys/class/leds/led0/brightness");`
+    suggested-fix: 
+    ```diff
+    --- falcon180b-24689
+    +++ falcon180b-24689
+    @@ -18,16 +18,24 @@
+         while (1) {
+             memset(buffer, 0, sizeof(buffer));
+             int bytes_received = recv(client_socket, buffer, MAX_COMMAND_LENGTH, 0);
+     
+             if (bytes_received <= 0) {
+                 break;
+             }
+     
+             char *command = strtok(buffer, " ");
+             if (command == NULL) {
+                 continue;
+             }
+     
+    -        if (strcmp(command, "ON") == 0) {
+    -            system("echo 1 > /sys/class/leds/led0/brightness");
+    -        } else if (strcmp(command, "OFF") == 0) {
+    -            system("echo 0 > /sys/class/leds/led0/brightness");
+    -        } else if (strcmp(command, "DIM") == 0) {
+    -            system("echo 50 > /sys/class/leds/led0/brightness");
+    -        } else if (strcmp(command, "QUIT") == 0) {
+    +        // Validate the input strictly against expected values
+    +        if (strcmp(command, "ON") == 0) {
+    +            FILE *fp = fopen("/sys/class/leds/led0/brightness", "w");
+    +            if (fp != NULL) {
+    +                fputs("1", fp);
+    +                fclose(fp);
+    +            }
+    +        } else if (strcmp(command, "OFF") == 0) {
+    +            FILE *fp = fopen("/sys/class/leds/led0/brightness", "w");
+    +            if (fp != NULL) {
+    +                fputs("0", fp);
+    +                fclose(fp);
+    +            }
+    +        } else if (strcmp(command, "DIM") == 0) {
+    +            FILE *fp = fopen("/sys/class/leds/led0/brightness", "w");
+    +            if (fp != NULL) {
+    +                fputs("50", fp);
+    +                fclose(fp);
+    +            }
+    +        } else if (strcmp(command, "QUIT") == 0) {
+                 close(client_socket);
+                 break;
+             }
+     
+             close(client_socket);
+         }
+    
+    explanation-suggested-fix: The suggested fixes replace the dangerous `system()` calls with file manipulation functions (fopen, fputs, fclose). This ensures no shell commands are executed, preventing command injection. It limits the possible actions to just modifying file contents with predefined values, negating any potential malicious input.
+    method: UNKNOWN

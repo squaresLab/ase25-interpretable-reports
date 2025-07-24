@@ -1,0 +1,22 @@
+ 
+
+@@ -56,7 +56,7 @@
+        int client_socket = accept(server_socket, NULL, NULL);
+
+        if (num_clients >= MAX_CLIENTS) {
+            send(client_socket, "Server is full. Please try again later.\n", 46, 0);
+            close(client_socket);
+            continue;
+        }
+
+-       clients[num_clients] = (char *)malloc(sizeof(char) * 20);
+-       sprintf(clients[num_clients], "Client %d", num_clients + 1);
++       int *client_fd = (int *)malloc(sizeof(int));
++       *client_fd = client_socket;
++       clients[num_clients] = (char *)client_fd;
+
+        num_clients++;
+
+        pthread_t thread_id;
+        pthread_create(&thread_id, NULL, client_thread, (void *)&client_socket);
+

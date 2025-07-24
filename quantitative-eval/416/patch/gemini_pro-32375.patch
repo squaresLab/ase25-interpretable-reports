@@ -1,0 +1,10 @@
+ 
+
+char* getMovieRating() {
+  static char rating[5];
+  printf("Enter the movie rating: ");
+  scanf("%4s", rating);
+
+  return rating;
+}
+

@@ -1,0 +1,58 @@
+plaintext
+vuln-fix: Command Injection (CWE-78) in falcon180b-42762 (severity: High)
+what: The code allows an attacker to execute arbitrary commands on the server by not properly sanitizing user input before passing it to system() function calls.
+where: The vulnerability is located in the `handle_client` function in the following lines:
+```c
+        if (strcmp(buffer, "on") == 0) {
+            system("gpio write 18 1");
+        } else if (strcmp(buffer, "off") == 0) {
+            system("gpio write 18 0");
+        } else if (strcmp(buffer, "status") == 0) {
+            char response[20];
+            sprintf(response, "Light is %s", (system("gpio read 18") == 0)? "off" : "on");
+            send(client_socket, response, strlen(response), 0);
+        }
+```
+why: If this weakness is not resolved, an attacker could execute arbitrary commands on the server, leading to a full system compromise.
+how: An attacker could exploit this vulnerability by sending crafted network packets to the application with malicious payloads. For example, sending the command "status; rm -rf /" could potentially delete all files on the server.
+code-sources: The `recv` function call in the `handle_client` function where the buffer is filled:
+```c
+        recv(client_socket, buffer, BUFFER_SIZE, 0);
+```
+code-sinks: The `system` function calls in the `handle_client` function:
+```c
+        if (strcmp(buffer, "on") == 0) {
+            system("gpio write 18 1");
+        } else if (strcmp(buffer, "off") == 0) {
+            system("gpio write 18 0");
+        } else if (strcmp(buffer, "status") == 0) {
+            sprintf(response, "Light is %s", (system("gpio read 18") == 0)? "off" : "on");
+        }
+```
+suggested-fix:
+```diff
+--- falcon180b-42762.c 2023-09-01
++++ falcon180b-42762-patched.c 2023-09-01
+@@ -18,7 +18,8 @@
+         recv(client_socket, buffer, BUFFER_SIZE, 0);
+
+         if (strcmp(buffer, "on") == 0) {
+-            system("gpio write 18 1");
++            // Replace system call with safer implementation
++            gpio_write(18, 1);
+         } else if (strcmp(buffer, "off") == 0) {
+-            system("gpio write 18 0");
++            // Replace system call with safer implementation
++            gpio_write(18, 0);
+         } else if (strcmp(buffer, "status") == 0) {
+             char response[20];
+-            sprintf(response, "Light is %s", (system("gpio read 18") == 0)? "off" : "on");
++            // Replace system call with safer implementation
++            char *status = get_gpio_status(18);
++            sprintf(response, "Light is %s", status);
+             send(client_socket, response, strlen(response), 0);
+         }
+     ...
+```
+explanation-suggested-fix: The suggested code diff removes dangerous `system` calls and replaces them with safer, direct function calls (`gpio_write` and `get_gpio_status`). This approach avoids command injection vulnerabilities by preventing user input from being executed as shell commands.
+method: UNKNOWN

@@ -1,0 +1,24 @@
+
+vuln-fix: Unbounded Write (CWE-120, CWE-787, CWE-805) in gpt35-44427, line 77 (severity: High)
+what: The vulnerability arises because the `strcpy` function is used to copy user input into a fixed-size buffer without controlling the length of the data being copied. This can lead to buffer overflow vulnerabilities.
+where: The vulnerability is located in the `insert_record` function, specifically at line 77 in the file gpt35-44427.
+why: Not resolving this weakness can allow an attacker to overwrite adjacent memory, which may result in arbitrary code execution, data corruption, or application crashes.
+how: An attacker can exploit this vulnerability by providing an account holder name that exceeds the size of the `account_holder_name` buffer (50 characters). This will cause buffer overflow and potentially lead to severe security risks.
+code-sources: The `scanf` function in the `main` function, line 90 where the account holder name is read from the user input.
+code-sinks: The `strcpy` function call in the `insert_record` function at line 77, where the user input (account holder name) is copied into the buffer.
+suggested-fix: 
+```diff
+--- gpt35-44427.c
++++ gpt35-44427-fixed.c
+@@ -74,7 +74,8 @@
+   BankRecord *new_record = malloc(sizeof(BankRecord));
+   new_record->account_number = account_number;
+-  strcpy(new_record->account_holder_name, account_holder_name);
++  strncpy(new_record->account_holder_name, account_holder_name, sizeof(new_record->account_holder_name) - 1);
++  new_record->account_holder_name[sizeof(new_record->account_holder_name) - 1] = '\0'; // Null-terminate the string
+   new_record->balance = balance;
+   if (head == NULL) {
+     head = new_record;
+```
+explanation-suggested-fix: The suggested code change uses `strncpy` instead of `strcpy` to copy the account holder name to the buffer. `strncpy` limits the number of characters copied to the size of the destination buffer minus one, which prevents buffer overflow. Additionally, it explicitly null-terminates the string to ensure it is safely handled.
+method: CODEQL

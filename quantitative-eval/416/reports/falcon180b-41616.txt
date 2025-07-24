@@ -1,0 +1,38 @@
+ 
+    vuln-fix: CWE-362: Race Condition in falcon180b-41616 (severity: High)
+    what: The application contains a race condition vulnerability due to an unsafe interaction between threads when accessing and modifying the `client_sockets` array and `num_clients` variable without adequate locking.
+    where: 
+        1. `pthread_create(&thread_id, NULL, handle_client, (void *)&client_socket);` in the main function.
+        2. `client_sockets[num_clients] = client_socket;` in the main function.
+        3. `num_clients++;` in the main function.
+        4. `for(int i = 0; i < num_clients; i++) { ... }` in `handle_client` function.
+    why: A race condition can allow concurrent threads to operate on shared resources in an inconsistent or undefined manner, potentially leading to application crashes, security vulnerabilities, or data corruption.
+    how: An attacker could exploit this vulnerability by quickly opening multiple socket connections, potentially causing inconsistent state in the `client_sockets` array and `num_clients` variable, possibly causing the server to malfunction or crash.
+    code-sources: `accept(server_socket, (struct sockaddr *)&client_addr, &addr_len);` user connections.
+    code-sinks: `send(client_sockets[i], buffer, strlen(buffer), 0);` broadcasting messages to clients.
+    suggested-fix: 
+    ```diff
+    --- falcon180b-41616	2023-10-13
+    +++ falcon180b-41616-fixed	2023-10-13
+    @@ -31,8 +31,10 @@
+            int client_socket = accept(server_socket, (struct sockaddr *)&client_addr, &addr_len);
+
+            if(num_clients >= MAX_CLIENTS) {
+                send(client_socket, "Server is full.", strlen("Server is full."), 0);
+                close(client_socket);
+                continue;
+            }
+
+    -        client_sockets[num_clients] = client_socket;
+    -        num_clients++;
+    +        pthread_mutex_lock(&lock);
+    +        client_sockets[num_clients] = client_socket;
+    +        num_clients++;
+    +        pthread_mutex_unlock(&lock);
+
+            pthread_t thread_id;
+            pthread_create(&thread_id, NULL, handle_client, (void *)&client_socket);
+    ```
+
+    explanation-suggested-fix: Enclosing the critical section that modifies the `client_sockets` array and increments `num_clients` within `pthread_mutex_lock(&lock)` and `pthread_mutex_unlock(&lock)` ensures that these operations are atomic and only one thread can perform them at a time, thereby avoiding race conditions.
+    method: CODEQL

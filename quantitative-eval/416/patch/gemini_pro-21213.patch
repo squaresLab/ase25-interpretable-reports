@@ -1,0 +1,13 @@
+ 
+
+72c72,74
+<     int n = read(sockfd, buffer, sizeof(buffer));
+---
+>     int n = recv(sockfd, buffer, sizeof(buffer) - 1, 0);
+>     if (n >= sizeof(buffer)) {
+>         fprintf(stderr, "Input too large\n");
+>         close(sockfd);
+>         pthread_exit(NULL);
+>     }
+>     buffer[n] = '\0';
+

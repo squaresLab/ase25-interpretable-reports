@@ -1,0 +1,43 @@
+ 
+
+--- falcon180b-22976.c
++++ falcon180b-22976.c
+@@ -21,7 +21,8 @@
+ }
+ 
+ // Function to get user input
+-char* get_input(char* prompt) {
++void get_input(char* prompt, char* buffer, size_t size) {
++    char input[MAX_INPUT_LENGTH];
+     printf("%s: ", prompt);
+-    fgets(input, MAX_INPUT_LENGTH, stdin);
+-    input[strcspn(input, "\n")] = '\0';
+-    return input;
++    fgets(buffer, size, stdin);
++    buffer[strcspn(buffer, "\n")] = '\0';
+ }
+ 
+ // Main function
+-int main() {
++int main() {
++    char name[MAX_INPUT_LENGTH];
+     char kingdom[MAX_INPUT_LENGTH]; 
+     char title[MAX_INPUT_LENGTH]; 
+ 
+@@ -32,9 +33,11 @@
+     printf("Enter thy name, noble knight:\n");
+-    strcpy(name, get_input("Name: "));
++    get_input("Name: ", name, MAX_INPUT_LENGTH);
+     sanitize_input(name);
+ 
+     printf("From which kingdom dost thou hail?\n");
+-    strcpy(kingdom, get_input("Kingdom: "));
++    get_input("Kingdom: ", kingdom, MAX_INPUT_LENGTH);
+     sanitize_input(kingdom);
+ 
+     printf("What title dost thou bear?\n");
+-    strcpy(title, get_input("Title: "));
++    get_input("Title: ", title, MAX_INPUT_LENGTH);
+     sanitize_input(title);
+
+

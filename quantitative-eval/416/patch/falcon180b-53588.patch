@@ -1,0 +1,83 @@
+ 
+    
+    --- falcon180b-53588.c
+    +++ falcon180b-53588_fixed.c
+    @@ -17,10 +17,13 @@
+         memset(buffer, 0, BUFFER_SIZE);
+         int bytes_received = recv(client_socket, buffer, BUFFER_SIZE - 1, 0);
+
+    +    if (bytes_received < 0) {
+    +        perror("recv");
+    +        break;
+    +    }
+         if (bytes_received == 0) {
+             break;
+         }
+
+         printf("Client %d sent message: %s\n", client_socket, buffer);
+    +
+         // Send message to all clients
+         for (int i = 0; i < num_clients; i++) {
+             if (i != client_socket) {
+    @@ -37,10 +40,20 @@
+         }
+
+         close(client_socket);
+    +    return NULL;
+     }
+
+     int main() {
+         int server_socket = socket(AF_INET, SOCK_STREAM, 0);
+    +    if (server_socket < 0) {
+    +        perror("socket");
+    +        return 1;
+    +    }
+    
+    +    for (int i = 0; i < MAX_CLIENTS; i++) {
+    +        clients[i] = -1;
+    +    }
+    +
+         struct sockaddr_in server_addr;
+         memset(&server_addr, 0, sizeof(server_addr));
+         server_addr.sin_family = AF_INET;
+    @@ -47,6 +60,10 @@
+         bind(server_socket, (struct sockaddr *)&server_addr, sizeof(server_addr));
+         listen(server_socket, 3);
+
+    -    int num_clients = 0;
+         printf("Server started on port %d\n", PORT);
+
+         while (1) {
+    -        int client_socket = accept(server_socket, NULL, NULL);
+    +        int client_socket = accept(server_socket, NULL, NULL);
+    +
+    +        if (client_socket < 0) {
+    +            perror("accept");
+    +            continue;
+    +        }
+            
+             if (num_clients >= MAX_CLIENTS) {
+                 send(client_socket, "Server is full", strlen("Server is full"), 0);
+                 close(client_socket);
+    @@ -55,10 +72,22 @@
+
+             clients[num_clients] = client_socket;
+             num_clients++;
+
+    +        int *new_client_socket = malloc(sizeof(int));
+    +        if (new_client_socket == NULL) {
+    +            perror("malloc");
+    +            continue;
+    +        }
+    +        *new_client_socket = client_socket;
+    +
+             pthread_t thread_id;
+    -        pthread_create(&thread_id, NULL, handle_client, (void *)&client_socket);
+    +        pthread_create(&thread_id, NULL, handle_client, (void *)new_client_socket);
+         }
+
+    +    close(server_socket);
+         return 0;
+     }
+    
+    

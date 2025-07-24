@@ -1,0 +1,38 @@
+
+    vuln-fix: CWE-362: Race Condition in falcon180b-65520 (severity: High)
+    what: The code contains a race condition in the `accept_connections` function, specifically how `client_socket` is shared between the main thread and multiple created threads without proper synchronization.
+    where: Lines inside function `accept_connections` and the start of `handle_client` function in file falcon180b-65520.
+    why: If unresolved, this race condition could allow two threads to operate on the same client socket, leading to data corruption, crashes, or undefined behavior in the server application.
+    how: An attacker can exploit this vulnerability by rapidly connecting to and disconnecting from the server, potentially causing multiple threads to mishandle socket file descriptors.
+    code-sources: The `accept` function in `accept_connections` where it accepts new socket connections.
+    code-sinks: The `recv` and `send` functions in `handle_client` that process the client data.
+    suggested-fix: 
+    ```diff
+    --- falcon180b-65520.orig.c
+    +++ falcon180b-65520.fixed.c
+    @@ -24,7 +24,7 @@
+      }
+    
+      void accept_connections(int server_socket) {
+    +    while (1) {
+    +        int *client_socket = malloc(sizeof(int));
+    +        *client_socket = accept(server_socket, NULL, NULL);
+    -
+    -        if (client_socket == -1) {
+    +        if (*client_socket == -1) {
+                free(client_socket);
+                break;
+            }
+
+            printf("Client connected: %d\n", *client_socket);
+
+            pthread_t thread_id;
+    -        pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+    +        pthread_create(&thread_id, NULL, handle_client, (void *) client_socket);
+
+            clients[num_clients++] = *client_socket;
+        }
+      }
+    ```
+    explanation-suggested-fix: The fix involves dynamically allocating memory for the `client_socket` so that each thread gets its own copy. This ensures that the main thread and worker threads do not share the same client socket variable, thus eliminating the race condition.
+    method: UNKNOWN

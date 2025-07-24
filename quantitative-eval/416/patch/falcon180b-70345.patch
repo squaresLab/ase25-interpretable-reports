@@ -1,0 +1,15 @@
+
+
+--- falcon180b-70345  2023-10-02 12:00:00.000000000 +0000
++++ falcon180b-70345  2023-10-02 12:15:00.000000000 +0000
+@@ -20,6 +20,7 @@
+     char buffer[BUFFER_SIZE];
+ 
+     while (1) {
++        int received_data_length = 0;
+         memset(buffer, 0, BUFFER_SIZE);
+         int bytes_received = recv(client_socket, buffer, sizeof(buffer) - 1, 0); // change from BUFFER_SIZE to sizeof(buffer) - 1
+ 
+         if (bytes_received <= 0) { 
+             break;
+

@@ -1,0 +1,42 @@
+ 
+vuln-fix: CWE-78: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection') in falcon180b-56167 (severity: High)
+what: The code above has an OS Command Injection vulnerability due to the use of the `system()` function without proper sanitization of user input.
+where: `system("echo 1 > /sys/class/leds/led1/brightness");` and `system("echo 0 > /sys/class/leds/led1/brightness");` inside `handle_client` function.
+why: If an attacker can send specially-crafted input to the `handle_client` function, they can execute arbitrary commands on the server, potentially leading to a complete system compromise.
+how: An attacker could send a string containing a command injection payload to the server. For example, a message like `"light on; rm -rf /"` could be sent, which would execute the `rm -rf /` command and delete critical system files.
+code-sources: `recv(client_socket, buffer, sizeof(buffer), 0);` in `handle_client` function.
+code-sinks: `system("echo 1 > /sys/class/leds/led1/brightness");` and `system("echo 0 > /sys/class/leds/led1/brightness");` inside `handle_client` function.
+suggested-fix: 
+```diff
+#include <stdbool.h>
+// Additional necessary headers for sanitization
+
+void *handle_client(void *arg) {
+    int client_socket = *(int *) arg;
+    char buffer[1024];
+
+    while (1) {
+        memset(buffer, 0, sizeof(buffer));
+        recv(client_socket, buffer, sizeof(buffer), 0);
+        printf("Client %d sent: %s\n", client_socket, buffer);
+
+        if (strcmp(buffer, "light on") == 0) {
+            // Safely control LED instead of using system command
+            FILE *led = fopen("/sys/class/leds/led1/brightness", "w");
+            if (led != NULL) {
+                fputs("1", led);
+                fclose(led);
+            }
+        } else if (strcmp(buffer, "light off") == 0) {
+            // Safely control LED instead of using system command
+            FILE *led = fopen("/sys/class/leds/led1/brightness", "w");
+            if (led != NULL) {
+                fputs("0", led);
+                fclose(led);
+            }
+        }
+    }
+}
+```
+explanation-suggested-fix: The suggested fix replaces the `system()` calls with direct file operations using `fopen()` and `fputs()`, eliminating the possibility of command injection since no shell commands are executed. This allows the program to safely control the LED light without the risk of executing arbitrary commands.
+method: UNKNOWN

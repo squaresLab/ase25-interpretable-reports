@@ -1,0 +1,37 @@
+
+    vuln-fix: Race Condition CWE-362 in falcon180b-4002 (severity: High)
+    what: The code contains a race condition vulnerability. Specifically, the `client_sock` variable is shared between the main thread and the thread created in the `pthread_create` function.
+    where: Lines 62-69 in the file falcon180b-4002.
+    why: If not resolved, this weakness can lead to undefined behavior, causing the server to handle requests incorrectly. One possible consequence is that one client may receive responses intended for another client.
+    how: An attacker could exploit this vulnerability by sending multiple requests in quick succession to trigger the race condition, potentially causing data leakage between clients.
+    code-sources: The code source is the `accept` function on line 56, which accepts connections and assigns them to `client_sock`.
+    code-sinks: The code sink is the `send` and `recv` functions within the `handle_client` function starting from line 37, where the client socket is used to send and receive data.
+    suggested-fix: 
+    ```diff
+    --- falcon180b-4002    2023-03-18 10:53:48.000000000 +0100
+    +++ falcon180b-4002-fixed    2023-03-18 10:58:36.000000000 +0100
+    @@ -63,12 +63,13 @@
+            if (num_clients >= MAX_CLIENTS) {
+                send(client_sock, "Server is full\n", strlen("Server is full\n"), 0);
+                close(client_sock);
+                continue;
+            }
+
+    -       client_sockets[num_clients] = client_sock;
+    -       num_clients++;
+    +       int *new_sock = malloc(sizeof(int));
+    +       *new_sock = client_sock;
+    +
+    +       client_sockets[num_clients] = *new_sock;
+    +       num_clients++;
+
+    -       pthread_t thread_id;
+    -       pthread_create(&thread_id, NULL, handle_client, (void *) &client_sock);
+    +       pthread_t thread_id;
+    +       pthread_create(&thread_id, NULL, handle_client, (void *) new_sock);
+        }
+
+        return 0;
+    ```
+    explanation-suggested-fix: The suggested fix resolves the vulnerability by dynamically allocating memory for each new socket (i.e., `client_sock`). This ensures that each thread works on a distinct `client_sock` value without interfering with each other, thereby eliminating the race condition.
+    method: UNKNOWN

@@ -1,0 +1,41 @@
+
+    vuln-fix: CWE-362: Race Condition in falcon180b-51339 (severity: High)
+    what: The code contains a race condition vulnerability due to the improper handling of the `client_socket` variable in the `accept_connections` function. Each call to `pthread_create` uses the same `client_socket` variable, which can be modified by subsequent calls to `accept` before the new thread has a chance to use it.
+    where: 
+        - falcon180b-51339, line 26 (thread creation and client_socket handling)
+        - Possible impact with use of `num_clients` across threads (global variable could introduce race conditions)
+    why: If this race condition is not resolved, multiple threads could end up using the same `client_socket`, leading to unpredictable behavior including data corruption, crashes, and security breaches. Furthermore, an attacker could manipulate timing and exploit this condition to gain unauthorized access or cause denial of service.
+    how: An attacker could use specially crafted, closely-timed connection attempts to the server to exploit the race condition, causing multiple threads to incorrectly share the same client socket descriptor. This could lead to confusing threads and possibly leaking sensitive information or causing service crashes.
+    code-sources: 
+        - The main `accept` call in the `accept_connections` function.
+        - Example at line 31 where user input (connections) enter through `client_socket`.
+    code-sinks: 
+        - The `recv` call within the `handle_client` function at line 14, which processes incoming data from the client.
+    suggested-fix: 
+        ```diff
+        --- falcon180b-51339.c.previous
+        +++ falcon180b-51339.c.updated
+        @@ -24,7 +24,6 @@
+         
+         void accept_connections(int server_socket) {
+             while (num_clients < MAX_CLIENTS) {
+        -        int client_socket = accept(server_socket, NULL, NULL);
+        +        int *client_socket = malloc(sizeof(int));
+        +        *client_socket = accept(server_socket, NULL, NULL);
+         
+                 if (*client_socket == -1) {
+                     printf("Error accepting connection\n");
+        @@ -32,7 +31,7 @@
+                 }
+         
+        -        clients[num_clients] = client_socket;
+        +        clients[num_clients] = *client_socket;
+                 num_clients++;
+         
+                 pthread_t thread_id;
+        -        pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+        +        pthread_create(&thread_id, NULL, handle_client, (void *) client_socket);
+             }
+         ```
+    explanation-suggested-fix: The suggested code diff resolves the race condition by allocating memory for `client_socket` on the heap for each accepted connection. This ensures that each thread receives a unique socket descriptor to handle, preventing the overwrite issues in the shared `client_socket` variable. Additionally, handling the socket allocation dynamically ensures that each thread will have its own isolated context for communication.
+    method: UNKNOWN

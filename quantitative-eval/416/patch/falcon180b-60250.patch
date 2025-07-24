@@ -1,0 +1,30 @@
+ 
+    
+    --- falcon180b-60250.c
+    +++ falcon180b-60250-fixed.c
+    @@ -20,9 +20,18 @@
+         while (1) {
+             memset(request, 0, MAX_REQUEST_SIZE);
+             memset(response, 0, MAX_RESPONSE_SIZE);
+     
+    -        int bytes_received = recv(client_socket, request, MAX_REQUEST_SIZE, 0);
+    +        int bytes_received = recv(client_socket, request, MAX_REQUEST_SIZE - 1, 0);
+     
+             if (bytes_received <= 0) {
+                 break;
+             }
+    +        
+    +        // Null-terminate the request to prevent overflow
+    +        request[bytes_received] = '\0';
+    +        
+    +        // Validate input to ensure it is a valid hostname
+    +        if (strchr(request, '\n') != NULL || strchr(request, '\r') != NULL || strchr(request, ' ') != NULL) {
+    +            sprintf(response, "HTTP/1.1 400 Bad Request\r\nContent-Length: 0\r\nConnection: close\r\n\r\n");
+    +            send(client_socket, response, strlen(response), 0);
+    +            continue;
+    +        }
+     
+             char hostname[1024];
+             struct hostent *host_info = gethostbyname(request);
+    
+    

@@ -1,0 +1,29 @@
+
+    vuln-fix: CWE-134: Uncontrolled Format String in falcon180b-59307.c:19 (severity: High)
+    what: The code uses `printf` with a variable `buffer` directly derived from user input. This can lead to a format string vulnerability.
+    where: 
+    ```
+    falcon180b-59307.c:19
+        printf("Thread %d received message: %s\n", sock, buffer);
+    ```
+    why: An attacker might exploit this vulnerability to execute arbitrary code, cause a crash, or read unintended memory locations.
+    how: An attacker could send a specially crafted message containing format specifiers like `%x` or `%n` to manipulate the program's execution.
+    code-sources: 
+    ```
+    falcon180b-59307.c:13
+        int bytes_recv = recv(sock, buffer, MAX, 0);
+    ```
+    code-sinks: 
+    ```
+    falcon180b-59307.c:19
+        printf("Thread %d received message: %s\n", sock, buffer);
+    ```
+    suggested-fix: 
+    ```diff
+    19c19
+    <        printf("Thread %d received message: %s\n", sock, buffer);
+    ---
+    >        printf("Thread %d received message: %.99s\n", sock, buffer);
+    ```
+    explanation-suggested-fix: The suggested code change ensures that the user-controlled input `buffer` is safely printed with a specified maximum length to prevent format string vulnerabilities.
+    method: UNKNOWN

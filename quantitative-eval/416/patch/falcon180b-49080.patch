@@ -1,0 +1,17 @@
+
+
+    for (int i = 0; i < num_threads; i++) {
+-        int room_id = rand() % NUM_ROOMS;
+-        pthread_create(&threads[i], NULL, haunt_room, &room_id);
++        int *room_id = malloc(sizeof(int));
++        *room_id = rand() % NUM_ROOMS;
++        pthread_create(&threads[i], NULL, haunt_room, room_id);
+         sleep(1);
+     }
+
+     for (int i = 0; i < num_threads; i++) {
+         pthread_join(threads[i], NULL);
++        free(room_id);
+         sleep(1);
+     }
+

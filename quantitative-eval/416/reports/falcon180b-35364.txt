@@ -1,0 +1,110 @@
+
+vuln-fix: CWE-362: Race Condition in falcon180b-35364 (severity: High)
+what: The code has a potential race condition vulnerability related to the management and access of the `num_clients` variable. Multiple threads can potentially modify `num_clients` concurrently without proper synchronization, leading to undefined behavior or a situation where more than the allowed number of clients get added simultaneously.
+where: Lines 17 (start of `handle_client` function) through 65 (end of the `main` function) in file falcon180b-35364.
+why: If this race condition is not resolved, it may lead to scenarios where the system exceeds the predefined number of clients (`MAX_CLIENTS`), causing resource exhaustion, application crashes, or unintended behavior, potentially impacting service availability.
+how: An attacker could exploit this race condition by rapidly opening multiple connections to the server simultaneously. If timed correctly, this could cause multiple threads to bypass the client limit check due to concurrent access, leading to more clients being accepted than intended.
+code-sources: The server listens for incoming connections in the `main` function, starting at line 50: `int client_socket = accept(server_socket, (struct sockaddr *) &client_addr, &client_size);`
+code-sinks: The user input from the socket is processed in the `handle_client` function starting on line 17: `int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);`
+suggested-fix: 
+```diff
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <pthread.h>
+
+#define MAX_CLIENTS 10
+#define BUFFER_SIZE 1024
+
+int clients[MAX_CLIENTS][2];
+int num_clients = 0;
+pthread_mutex_t num_clients_mutex = PTHREAD_MUTEX_INITIALIZER; // Adjust this
+
+void *handle_client(void *arg) {
+    int client_socket = *(int *) arg;
+    char buffer[BUFFER_SIZE];
+
+    while (1) {
+        memset(buffer, 0, BUFFER_SIZE);
+        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+
+        if (bytes_received <= 0) {
+            break;
+        }
+
+        printf("Client %d sent: %s\n", client_socket, buffer);
+    }
+
+    close(client_socket);
+
+    pthread_mutex_lock(&num_clients_mutex);
+    num_clients--;
+    pthread_mutex_unlock(&num_clients_mutex);
+
+    return NULL;
+}
+
+int main() {
+    int server_socket = socket(AF_INET, SOCK_STREAM, 0);
+
+    if (server_socket == -1) {
+        printf("Error creating socket\n");
+        return 1;
+    }
+
+    struct sockaddr_in server_addr;
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(8080);
+    server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+
+    if (bind(server_socket, (struct sockaddr *) &server_addr, sizeof(server_addr)) == -1) {
+        printf("Error binding socket\n");
+        return 1;
+    }
+
+    if (listen(server_socket, 3) == -1) {
+        printf("Error listening on socket\n");
+        return 1;
+    }
+
+    printf("Server listening on port 8080\n");
+
+    while (1) {
+        struct sockaddr_in client_addr;
+        socklen_t client_size = sizeof(client_addr);
+        int client_socket = accept(server_socket, (struct sockaddr *) &client_addr, &client_size);
+
+        if (client_socket == -1) {
+            printf("Error accepting connection\n");
+            continue;
+        }
+
+        pthread_mutex_lock(&num_clients_mutex);
+        if (num_clients >= MAX_CLIENTS) {
+            printf("Maximum number of clients reached\n");
+            pthread_mutex_unlock(&num_clients_mutex);
+            close(client_socket);
+            continue;
+        }
+
+        clients[num_clients][0] = client_socket;
+        clients[num_clients][1] = 0;
+        num_clients++;
+        pthread_mutex_unlock(&num_clients_mutex);
+
+        pthread_t thread_id;
+        pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+    }
+
+    close(server_socket);
+    pthread_mutex_destroy(&num_clients_mutex);  // Adjust this
+
+    return 0;
+}
+```
+explanation-suggested-fix: The suggested code fix introduces a mutex, `num_clients_mutex`, to protect accesses and modifications to the `num_clients` variable. By locking and unlocking this mutex before incrementing and decrementing `num_clients`, concurrent access from multiple threads is prevented, thus eliminating the race condition and ensuring that the number of active client connections is properly managed.
+method: UNKNOWN

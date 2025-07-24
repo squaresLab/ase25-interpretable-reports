@@ -1,0 +1,32 @@
+
+    vuln-fix: Buffer Overflow (CWE-120) in falcon180b-3300 (severity: High)
+    what: The vulnerability is a buffer overflow issue. In the function `handle_client`, data received from a client is stored in a fixed-size buffer (`char buffer[BUFFER_SIZE];`) without any checks on the length of the data, which can lead to overflow if the received data exceeds the size of the buffer.
+    where: The vulnerability is located in the `handle_client` function, specifically on the line `int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);` and subsequent use of the `buffer` variable.
+    why: Failing to resolve this weakness can lead to buffer overflow, which malicious attackers can exploit to execute arbitrary code, crash the server, or gain unauthorized access to the system.
+    how: An attacker can send more than `BUFFER_SIZE` bytes of data to the server. Since there is no check on the length of the data received, the excess data will overflow the buffer, overwriting adjacent memory, which could enable an attacker to execute arbitrary code.
+    code-sources: The entry point for user input is the call to `recv(client_socket, buffer, BUFFER_SIZE, 0);`.
+    code-sinks: The sink is where the received data is stored into `buffer` and further processed, as in `send(clients[i], buffer, bytes_received, 0);`.
+    suggested-fix: 
+    ```diff
+    --- original/falcon180b-3300.c
+    +++ fixed/falcon180b-3300.c
+    @@ -19,11 +19,11 @@
+     
+         while(1) {
+             memset(buffer, 0, BUFFER_SIZE);
+    -        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+    +        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE - 1, 0);
+     
+             if(bytes_received <= 0) {
+                 close(client_socket);
+                 clients[num_clients - 1] = -1;
+                 num_clients--;
+                 break;
+             }
+    +        buffer[BUFFER_SIZE - 1] = '\0'; // Ensure null-terminated string
+     
+             for(int i = 0; i < num_clients; i++) {
+                 if(clients[i]!= -1) {
+    ```
+    explanation-suggested-fix: By modifying the `recv` call to limit the maximum bytes received to `BUFFER_SIZE - 1`, we reserve space for the null-terminator, which helps to prevent buffer overflow. In addition, explicitly setting `buffer[BUFFER_SIZE - 1] = '\0'` ensures that the buffer is always null-terminated, further mitigating risks of overflow and ensuring safe handling of the data.
+    method: UNKNOWN

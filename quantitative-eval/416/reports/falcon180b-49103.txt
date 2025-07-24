@@ -1,0 +1,29 @@
+
+    vuln-fix: CWE-415: Double Free in falcon180b-49103 (severity: High)
+    what: The code in falcon180b-49103 has a double free vulnerability. The `client_socket` can be closed multiple times, once in the `handle_client` function and potentially again in the main loop.
+    where: - `handle_client` function, line 21: `close(client_socket);`
+           - Main loop in `main` function, line 57: `close(client_socket);`
+    why: If this issue is not resolved, it can result in undefined behavior, which might include a crash of the application, memory corruption, or possible security vulnerabilities that could be exploited by an attacker.
+    how: An attacker can exploit this vulnerability by causing the server to close the same socket descriptor multiple times. This can create an unstable state in the application, potentially allowing code execution or denial of service.
+    code-sources: The entry point for user input is the `recv` function call on line 14 inside the `handle_client` function, where data is received from the connected clients.
+    code-sinks: Actions performed using user input include logging the data to the console via `printf` on line 18.
+    suggested-fix: 
+    ```diff
+    -        for (int i = 0; i < num_clients; i++) {
+    +        int added = 0;
+    +        for (int i = 0; i < MAX_CLIENTS; i++) {
+                if (clients[i] == 0) {
+                    clients[i] = client_socket;
+                    num_clients++;
+    +                added = 1;
+                    break;
+                }
+            }
+    +        if (!added) {
+    +            printf("Maximum clients reached\n");
+    +            close(client_socket);
+    +            continue;
+    +        }
+    ```
+    explanation-suggested-fix: The fix ensures that the `client_socket` variable is correctly checked and only one close operation is executed in case of reaching the maximum number of clients. It avoids re-closing the socket descriptor in multiple places.
+    method: UNKNOWN

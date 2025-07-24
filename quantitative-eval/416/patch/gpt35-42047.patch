@@ -1,0 +1,60 @@
+ 
+    
+    --- a/gpt35-42047.c
+    +++ b/gpt35-42047.c
+    @@ -7,14 +7,27 @@ int main() {
+    
+        printf("Enter your monthly income: ");
+    -   scanf("%f", &income);
+    +   if (scanf("%f", &income) != 1) {
+    +       printf("Invalid input. Please enter a valid number.\n");
+    +       return 1;
+    +   }
+    
+        printf("Enter your monthly expenses: ");
+    -   scanf("%f", &expenses);
+    +   if (scanf("%f", &expenses) != 1) {
+    +       printf("Invalid input. Please enter a valid number.\n");
+    +       return 1;
+    +   }
+    
+        savings = income - expenses;
+    
+        int choice;
+    
+        do {
+            printf("\nEnter your choice: ");
+    -       scanf("%d", &choice);
+    +       if (scanf("%d", &choice) != 1) {
+    +           printf("Invalid input. Please enter a valid number.\n");
+    +           return 1;
+    +       }
+    
+            switch(choice) {
+                case 1:
+                    printf("Enter number of months: ");
+    -               int months;
+    -               scanf("%d", &months);
+    +               int months;
+    +               if (scanf("%d", &months) != 1) {
+    +                   printf("Invalid input. Please enter a valid number.\n");
+    +                   return 1;
+    +               }
+                    printf("Total income for %d months: %.2f\n", months, income * months);
+                    break;
+    
+    @@ -39,6 +52,12 @@ int main() {
+                default:
+                    printf("Invalid choice. Please try again.\n");
+            }
+    +   } while(choice != 4);
+    +   
+    +   if (choice < 1 || choice > 4) {
+    +       printf("Invalid choice. Please enter a number between 1 and 4.\n");
+    +       return 1;
+    +   }
+        
+        return 0;
+    }
+    
+    

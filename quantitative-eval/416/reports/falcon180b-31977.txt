@@ -1,0 +1,50 @@
+
+vuln-fix: CWE-459: Incomplete Cleanup in falcon180b-31977 (severity: Moderate)
+what: The server code does not properly remove client socket descriptors from the `clients` array upon disconnection.
+where: 
+- In the `handle_client` function:
+    - Lines related to `recv` and connection handling.
+    - Lines related to broadcasting and maintaining client connections.
+- In the `main` function:
+    - Lines related to adding clients to the `clients` array.
+why: Failure to remove disconnected client sockets from the array could cause resource leakage, potentially leading to denial of service.
+how: An attacker could keep disconnecting and reconnecting to the server, eventually exhausting the array's capacity.
+code-sources: Functions involving client connections, primarily `accept` in the `main` function.
+code-sinks: Functions processing client data, specifically the `recv` call in the `handle_client` function.
+suggested-fix: 
+```diff
+--- falcon180b-31977.c
++++ falcon180b-31977-fixed.c
+@@ -33,7 +33,12 @@
+     }
+ 
+     close(client_socket);
++    
++    // Remove client socket from the array
++    for (int i = 0; i < num_clients; i++) {
++        if (clients[i] == client_socket) {
++            clients[i] = clients[num_clients-1];
++            break;
++        }
++    }
++    num_clients--;
+     return NULL;
+ }
+
+@@ -53,10 +58,10 @@
+        int client_socket = accept(server_socket, NULL, NULL);
+ 
+        if (num_clients >= MAX_CLIENTS) {
+            send(client_socket, "Server is full", strlen("Server is full"), 0);
+            close(client_socket);
+        } else {
++            pthread_t thread_id;
++            int* new_sock = malloc(1);
++            *new_sock = client_socket;
++            clients[num_clients++] = client_socket;
+            pthread_create(&thread_id, NULL, handle_client, (void*) new_sock);
+        }
+    }
+```
+explanation-suggested-fix: The suggested code diff ensures proper removal of client sockets from the `clients` array upon disconnection, which prevents resource leakage and ensures that the array capacity is maintained.
+method: UNKNOWN

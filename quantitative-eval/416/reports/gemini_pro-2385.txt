@@ -1,0 +1,100 @@
+
+vuln-fix: CWE-401: Memory Leak in gemini_pro-2385 (severity: High)
+what: The code suffers from a memory leak issue when creating shapes (rectangle, circle, and triangle) because the dynamically allocated memory for the 'sides' array is not properly managed.
+where: Lines relevant to the vulnerability are in the `create_rectangle`, `create_circle`, and `create_triangle` functions.
+why: If this memory leak is not resolved, it can lead to an exhaustion of memory resources, potentially crashing the application or causing it to behave unpredictably.
+how: An attacker could exploit this vulnerability by repeatedly creating shapes, causing continuous memory leaks until the system's resources are exhausted, leading to a Denial of Service (DoS).
+code-sources: User input enters through the parameters of the `create_rectangle`, `create_circle`, and `create_triangle` functions.
+code-sinks: The memory allocation and subsequent use of the 'sides' array in the `create_shape` function.
+suggested-fix:
+```diff
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+// Define a macro to simplify printing
+#define PRINTF(fmt, ...) printf(fmt "\n", ##__VA_ARGS__)
+
+// Define a struct to represent a shape
+typedef struct shape {
+    char *name;
+    int num_sides;
+    int *sides;
+} shape_t;
+
+// Create a new shape
+shape_t *create_shape(char *name, int num_sides, int *sides) {
+    shape_t *shape = malloc(sizeof(shape_t));
+    shape->name = strdup(name);  // Use strdup to properly duplicate the string
+    shape->num_sides = num_sides;
+    shape->sides = malloc(num_sides * sizeof(int));
+    if(shape->sides != NULL) {
+        memcpy(shape->sides, sides, num_sides * sizeof(int));
+    } else {
+        free(shape->name);
+        free(shape);
+        return NULL;
+    }
+    return shape;
+}
+
+// Free the memory allocated for a shape
+void free_shape(shape_t *shape) {
+    free(shape->name);
+    free(shape->sides);
+    free(shape);
+}
+
+// Print the details of a shape
+void print_shape(shape_t *shape) {
+    PRINTF("Shape: %s", shape->name);
+    PRINTF("Number of sides: %d", shape->num_sides);
+    for (int i = 0; i < shape->num_sides; i++) {
+        PRINTF("Side %d: %d", i + 1, shape->sides[i]);
+    }
+}
+
+// Create a rectangle
+shape_t *create_rectangle(char *name, int width, int height) {
+    int sides[] = {width, height, width, height};
+    return create_shape(name, 4, sides);
+}
+
+// Create a circle
+shape_t *create_circle(char *name, int radius) {
+    int sides[] = {radius};
+    return create_shape(name, 1, sides);
+}
+
+// Create a triangle
+shape_t *create_triangle(char *name, int side1, int side2, int side3) {
+    int sides[] = {side1, side2, side3};
+    return create_shape(name, 3, sides);
+}
+
+// Main function
+int main() {
+    // Create a rectangle
+    shape_t *rectangle = create_rectangle("Rectangle", 5, 3);
+
+    // Create a circle
+    shape_t *circle = create_circle("Circle", 4);
+
+    // Create a triangle
+    shape_t *triangle = create_triangle("Triangle", 3, 4, 5);
+
+    // Print the details of each shape
+    print_shape(rectangle);
+    print_shape(circle);
+    print_shape(triangle);
+
+    // Free the memory allocated for each shape
+    free_shape(rectangle);
+    free_shape(circle);
+    free_shape(triangle);
+
+    return 0;
+}
+```
+explanation-suggested-fix: The suggested code fixes the memory leak by ensuring that the 'name' string is properly duplicated using `strdup` and dynamically allocates memory for the 'sides' array within the `create_shape` function. This way, the `sides` array memory can be managed and freed correctly.
+method: UNKNOWN

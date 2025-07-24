@@ -1,0 +1,26 @@
+ 
+
+--- gpt35-68313.c 2023-03-18 12:00:00.000000000 +0000
++++ gpt35-68313-fixed.c 2023-03-18 12:30:00.000000000 +0000
+@@ -25,7 +25,17 @@
+         fprintf(fp, "Client %d: %s", client_sock, buffer);
+         fclose(fp);
+         pthread_mutex_unlock(&mutex);
+
++        // sanitize user input before using
++        for (int i = 0; i < strlen(buffer); i++) {
++            if (buffer[i] == '\n' || buffer[i] == '\r') {
++                buffer[i] = ' ';
++            }
++        }
+
++        // limit buffer size and escape special characters
++        snprintf(buffer_safe, sizeof(buffer_safe), "%.1000s", buffer);
++        FILE *fp = fopen("messages.txt", "a");
++        fprintf(fp, "Client %d: %s\n", client_sock, buffer_safe);
++        fclose(fp);
++        pthread_mutex_unlock(&mutex);
+ 
+         send(client_sock, buffer, strlen(buffer), 0);
+     }
+

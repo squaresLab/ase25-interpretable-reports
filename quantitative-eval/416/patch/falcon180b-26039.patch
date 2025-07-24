@@ -1,0 +1,27 @@
+ 
+
+1a2
+> #include <errno.h>
+33a35
+>     server_socket = socket(AF_INET, SOCK_STREAM, 0);
+34a37
+>         perror("socket creation failed");
+35a39
+>         exit(EXIT_FAILURE);
+53c57
+<     bind(server_socket, (struct sockaddr *) &server_addr, sizeof(server_addr));
+---
+>     if (bind(server_socket, (struct sockaddr *) &server_addr, sizeof(server_addr)) < 0) {
+>         perror("bind failed");
+>         close(server_socket);
+>         exit(EXIT_FAILURE);
+>     }
+54a59
+> 
+70a76
+> 
+72a79
+>         perror("accept failed");
+73a81
+>         continue;
+

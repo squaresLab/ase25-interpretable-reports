@@ -1,0 +1,30 @@
+
+vuln-fix: Buffer Overflow (CWE-120) in falcon180b-28652 (severity: high)
+what: The implementation has a buffer overflow vulnerability due to the direct use of `recv()` to store received data into a fixed-size buffer without properly checking the size of the input.
+where: The vulnerability is located in the `handle_client` function, specifically in the line `int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);`.
+why: An attacker can exploit this by sending data larger than `BUFFER_SIZE`, which can lead to overwriting adjacent memory. This can cause crashes or even allow the attacker to execute arbitrary code.
+how: An attacker would send a payload larger than 1024 bytes to the server. Since there's no bounds checking, this data would overflow the buffer, potentially overwriting memory and leading to unpredictable behavior or code execution.
+code-sources: Code line: `int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);`
+code-sinks: Code line: `printf("Client %d sent: %s\n", client_socket, buffer);` and `send(clients[i], buffer, strlen(buffer), 0);`
+suggested-fix:
+```diff
+--- falcon180b-28652.c
++++ falcon180b-28652-fixed.c
+@@ -15,6 +15,7 @@
+ 
+ void* handle_client(void* arg) {
+     int client_socket = *(int*) arg;
++    ssize_t bytes_received;
+     char buffer[BUFFER_SIZE];
+     while (1) {
+         memset(buffer, 0, BUFFER_SIZE);
+-        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
++        bytes_received = recv(client_socket, buffer, BUFFER_SIZE - 1, 0);
+         if (bytes_received <= 0) {
+             break;
+         }
+         buffer[bytes_received] = '\0';
+         printf("Client %d sent: %s\n", client_socket, buffer);
+```
+explanation-suggested-fix: The fix ensures that the buffer is not overflowed by limiting the bytes received to `BUFFER_SIZE - 1`, providing space for the null terminator. This improves the security by preventing buffer overflow.
+method: UNKNOWN

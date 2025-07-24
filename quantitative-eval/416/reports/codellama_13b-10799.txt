@@ -1,0 +1,64 @@
+
+vuln-fix: cpp/return-stack-allocated-memory (CWE-825) in codellama_13b-10799 (severity: High)
+what: A function returns a pointer to a stack-allocated region of memory. This memory is deallocated at the end of the function, which may lead the caller to dereference a dangling pointer.
+where: 
+    - Line 18 in codellama_13b-10799: The function `generate_password` returns a pointer to a local stack array `password`.
+    - Line 39 in codellama_13b-10799: The function `prompt_password` returns a pointer to a local stack array `password`.
+why: If not resolved, this weakness can lead to undefined behavior, crashes, or unpredictable program behavior when the caller attempts to use the deallocated memory.
+how: An attacker could exploit this vulnerability by forcing the program to use the dangling pointer, potentially leading to arbitrary code execution or crash.
+code-sources: `fgets(password, PASSWORD_LENGTH + 1, stdin)` in function `prompt_password`.
+code-sinks: `password = prompt_password();` and `display_password(password);` in `main` function.
+suggested-fix: 
+```
+diff --git a/codellama_13b-10799 b/codellama_13b-10799
+index ae67123..4b053e1 100644
+--- a/codellama_13b-10799
++++ b/codellama_13b-10799
+@@ -10,11 +10,12 @@
+   return password;
+ }
+
+-char* generate_password() {
+-  char password[PASSWORD_LENGTH + 1];
++void generate_password(char* password) {
+   int i;
+   for (i = 0; i < PASSWORD_LENGTH; i++) {
+     password[i] = 'a' + rand() % 26;
+   }
+   password[PASSWORD_LENGTH] = '\0';
+-  return password;
++}
++
+ void prompt_password(char* password) {
+   int i;
+   printf("Enter your password: ");
+@@ -34,11 +34,10 @@
+   password[strlen(password) - 1] = '\0';
++}
+
+ int main() {
+   int tries = 0;
+-  char* password;
++  char password[PASSWORD_LENGTH + 1];
+   while (tries < MAX_PASSWORD_TRIES) {
+-    password = prompt_password();
+-    if (check_password(password)) {
+-      display_password(password);
++    prompt_password(password);
++    if (check_password(password)) {
++      display_password(password);
+       break;
+     } else {
+-      tries++;
+-      printf("Invalid password. Try again.\n");
+     }
+@@ -48,5 +47,6 @@
+   }
+   if (tries == MAX_PASSWORD_TRIES) {
+     printf("Maximum number of tries exceeded. Goodbye.\n");
++  return 0;
+}
+
+```
+explanation-suggested-fix: The suggested code diff resolves the vulnerability by avoiding returning pointers to stack-allocated memory. Instead, it modifies the functions `generate_password` and `prompt_password` to accept a character array as an argument, which ensures the memory is managed by the caller and remains valid.
+method: CODEQL

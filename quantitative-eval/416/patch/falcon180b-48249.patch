@@ -1,0 +1,16 @@
+ 
+
+--- falcon180b-48249.c
++++ falcon180b-48249.c
+@@ -16,7 +16,8 @@
+     while (1) {
+         memset(buffer, 0, BUFFER_SIZE);
+         int bytes_received = recv(client_socket_fd, buffer, BUFFER_SIZE-1, 0);
+-        if (bytes_received <= 0) {
++        if (bytes_received <= 0 || bytes_received >= BUFFER_SIZE) {
++            buffer[BUFFER_SIZE-1] = '\0'; // Ensure null-termination
+             break;
+         }
+         printf("Client %d: %s", client_socket_fd, buffer);
+         send(client_socket_fd, buffer, strlen(buffer), 0);
+

@@ -1,0 +1,34 @@
+
+vuln-fix: CWE-787: Out-of-bounds Write in falcon180b-5284 (severity: High)
+what: The vulnerability is an out-of-bounds write issue in the code that handles client connections. Specifically, the code increments `num_clients` without bounds checking, which can lead to array `client_sockets` being accessed out of its defined range, potentially causing memory corruption.
+where: 
+  - Line 37: Definition and initialization of `client_sockets` array.
+  - Line 74: Increment of `num_clients` without bounds checking.
+  - Line 76: Access to `client_sockets[num_clients]`.
+why: Failure to resolve this issue can lead to writing outside the bounds of memory allocated for `client_sockets`, resulting in serious security implications, including crashes, arbitrary code execution, or data corruption.
+how: An attacker can establish multiple connections to the server until `num_clients` exceeds the size of the `client_sockets` array, at which point the server will write outside the memory bounds, leading to memory corruption or potential code execution.
+code-sources: Entry point of user input is at `accept()` in `accept_connections()` method, which assigns values to `client_sockets`.
+code-sinks: The primary action using user input occurs in the buffer handling code within the `handle_client` function given by `recv()` and `send()` functions.
+suggested-fix: 
+```diff
+--- falcon180b-5284.c
++++ falcon180b-5284.c
+@@ -71,6 +71,10 @@
+         if (client_socket == -1) {
+             printf("Error accepting connection\n");
+             exit(1);
+         }
+
++        if (num_clients >= MAX_CLIENTS) {
++            printf("Max clients reached. Connection refused.\n");
++            close(client_socket);
++            continue;
++        }
+        
+         client_sockets[num_clients] = client_socket;
+         num_clients++;
+         
+         pthread_t thread_id;
+```
+explanation-suggested-fix: The proposed code changes ensure that before a new client socket is added and `num_clients` is incremented, a check is performed to see if the maximum number of clients (`MAX_CLIENTS`) has been reached. If it has, the incoming connection is refused, and the client socket is closed to prevent out-of-bounds access to the `client_sockets` array.
+method: UNKNOWN

@@ -1,0 +1,36 @@
+
+vuln-fix: CWE-415 Double Free in falcon180b-24309 (severity: High)
+what: The vulnerability is a double free error caused by the incorrect handling of the client_socket variable in the multithreaded server code. Specifically, the client_socket variable is shared between the main thread and the thread handling the client, which can lead to it being closed (freed) multiple times.
+where: The vulnerability is located in the file falcon180b-24309 but is spread across two parts of the code:
+- Line 41 where the client_socket is passed to the thread.
+- Lines 17-28 in the handle_client function where client_socket is used and closed.
+why: Not resolving this weakness can lead to undefined behavior, crashes, or even exploitable conditions such as heap corruption, where an attacker might cause the application to behave unpredictably or even execute arbitrary code.
+how: An attacker could exploit this vulnerability by repeatedly connecting and disconnecting clients, causing the server to attempt to free the same memory location multiple times, which can lead to crashes or allow malicious memory manipulation.
+code-sources: Entry point at `accept(server_socket, NULL, NULL);` on line 34.
+code-sinks: Actions performed using `client_socket` in `handle_client` on lines 17-28.
+suggested-fix:
+```diff
+--- falcon180b-24309.old.c
++++ falcon180b-24309.new.c
+@@ -41,7 +41,10 @@
+         printf("Client %d connected\n", client_socket);
+
+         clients[client_count] = client_socket;
+-        client_count++;
++        
+         int *new_client_socket = malloc(sizeof(int));
+         *new_client_socket = client_socket;
+
+         pthread_t thread_id;
+-        pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
++        pthread_create(&thread_id, NULL, handle_client, (void *) new_client_socket);
+
++        client_count++;
+     }
++
++    close(server_socket);
+     return 0;
+ }
+```
+explanation-suggested-fix: The suggested code diff resolves the vulnerability by dynamically allocating memory for each `client_socket` before passing it to the thread. This ensures that each thread operates on a separate copy of `client_socket`, thus preventing it from being freed multiple times. Additionally, the server socket is closed properly when the main loop exits.
+method: UNKNOWN

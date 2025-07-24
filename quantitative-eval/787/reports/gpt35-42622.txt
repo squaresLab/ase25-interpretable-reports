@@ -1,0 +1,28 @@
+
+vuln-fix: Out-of-bounds read (`CWE-125`) in `gpt35-42622` at line(s) 37, 73 (severity: High)
+what: The `read_employee` function reads data from a file into an `Employee` structure without verifying if the data fields match the expected format or if they exceed the buffer sizes, potentially leading to out-of-bounds memory access.
+where: The vulnerability is present in `gpt35-42622` at `read_employee` function (line 37) and in `create_index` function (line 73).
+why: Not resolving this weakness may allow an attacker to provide a maliciously crafted file that could lead to buffer overflows, causing the program to crash or enabling arbitrary code execution.
+how: An attacker can manipulate the input file (`employees.txt`) to include oversized fields, which the `fscanf` function will read into the fixed-size buffers of the `Employee` structure, leading to buffer overflows and potential arbitrary code execution.
+code-sources: The source of the vulnerability is the `fscanf` call in the `read_employee` function.
+code-sinks: The sink is the memory allocation in the `Employee` structure where the `fscanf` function writes the data.
+suggested-fix: ```
+diff --git a/gpt35-42622 b/gpt35-42622
+index abcd123..def4567 100644
+--- a/gpt35-42622
++++ b/gpt35-42622
+@@ -37,7 +37,7 @@ void read_employee(FILE* fp, Employee* employee) {
+     fscanf(fp, "%d %s %s %lf", &employee->id, employee->name, employee->address, &employee->salary);
+ }
+
++void read_employee(FILE* fp, Employee* employee) {
++    fscanf(fp, "%d %49s %99s %lf", &employee->id, employee->name, employee->address, &employee->salary);
+ }
+
+int main() {
+     Index index;
+     create_index("employees.txt", &index);
+
+```
+explanation-suggested-fix: The suggested code diff limits the number of characters `fscanf` will read into the `name` and `address` fields of the `Employee` structure, preventing buffer overflows and ensuring that data read does not exceed the allocated memory bounds.
+method: UNKNOWN

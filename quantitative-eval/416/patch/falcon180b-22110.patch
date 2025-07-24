@@ -1,0 +1,30 @@
+ 
+
+diff --git a/falcon180b-22110 b/falcon180b-22110
+index 1234567..89abcde 100644
+--- a/falcon180b-22110
++++ b/falcon180b-22110
+@@ -10,6 +10,7 @@ void *handle_client(void *arg) {
+     char buffer[BUFFER_SIZE];
+     while (1) {
+         memset(buffer, 0, BUFFER_SIZE);
++        int total_bytes_received = 0;
+         int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+         if (bytes_received <= 0) {
+             break;
+@@ -18,6 +19,9 @@ void *handle_client(void *arg) {
+             if (clients[i] != client_socket) {
++                if (total_bytes_received + bytes_received > BUFFER_SIZE) {
++                    // Log error and break to avoid buffer overflow
++                    fprintf(stderr, "Buffer overflow attempt detected");
++                    break;
++                }
+                 send(clients[i], buffer, bytes_received, 0);
+             }
+         }
++        total_bytes_received += bytes_received;
+     }
+     close(client_socket);
+     return NULL;
+ }
+

@@ -1,0 +1,12 @@
+ 
+
+58c58,59
+<     pthread_create(&elevator_threads[i], NULL, elevator_thread, &i);
+---
+>     int *elevator_id = malloc(sizeof(int));
+>     *elevator_id = i;
+>     pthread_create(&elevator_threads[i], NULL, elevator_thread, elevator_id);
+61a63
+>     free(elevator_id);
+
+

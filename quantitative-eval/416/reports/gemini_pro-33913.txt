@@ -1,0 +1,34 @@
+
+vuln-fix: CWE-119: Buffer Overflow in gemini_pro-33913 (severity: High)
+what: The code contains a buffer overflow vulnerability due to the way the filename is received and handled by the `recv` function without proper bounds checking. Specifically, `filename` is defined with a fixed size of `BUFFER_SIZE` (1024 bytes), but there is no check to ensure that the received data does not exceed this size.
+where: Vulnerability is located in the `thread_func` function, specifically at the line:
+```C
+int bytes_received = recv(sockfd, filename, BUFFER_SIZE, 0);
+```
+why: If not resolved, this vulnerability can lead to arbitrary code execution, denial of service (crash), or data corruption as an attacker could exploit the buffer overflow to overwrite important memory structures.
+how: An attacker can send a specially crafted filename that exceeds the `BUFFER_SIZE` limit. This will overwrite adjacent memory locations in the `filename` buffer, which can then be used to execute malicious code or crash the application.
+code-sources: The entry point is the `recv` function call in the `thread_func` function, which receives user input (the filename) from the client.
+code-sinks: The received filename is then passed to the `scan_file` function.
+suggested-fix: 
+```
+diff --git a/gemini_pro-33913 b/gemini_pro-33913
+index e69de29..bca9e67 100644
+--- a/gemini_pro-33913
++++ b/gemini_pro-33913
+@@ -42,7 +42,13 @@ void *thread_func(void *arg) {
+     char filename[BUFFER_SIZE];
+     int bytes_received = recv(sockfd, filename, BUFFER_SIZE, 0);
+     if (bytes_received < 0 || bytes_received >= BUFFER_SIZE) {
++        if (bytes_received >= BUFFER_SIZE) {
++            // Log an error message
++            fprintf(stderr, "Filename exceeded buffer size.\n");
++        }
+         perror("recv");
+         close(sockfd);
+         pthread_exit(NULL);
++    } else {
++        filename[bytes_received] = '\0'; // Null-terminate the string
+     }
+```
+explanation-suggested-fix: The suggested fix ensures that if the received data length exceeds `BUFFER_SIZE`, the function logs an error and exits gracefully, mitigating the risk of buffer overflow. Additionally, it adds a null terminator at the end of the received data to prevent reading invalid memory beyond the buffer.
+method: UNKNOWN

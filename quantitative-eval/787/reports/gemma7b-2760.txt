@@ -1,0 +1,36 @@
+ 
+    vuln-fix: CWE-131: Incorrect Calculation of Buffer Size in gemma7b-2760 (severity: High)
+    what: The code contains multiple issues with memory allocation and manipulation, primarily incorrect calculation of buffer sizes which can lead to buffer overflows and memory corruption.
+    where: Lines 1-59 in gemma7b-2760
+    why: Not resolving this weakness can allow an attacker to execute arbitrary code, potentially taking control of the system on which the application is running.
+    how: An attacker could supply a specially crafted CSV file with lines longer than `MAX_BUFFER_SIZE`, causing the application to allocate insufficient memory and write out of bounds, leading to memory corruption.
+    code-sources: The `csv_reader_init` function where `filename` is passed from the main function and the `csv_reader_parse` function where the data is read from the file.
+    code-sinks: The usage of `malloc`, `realloc`, and `strdup` for memory allocations in `csv_reader_parse` and the loops that copy line content to buffer without proper bounds checking.
+    suggested-fix: 
+--- gemma7b-2760.c
++++ gemma7b-2760-fixed.c
+@@ -23,10 +23,11 @@
+         reader->rows++;
+         data = realloc(reader->buffer, reader->rows * sizeof(char*));
+         reader->buffer = data;
+
+-        reader->cols = 0;
++        reader->cols = strlen(line);
++        data[reader->rows - 1] = malloc((reader->cols + 1) * sizeof(char));
+         data[reader->rows - 1] = strdup(line);
+-        while (line[i] != '\n') {
+-            reader->cols++;
+-            data[reader->rows - 1] = realloc(data[reader->rows - 1], (reader->cols + 1) * sizeof(char));
+-            data[reader->rows - 1][reader->cols] = line[i];
+-            i++;
++        if (data[reader->rows - 1] == NULL) {
++            perror("Unable to allocate buffer");
++            exit(EXIT_FAILURE);
++        }
++        strcpy(data[reader->rows - 1], line);
+     }
+ 
+     fclose(reader->file);
+ 
+    explanation-suggested-fix: The suggested fix ensures proper memory allocation by allocating the total required buffer size at once using `malloc`, avoiding multiple `realloc` calls and potential overflows. Additionally, `strcpy` is used to safely copy the line data into the allocated buffer.
+    method: UNKNOWN

@@ -1,0 +1,34 @@
+
+vuln-fix: Buffer Overflow (CWE-120) in falcon180b-4868 (severity: High)
+what: The vulnerability is a buffer overflow that occurs because the `send` function uses `strlen(buffer)` to determine the number of bytes to send, potentially sending more data than intended if the received buffer is not null-terminated.
+where: The vulnerability is located in the `handle_client` function, specifically in the following line:
+```c
+send(client_socket, buffer, strlen(buffer), 0);
+```
+why: If this vulnerability is not resolved, an attacker could exploit it to execute arbitrary code or cause a denial-of-service (DoS) by crashing the server.
+how: An attacker could send a specially crafted payload that fills the buffer without a null terminator, causing `strlen(buffer)` to read beyond the buffer's boundary. This could lead to memory corruption and potentially allow the attacker to execute arbitrary code.
+code-sources: The entry point for user input is `recv(client_socket, buffer, sizeof(buffer), 0);`.
+code-sinks: The vulnerable action performed by the application is `send(client_socket, buffer, strlen(buffer), 0);`.
+suggested-fix:
+```diff
+--- falcon180b-4868
++++ falcon180b-4868
+@@ -16,7 +16,10 @@
+ 
+     while (1) {
+         memset(buffer, 0, sizeof(buffer));
+         int bytes_received = recv(client_socket, buffer, sizeof(buffer), 0);
+
+         if (bytes_received <= 0) {
+             break;
+         }
+
++        if (buffer[bytes_received - 1] == '\n') {
++            buffer[bytes_received - 1] = '\0';
++        }
++
+         printf("Client %d sent: %s", client_socket, buffer);
+         send(client_socket, buffer, bytes_received, 0);
+```
+explanation-suggested-fix: The suggested fix ensures that the buffer is properly null-terminated by checking if the last character received is a newline (`\n`). If it is, it is replaced with a null terminator (`\0`). This way, `strlen(buffer)` will only return the length up to the null terminator, preventing the buffer overflow.
+method: UNKNOWN

@@ -1,0 +1,30 @@
+ 
+    
+    #include <pthread.h>
+
+    + pthread_mutex_t clients_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+    ...
+    
+    while (1) {
+        int client_socket = accept(server_socket, NULL, NULL);
+
+        + pthread_mutex_lock(&clients_mutex);
+        if (num_clients >= MAX_CLIENTS) {
+            send(client_socket, "Server is full.\n", strlen("Server is full.\n"), 0);
+            close(client_socket);
+            + pthread_mutex_unlock(&clients_mutex);
+            continue;
+        }
+
+        clients[num_clients][0] = client_socket;
+        clients[num_clients][1] = 0;
+        num_clients++;
+        + pthread_mutex_unlock(&clients_mutex);
+
+        pthread_t thread_id;
+        pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+    }
+    
+
+    

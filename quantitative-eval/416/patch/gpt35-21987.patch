@@ -1,0 +1,18 @@
+ 
+    
+    --- original-code.c
+    +++ fixed-code.c
+    @@ -75,7 +75,8 @@
+         char buffer[1024] = {0};
+         int valread;
+         char *response = "Hello from server.";
+    +    size_t buffer_size = sizeof(buffer) - 1;
+         send(sock, response, strlen(response), 0);
+         
+         while ((valread = read(sock, buffer, 1024)) > 0)
+         {
+             buffer[valread] = '\0';
+             printf("Received Message: %s\n", buffer);
+    
+
+    

@@ -1,0 +1,16 @@
+ 
+    
+    --- original/falcon180b-614.c
+    +++ fixed/falcon180b-614.c
+    @@ -37,7 +37,7 @@
+         // Get client name
+         char name_buffer[10];
+         recv(client_sock, name_buffer, sizeof(name_buffer), 0);
+    -    strcpy(clients[num_clients].name, name_buffer);
+    +    strncpy(clients[num_clients].name, name_buffer, sizeof(clients[num_clients].name) - 1);
+    +    clients[num_clients].name[sizeof(clients[num_clients].name) - 1] = '\0';
+    
+         // Send welcome message to client
+         sprintf(buffer, "Welcome to the chat, %s!\n", clients[num_clients].name);
+    
+    

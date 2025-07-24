@@ -1,0 +1,40 @@
+
+vuln-fix: Buffer Overflow (CWE-120) in falcon180b-15731 at lines 17, 25, 29, 33, and 45 (severity: High)
+what: The code contains a potential buffer overflow in the handling of client messages within the `handle_client` function. The fixed-size buffer `char buffer[BUFFER_SIZE]` can be overflowed if a client sends more than `BUFFER_SIZE` bytes, leading to undefined behavior or possible execution of malicious code.
+where: The vulnerability exists at multiple locations in the `handle_client` function in falcon180b-15731:
+- Line 17: Definition of `char buffer[BUFFER_SIZE]`.
+- Line 25: `recv` function call which writes data into `buffer`.
+- Line 29: Printing of the `buffer` to the console.
+- Line 33: Sending the `buffer` to other clients.
+- Line 45: Accepting client connections without bounds checking.
+why: If this buffer overflow is not resolved, it could lead to an attacker being able to overwrite critical memory regions, potentially executing arbitrary code, crashing the server, or corrupting data.
+how: An attacker can send a maliciously crafted message longer than `BUFFER_SIZE` bytes to overflow the buffer, which could overwrite adjacent memory (stack buffer overflow) and lead to code execution or other malicious activities.
+code-sources: The source of user input originates from the `recv` function call at line 25 within the `handle_client` function.
+code-sinks: The application uses the unchecked buffer in the `printf` function call at line 29 and the `send` function call at line 33.
+suggested-fix:
+```diff
+--- falcon180b-15731	2023-10-04
++++ falcon180b-15731	2023-10-04
+@@ -25,7 +25,8 @@
+     while (1) {
+         memset(buffer, 0, BUFFER_SIZE);
+         int bytes_received = recv(client_socket, buffer, BUFFER_SIZE - 1, 0);
+-        if (bytes_received <= 0) {
++        if (bytes_received <= 0 || bytes_received >= BUFFER_SIZE) {
++            buffer[BUFFER_SIZE - 1] = '\0'; // Ensure null termination
+             break;
+         }
+
+@@ -41,6 +42,8 @@
+         clients[num_clients][0] = client_socket;
+         clients[num_clients][1] = num_clients;
+         num_clients++;
++
++        int *new_client_socket = malloc(sizeof(int));
+         pthread_t thread_id;
+-        pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
++        pthread_create(&thread_id, NULL, handle_client, (void *) new_client_socket);
+     }
+ ```
+explanation-suggested-fix: The suggested fix ensures that the `recv` call does not cause a buffer overflow by only accepting up to `BUFFER_SIZE - 1` bytes and ensures null termination of the buffer using `buffer[BUFFER_SIZE - 1] = '\0'`. It also corrects the management of `client_socket` by allocating memory for it to avoid race conditions caused by the reused socket file descriptor.
+method: UNKNOWN

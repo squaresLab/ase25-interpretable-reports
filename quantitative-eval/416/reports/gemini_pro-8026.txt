@@ -1,0 +1,35 @@
+ 
+vuln-fix: CWE-362: Race Condition in gemini_pro-8026 (severity: High)
+what: The vulnerability exists in the handling of client connections where the same memory address (containing client_socket) is being passed to multiple threads without protection, potentially causing threads to operate on an invalid or incorrect socket descriptor.
+where: Lines 62-67 in gemini_pro-8026
+why: If not resolved, a race condition can lead to unpredictable behavior, crashes, or security vulnerabilities where one client's data might be sent to another client.
+how: An attacker could exploit this by flooding the server with multiple connections simultaneously, potentially leading to race conditions that cause security breaches, data corruption, or application crashes.
+code-sources: `accept` function call in the main loop on line 60.
+code-sinks: Use of `client_socket` in the `handle_client` function on line 33.
+suggested-fix: 
+```diff
+--- gemini_pro-8026.c
++++ gemini_pro-8026_fixed.c
+@@ -60,14 +60,17 @@
+ 	while (1) {
+ 		int client_socket = accept(server_socket, NULL, NULL);
+ 		if (client_socket == -1) {
+ 			perror("accept");
+ 			continue;
+ 		}
+
++		int *client_sock_ptr = malloc(sizeof(int));
++		*client_sock_ptr = client_socket;
++
+ 		pthread_t thread;
+-		if (pthread_create(&thread, NULL, handle_client, &client_socket) != 0) {
++		if (pthread_create(&thread, NULL, handle_client, client_sock_ptr) != 0) {
+ 			perror("pthread_create");
+			close(client_socket);
++			free(client_sock_ptr);
+ 			continue;
+ 		}
+ 	}
+```
+explanation-suggested-fix: The proposed fix dynamically allocates memory for each `client_socket` and passes a unique pointer to each thread. This prevents race conditions by ensuring that each thread operates on a different memory address, thus avoiding conflicts.
+method: UNKNOWN

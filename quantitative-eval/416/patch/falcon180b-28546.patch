@@ -1,0 +1,18 @@
+ 
+cpp
+diff --git a/falcon180b-28546 b/falcon180b-28546
+index e69de29..b2a8e48 100644
+--- a/falcon180b-28546
++++ b/falcon180b-28546
+@@ -22,7 +22,7 @@ void *handle_client(void *arg) {
+ 
+         if (bytes_received <= 0) {
+             close(client_socket);
+             pthread_exit(0);
+         }
+ 
+-        printf("Client %d sent message: %s\n", client_socket, buffer);
++        printf("Client %d sent message: %.*s\n", client_socket, bytes_received, buffer);
+     }
+ }
+

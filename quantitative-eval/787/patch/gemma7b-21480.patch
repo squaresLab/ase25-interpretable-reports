@@ -1,0 +1,14 @@
+ 
+
+23c23
+<   reader->buffer = realloc(reader->buffer, (reader->lineNumber + 1) * MAX_BUFFER_SIZE);
+---
+>   size_t newBufferSize = (size_t)reader->lineNumber + 1 > SIZE_MAX / MAX_BUFFER_SIZE ? 0 : (reader->lineNumber + 1) * MAX_BUFFER_SIZE;
+>   if (newBufferSize == 0) {
+>       // Handle error
+>       fprintf(stderr, "Buffer size overflow\n");
+>       csvReader_finalize(reader);
+>       exit(EXIT_FAILURE);
+>   }
+>   reader->buffer = realloc(reader->buffer, newBufferSize);
+

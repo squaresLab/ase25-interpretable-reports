@@ -1,0 +1,34 @@
+ 
+        diff --git a/gemini_pro-30004.c b/gemini_pro-30004.c
+        index abcdefg..hijklmn 100644
+        --- a/gemini_pro-30004.c
+        +++ b/gemini_pro-30004.c
+        @@ -28,6 +28,8 @@
+             if (fgets(title, sizeof(title), file) == NULL) {
+                 perror("Error reading title");
+                 fclose(file);
+        +        return NULL;
+        +    }
+        +    title[strcspn(title, "\n")] = 0; // Remove newline character, if any
+         
+             // Read the author of the book
+             char author[256];
+             if (fgets(author, sizeof(author), file) == NULL) {
+                 perror("Error reading author");
+                 fclose(file);
+        +        return NULL;
+        +    }
+        +    author[strcspn(author, "\n")] = 0; // Remove newline character, if any
+        
+        @@ -49,10 +51,12 @@
+                 perror("Error reading text");
+                 fclose(file);
+                 return NULL;
+             }
+    +        text[num_pages] = '\0';  // Ensure null-termination
+
+             // Close the file
+             fclose(file);
+
+             // Create a new book
+    

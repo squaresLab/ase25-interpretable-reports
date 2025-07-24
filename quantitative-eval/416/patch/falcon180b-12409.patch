@@ -1,0 +1,22 @@
+ 
+    
+    diff --git a/falcon180b-12409 b/falcon180b-12409
+    index e69de29..b1a6b02 100644
+    --- a/falcon180b-12409
+    +++ b/falcon180b-12409
+    @@ -69,12 +69,12 @@ int main() {
+            }
+            clients[num_clients].socket = client_socket;
+            clients[num_clients].ip = inet_ntoa(client_addr.sin_addr);
+            clients[num_clients].port = ntohs(client_addr.sin_port);
+            num_clients++;
+            pthread_t thread_id;
+    -       pthread_create(&thread_id, NULL, handle_request, (void *)&client_socket);
+    +       pthread_create(&thread_id, NULL, handle_request, (void *)&client_socket);
+    +       pthread_detach(thread_id); // Ensure thread resources are freed when done
+        }
+    
+        return 0;
+    }
+    
+    

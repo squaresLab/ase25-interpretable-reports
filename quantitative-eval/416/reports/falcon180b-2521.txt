@@ -1,0 +1,26 @@
+ 
+    vuln-fix: OS Command Injection (CWE-78) in falcon180b-2521 (severity: High)
+    what: The vulnerability is due to the use of the `system` function with user input that is not properly sanitized, allowing an attacker to execute arbitrary commands on the system.
+    where: The vulnerability is located in the `main` function, specifically at the line `system("clear");`.
+    why: Failing to resolve this issue could allow an attacker to execute arbitrary system commands, potentially leading to data loss, unauthorized access, or system compromise.
+    how: An attacker could exploit this vulnerability by injecting malicious system commands if they can control the input that is passed to the `system` function.
+    code-sources: `scanf("%d", &choice);`, `scanf(" %c", &answer);`
+    code-sinks: `system("clear");`
+    suggested-fix: 
+    ```diff
+    --- a/falcon180b-2521
+    +++ b/falcon180b-2521
+    @@ -11,7 +11,7 @@
+         int treasure = 0;
+
+         while(health > 0) {
+    -        system("clear");
+    +        #ifdef _WIN32
+    +            system("cls");
+    +        #else
+    +            system("clear");
+    +        #endif
+             printf("You are in a dark, damp cave.\n"); 
+    ```
+    explanation-suggested-fix: The suggested code diff replaces the unconditional use of `system("clear")` with a safe, multi-platform method using preprocessor directives to ensure the correct system command is used based on the operating system. While this does not eliminate the risk of command injection, it provides a controlled and appropriate usage context.
+    method: UNKNOWN

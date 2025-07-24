@@ -1,0 +1,24 @@
+
+vuln-fix: Unbounded Buffer Write (CWE-120, CWE-787, CWE-805) in gpt35-63037 at line 26 (severity: High)
+what: This vulnerability exists because there are buffer write operations that do not control the length of the data written, which can result in a buffer overflow.
+where: Line 26 of `gpt35-63037` contains the vulnerable code: `sprintf(msg, "%s: %s", cl->name, msg);`.
+why: If this weakness is not resolved, an attacker can exploit this buffer overflow to execute arbitrary code, crash the server, or exploit other vulnerabilities leading to potential full system compromise.
+how: An attacker can exploit this vulnerability by sending specially crafted input that exceeds the buffer limit, causing a buffer overflow.
+code-sources: The `fgets(cl.name, 50, stdin);` on line 83 and `fgets(msg, MAX_MSG_LENGTH, stdin);` on line 16 are entry points where user input enters the application.
+code-sinks: The line `sprintf(msg, "%s: %s", cl->name, msg);` at line 26 writes user input to a buffer without bounds checking.
+suggested-fix: 
+```diff
+--- gpt35-63037-original.c
++++ gpt35-63037-fixed.c
+@@ -24,7 +24,7 @@
+         fgets(msg, MAX_MSG_LENGTH, stdin);
+         msg[strcspn(msg, "\n")] = '\0'; // remove newline character
+         // Buffer length checking is added here
+-        sprintf(msg, "%s: %s", cl->name, msg);
++        snprintf(msg, MAX_MSG_LENGTH, "%s: %s", cl->name, msg);
+         if (send(cl->sockfd, msg, strlen(msg), 0) < 0) {
+             perror("Error sending message to all clients");
+         }
+```
+explanation-suggested-fix: By replacing `sprintf` with `snprintf`, the length of the data written to the `msg` buffer is controlled, preventing buffer overflow. The `snprintf` function limits the number of characters written to `msg` to `MAX_MSG_LENGTH`.
+method: CODEQL

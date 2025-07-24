@@ -1,0 +1,18 @@
+ 
+diff --git a/gpt35-42622 b/gpt35-42622
+index abcd123..def4567 100644
+--- a/gpt35-42622
++++ b/gpt35-42622
+@@ -37,7 +37,7 @@ void read_employee(FILE* fp, Employee* employee) {
+     fscanf(fp, "%d %s %s %lf", &employee->id, employee->name, employee->address, &employee->salary);
+ }
+
++void read_employee(FILE* fp, Employee* employee) {
++    fscanf(fp, "%d %49s %99s %lf", &employee->id, employee->name, employee->address, &employee->salary);
+ }
+
+int main() {
+     Index index;
+     create_index("employees.txt", &index);
+
+

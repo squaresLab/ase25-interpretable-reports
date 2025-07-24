@@ -1,0 +1,16 @@
+ 
+    
+    --- falcon180b-40658.c
+    +++ falcon180b-40658-fixed.c
+    @@ -14,6 +14,7 @@
+        {
+            int client_socket = *(int *) arg;
+            char request[MAX_REQUEST_SIZE];
+            bzero(request, MAX_REQUEST_SIZE);
+    +       ssize_t recv_size;
+
+            while ((recv_size = recv(client_socket, request, MAX_REQUEST_SIZE - 1, 0)) > 0) {
+                request[recv_size] = '\0';
+                printf("Request from client %d: %s\n", client_socket, request);
+    
+    

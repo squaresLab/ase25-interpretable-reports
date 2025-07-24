@@ -1,0 +1,29 @@
+ 
+
+--- falcon180b-40084.c
++++ falcon180b-40084.c
+@@ -39,12 +39,13 @@
+             pthread_t thread_id;
+             
+             // Allocate memory for the client socket to pass to the thread
+-            int *client_sock_ptr = malloc(sizeof(int));
+-            if (client_sock_ptr == NULL) {
+-                perror("malloc");
+-                close(client_socket);
+-                continue;
+-            }
+-            *client_sock_ptr = client_socket;
++            int *new_client_socket = malloc(sizeof(int));
++            if (new_client_socket == NULL) {
++                perror("malloc");
++                close(client_socket);
++                continue;
++            }
++            *new_client_socket = client_socket;
+ 
+-            pthread_create(&thread_id, NULL, handle_client, (void *)client_sock_ptr);
++            client_sockets[num_clients] = client_socket;
++            num_clients++;
++            pthread_create(&thread_id, NULL, handle_client, (void *)new_client_socket);
+         }
+ 

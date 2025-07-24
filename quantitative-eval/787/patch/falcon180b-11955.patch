@@ -1,0 +1,114 @@
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define MAX_ROWS 100
+#define MAX_COLS 100
+
+typedef struct {
+    char *name;
+    int age;
+    float salary;
+} Employee;
+
+typedef struct {
+    char *name;
+    float balance;
+} Account;
+
+typedef struct {
+    char *name;
+    int num_employees;
+    float revenue;
+} Company;
+
+typedef struct {
+    char *name;
+    int num_accounts;
+    float total_balance;
+} Bank;
+
+void create_table(char *filename, int num_rows, int num_cols) {
+    FILE *fp = fopen(filename, "w");
+    if (fp == NULL) {
+        perror("Failed to create table");
+        exit(EXIT_FAILURE);
+    }
+    for (int i = 0; i < num_rows; i++) {
+        for (int j = 0; j < num_cols; j++) {
+            fprintf(fp, "%s\t", "");
+        }
+        fprintf(fp, "\n");
+    }
+    fclose(fp);
+}
+
+void insert_row(FILE *fp, int num_cols, char **values) {
+    if (fp == NULL) {
+        fprintf(stderr, "Invalid file pointer\n");
+        return;
+    }
+    for (int i = 0; i < num_cols; i++) {
+        fprintf(fp, "%s\t", values[i]);
+    }
+    fprintf(fp, "\n");
+}
+
+void print_table(FILE *fp) {
+    if (fp == NULL) {
+        fprintf(stderr, "Invalid file pointer\n");
+        return;
+    }
+    char line[1024];
+    while (fgets(line, sizeof(line), fp)!= NULL) {
+        printf("%s", line);
+    }
+}
+
+int main() {
+    Employee employees[] = {{"John Doe", 30, 50000}, {"Jane Smith", 28, 60000}, {"Jim Brown", 35, 70000}};
+    Account accounts[] = {{"Checking", 10000}, {"Savings", 20000}};
+    Company companies[] = {{"Acme Corp", 50, 1000000}, {"Widget Inc", 75, 2000000}};
+    Bank banks[] = {{"Bank of America", 2, 30000}, {"Chase Bank", 3, 50000}};
+
+    create_table("employees.txt", 3, 3);
+    FILE *emp_file = fopen("employees.txt", "a");
+    insert_row(emp_file, 3, (char **)employees);
+    fclose(emp_file);
+
+    create_table("accounts.txt", 2, 2);
+    FILE *acc_file = fopen("accounts.txt", "a");
+    insert_row(acc_file, 2, (char **)accounts);
+    fclose(acc_file);
+
+    create_table("companies.txt", 2, 3);
+    FILE *comp_file = fopen("companies.txt", "a");
+    insert_row(comp_file, 3, (char **)companies);
+    fclose(comp_file);
+
+    create_table("banks.txt", 2, 3);
+    FILE *bank_file = fopen("banks.txt", "a");
+    insert_row(bank_file, 3, (char **)banks);
+    fclose(bank_file);
+
+    emp_file = fopen("employees.txt", "r");
+    print_table(emp_file);
+    fclose(emp_file);
+
+    acc_file = fopen("accounts.txt", "r");
+    print_table(acc_file);
+    fclose(acc_file);
+
+    comp_file = fopen("companies.txt", "r");
+    print_table(comp_file);
+    fclose(comp_file);
+
+    bank_file = fopen("banks.txt", "r");
+    print_table(bank_file);
+    fclose(bank_file);
+
+    return 0;
+}
+

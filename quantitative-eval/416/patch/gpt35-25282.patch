@@ -1,0 +1,41 @@
+ 
+    
+    --- gpt35-25282	2023-10-08 10:29:26.000000000 +0000
+    +++ gpt35-25282-fixed	2023-10-08 10:35:55.000000000 +0000
+    @@ -27,7 +27,10 @@
+       strcpy(buf, "Enter your name: ");
+       send(client_socket, buf, strlen(buf), 0);
+       recv(client_socket, client_name, BUF_SIZE, 0);
+    -  strcpy(client_names[client_id], client_name);
+    +  client_name[BUF_SIZE-1] = '\0'; // Ensure null-termination
+    +  strncpy(client_names[client_id], client_name, BUF_SIZE-1);
+    +  client_names[client_id][BUF_SIZE-1] = '\0'; // Ensure null-termination
+    +
+    
+       while (1) {
+         // Receive message
+    @@ -68,7 +71,10 @@
+     
+         // Handle command message
+         if (strlen(buf) > 1 && buf[0] == '/') {
+    -      if (strcmp(buf, "/list") == 0) {
+    +      buf[BUF_SIZE-1] = '\0'; // Ensure null-termination
+    +      if (strcmp(buf, "/list") == 0) {
+    +        buf[BUF_SIZE-1] = '\0'; // Ensure null-termination
+    +
+             // Send list of connected clients
+             char message[BUF_SIZE] = "Connected clients:\n";
+             pthread_mutex_lock(&mutex);
+    @@ -98,7 +104,10 @@
+         continue;
+       }
+     
+    -    sprintf(message, "%s: %s", client_name, buf);
+    +    snprintf(message, BUF_SIZE-1, "%s: %s", client_name, buf);
+    +    message[BUF_SIZE-1] = '\0'; // Ensure null-termination
+    +
+         send_all(message, client_id);
+         pthread_mutex_unlock(&mutex);
+       }
+    
+    

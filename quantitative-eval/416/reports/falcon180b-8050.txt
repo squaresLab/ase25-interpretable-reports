@@ -1,0 +1,99 @@
+
+vuln-fix: Race Condition (CWE-362) in falcon180b-8050 at lines 24-39 (severity: High)
+what: The code is vulnerable to a race condition due to manipulating shared client socket array `client_sockets` and `num_clients` without proper synchronization in multi-threaded context.
+where: The vulnerability is located in lines 24-39 of the file falcon180b-8050, specifically within the `accept_connections` function and when new client threads are created with `pthread_create`.
+why: Failure to resolve this vulnerability can lead to undefined behavior, crashes, or security vulnerabilities due to concurrent modifications of shared data structures without appropriate locks.
+how: An attacker could exploit this race condition by connecting multiple clients simultaneously, causing inconsistent state or corruption of the `client_sockets` array and `num_clients` variable.
+code-sources: The entry point for user input is through the `accept` function at line 6 in the `accept_connections` function.
+code-sinks: The `send` function at line 31 in the `handle_client` function processes the user input from the source.
+suggested-fix: 
+```diff
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#include <pthread.h>
+
+#define MAX_CLIENTS 10
+#define BUFFER_SIZE 1024
+
+int server_socket;
+int client_sockets[MAX_CLIENTS];
+int num_clients = 0;
+pthread_mutex_t client_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+void *handle_client(void *arg) {
+    int client_socket = *(int *) arg;
+
+    char buffer[BUFFER_SIZE];
+    while (1) {
+        memset(buffer, 0, BUFFER_SIZE);
+        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+
+        if (bytes_received <= 0) {
+            break;
+        }
+
+        send(client_socket, buffer, bytes_received, 0);
+    }
+
+    close(client_socket);
+    pthread_exit(0);
+}
+
+void accept_connections() {
+    while (1) {
+        int client_socket = accept(server_socket, NULL, NULL);
+
+        if (client_socket == -1) {
+            printf("Error accepting connection\n");
+            continue;
+        }
+
+        pthread_mutex_lock(&client_mutex);
+
+        if (num_clients >= MAX_CLIENTS) {
+            close(client_socket);
+            printf("Maximum number of clients reached\n");
+        } else {
+            client_sockets[num_clients] = client_socket;
+            num_clients++;
+
+            pthread_t thread_id;
+            pthread_create(&thread_id, NULL, handle_client, (void *) &client_sockets[num_clients - 1]);
+        }
+
+        pthread_mutex_unlock(&client_mutex);
+    }
+}
+
+int main() {
+    int opt = 1;
+    setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+
+    server_socket = socket(AF_INET, SOCK_STREAM, 0);
+
+    struct sockaddr_in server_addr;
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(8080);
+    server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+
+    bind(server_socket, (struct sockaddr *) &server_addr, sizeof(server_addr));
+
+    listen(server_socket, 3);
+
+    printf("Server started on port 8080\n");
+
+    accept_connections();
+
+    close(server_socket);
+    pthread_mutex_destroy(&client_mutex);
+
+    return 0;
+}
+```
+explanation-suggested-fix: The suggested fix introduces a mutex `client_mutex` to ensure that the `client_sockets` array and `num_clients` variable are accessed and modified synchronously. This prevents concurrent threads from causing a race condition by locking around critical sections of code that manipulate shared resources.
+method: UNKNOWN

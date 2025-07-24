@@ -1,0 +1,37 @@
+
+vuln-fix: CWE-415: Double Free in falcon180b-19957 (severity: High)
+what: The code does not properly handle memory allocated by `strdup`. Specifically, there is no handling to free the duplicate strings stored in the `name` fields of `Record` structures, which can lead to a double-free vulnerability if the `add_record` function is called with duplicate names or if memory is manually freed incorrectly.
+where: The vulnerability is located at the memory allocation for the `name` field in the `add_record` function.
+why: One possible consequence of not resolving this weakness is that an attacker could exploit the double-free vulnerability to execute arbitrary code or to cause a denial of service (e.g., crashing the program).
+how: An attacker could insert records with duplicate names, resulting in multiple free operations on the same memory, leading to unpredictable behavior such as crashes or potential execution of malicious code.
+code-sources: User input `name`, `age`, and `salary` in the `add_record` function.
+code-sinks: The actions performed by `strdup` and freeing of `name` in `add_record`.
+suggested-fix: 
+```
+diff --git a/falcon180b-19957 b/falcon180b-19957
+index e69de29..b74d6ba 100644
+--- a/falcon180b-19957
++++ b/falcon180b-19957
+@@ -25,6 +25,17 @@ void add_record(Database* db, char* name, int age, float salary) {
+     return;
+   }
+   Record* new_row = &db->rows[db->num_rows];
++  // Free previously allocated memory if it exists to prevent memory leak
++  if (new_row->name != NULL) {
++      free(new_row->name);
++  }
+   new_row->name = strdup(name);
+   new_row->age = age;
+   new_row->salary = salary;
+   db->num_rows++;
+ }
++
++void free_table(Database* db) {
++  // Free the strdup allocated memory
++  for (int i = 0; i < db->num_rows; i++) {
++    free(db->rows[i].name);
++  }
+ }
+```
+explanation-suggested-fix: The suggested code diff adds logic to free previously allocated memory for the `name` field in `add_record`, thereby preventing a memory leak when updating records with new names. Additionally, a new function `free_table` is introduced to free the memory allocated for all `name` fields before the program terminates, ensuring a clean exit without memory issues.
+method: UNKNOWN

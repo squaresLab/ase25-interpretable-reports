@@ -1,0 +1,18 @@
+ 
+    
+    @@ -61,7 +61,10 @@ int main() {
+            continue;
+        }
+
+    -   client_sockets[num_clients] = client_socket;
+    -   num_clients++;
+    +   pthread_mutex_lock(&client_sockets_mutex);
+    +   if (num_clients < MAX_CLIENTS) {
+    +       client_sockets[num_clients++] = client_socket;
+    +   }
+    +   pthread_mutex_unlock(&client_sockets_mutex);
+
+        pthread_t thread_id;
+        pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+    
+    

@@ -1,0 +1,7 @@
+ 
+
+- printf("Client %d sent: %s\n", client_socket, buffer);
++ printf("Client %d sent: %.*s\n", client_socket, bytes_received, buffer);
+- send(client_socket, buffer, strlen(buffer), 0);
++ send(client_socket, buffer, bytes_received, 0);
+

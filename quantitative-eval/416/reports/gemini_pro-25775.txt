@@ -1,0 +1,24 @@
+
+vuln-fix: Buffer Write Operations (CWE-120, CWE-787, CWE-805) in gemini_pro-25775:52 (severity: High)
+what: The code writes data into a fixed-size buffer without checking if the input data will overflow the buffer.
+where: Line 52 in gemini_pro-25775 file inside the handle_client function: 
+    strcpy(clients[num_clients].name, buff + 5);
+why: An attacker could exploit this vulnerability to execute arbitrary code by overflowing the buffer and corrupting the program's memory management structures.
+how: An attacker would send a specially crafted message containing a 'name' command followed by more than 31 characters (due to the fixed size 32 minus the null terminator) to overflow the buffer and control the program's execution flow.
+code-sources: Input from `recv` function (line 22) populates `buff` with user-provided data.
+code-sinks: The `strcpy` function at line 52 uses `buff + 5`, which is directly influenced by user input.
+suggested-fix:
+```diff
+@@ -49,7 +49,11 @@
+ pthread_mutex_lock(&mutex);
+ if (strncmp(buff, "name", 4) == 0) {
+-    strcpy(clients[num_clients].name, buff + 5);
++    strncpy(clients[num_clients].name, buff + 5, sizeof(clients[num_clients].name) - 1);
++    clients[num_clients].name[sizeof(clients[num_clients].name) - 1] = '\0'; // Ensure null-termination
+     num_clients++;
+ }
+ else if (strncmp(buff, "move", 4) == 0) {
+     sscanf(buff + 5, "%d %d %d %d %d %d", &drone_info.x, &drone_info.y, &drone_info.z, &drone_info.yaw, &drone_info.pitch, &drone_info.roll);
+```
+explanation-suggested-fix: The proposed fix uses `strncpy` instead of `strcpy` to limit the number of characters copied to the `name` field of the `clients` structure. This ensures the buffer does not overflow by correctly bounding the copy operation to the size of the destination buffer minus one for the null terminator and explicitly sets the last character of the buffer to `\0` for safety.
+method: CODEQL

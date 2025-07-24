@@ -1,0 +1,30 @@
+
+vuln-fix: Missing null termination in buffer before printing (CWE-170) in falcon180b-26781 (severity: medium)
+what: The vulnerability is that the `recv` function may not null-terminate the `buffer` before it is used in the `printf` function, potentially allowing attacker-supplied data to exceed the bounds of the allocated buffer.
+where: falcon180b-26781, function `thread_client`, lines with `recv` and `printf` usages.
+why: Not resolving this weakness could lead to attackers being able to inject malicious payloads into the server’s output, potentially leading to buffer overflows or unpredictable behavior.
+how: An attacker could send a specially crafted message to the server that does not include a null terminator, causing subsequent operations on the buffer to read beyond its allocated memory.
+code-sources: The `recv` function call in `thread_client` where data is received from the client.
+code-sinks: The `printf` call in `thread_client` where the received data is printed.
+suggested-fix: 
+```diff
+int client_socket = *(int *) arg;
+char buffer[1024];
+while (1) {
+    memset(buffer, 0, sizeof(buffer));
+    ssize_t bytes_received = recv(client_socket, buffer, sizeof(buffer) - 1, 0);
+-    if (bytes_received <= 0) {
++    if (bytes_received <= 0 || bytes_received >= sizeof(buffer)) {
+        break;
+    }
++    buffer[bytes_received] = '\0';
+    printf("Client %d says: %s\n", client_socket, buffer);
+    for (int i = 0; i < num_clients; i++) {
+        if (clients[i] != client_socket) {
+            send(clients[i], buffer, strlen(buffer), 0);
+        }
+    }
+}
+```
+explanation-suggested-fix: The suggested code diff ensures that the buffer will always be null-terminated before it is used in the `printf` function. This is achieved by modifying the `recv` call to leave space for the null terminator and explicitly adding the null terminator after the data is received.
+method: UNKNOWN

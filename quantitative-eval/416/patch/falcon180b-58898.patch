@@ -1,0 +1,71 @@
+ 
+    
+    #include <stdio.h>
+    #include <stdlib.h>
+    #include <time.h>
+    #include <string.h>
+
+    #define MAX_CONSPIRACY_LENGTH 100
+    #define MAX_CONSPIRACY_WORDS 20
+    #define MAX_WORD_LENGTH 20
+
+    typedef struct {
+        char word[MAX_WORD_LENGTH];
+        int length;
+    } ConspiracyWord;
+
+    void generate_conspiracy(char *conspiracy, int max_length, int num_words) {
+        srand(time(NULL));
+        ConspiracyWord words[MAX_CONSPIRACY_WORDS];
+        int total_length = 0;
+
+        // Add random words to the conspiracy
+        for (int w = 0; w < num_words; w++) {
+            int word_length = rand() % (MAX_WORD_LENGTH - 1) + 1;
+            ConspiracyWord new_word = {{0}, word_length};
+
+            for (int i = 0; i < word_length; i++) {
+                new_word.word[i] = rand() % 26 + 'a';
+            }
+
+            words[w] = new_word;
+            total_length += word_length + 1; // +1 for the space or null terminator
+            if (total_length >= max_length) {
+                num_words = w + 1; // limit the number of words so we don't exceed the buffer
+                break;
+            }
+        }
+
+        // Shuffle the words
+        for (int i = 0; i < num_words; i++) {
+            int j = rand() % num_words;
+            ConspiracyWord temp = words[i];
+            words[i] = words[j];
+            words[j] = temp;
+        }
+
+        // Concatenate the words into a conspiracy
+        conspiracy[0] = '\0'; // Initialize the conspiracy string
+        for (int i = 0; i < num_words; i++) {
+            if (strlen(conspiracy) + words[i].length + 1 >= max_length) {
+                break;
+            }
+            if (i > 0) {
+                strncat(conspiracy, " ", max_length - strlen(conspiracy) - 1);
+            }
+            strncat(conspiracy, words[i].word, max_length - strlen(conspiracy) - 1);
+        }
+    }
+
+    int main() {
+        char conspiracy[MAX_CONSPIRACY_LENGTH] = {0};
+        int length = rand() % MAX_CONSPIRACY_WORDS + 1;
+
+        generate_conspiracy(conspiracy, MAX_CONSPIRACY_LENGTH, length);
+        printf("A new conspiracy theory has emerged:\n");
+        printf("%s\n", conspiracy);
+
+        return 0;
+    }
+    
+    

@@ -1,0 +1,23 @@
+ 
+
+ int client_socket = accept(server_socket, (struct sockaddr *) &client_addr, &client_addr_size);
+if (client_socket == -1) {
+    printf("Error accepting connection\n");
+    continue;
+}
+
+if (num_clients >= MAX_CLIENTS) {
+    send(client_socket, "Server is full\n", strlen("Server is full\n"), 0);
+    close(client_socket);
+    continue;
+}
+
+client_sockets[num_clients] = client_socket;
+num_clients++;
+
+pthread_t thread_id;
+- pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
++ int *new_client_socket = malloc(sizeof(int));
++ *new_client_socket = client_socket;
++ pthread_create(&thread_id, NULL, handle_client, (void *) new_client_socket);
+

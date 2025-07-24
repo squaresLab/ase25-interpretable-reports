@@ -1,0 +1,56 @@
+
+vuln-fix: TOCTOU CWE-367 in falcon180b-598 line 40 (severity: High)
+what: The code has a Time-Of-Check Time-Of-Use (TOCTOU) race condition vulnerability in the `accept_connections` function. The check for the number of clients is done before the client socket is properly handled.
+where: Lines 42-48 in falcon180b-598
+why: This vulnerability may allow an attacker to exceed the maximum number of clients, potentially leading to resource exhaustion and denial of service.
+how: An attacker could exploit this vulnerability by attempting to connect multiple times simultaneously and rapidly, leading to bypassing the `num_clients` check and possibly causing the server to handle more clients than the intended maximum.
+code-sources: 
+- `accept(master_socket, NULL, NULL)` on line 42
+code-sinks:
+- `clients[num_clients++] = client_socket` on line 47
+suggested-fix: 
+```diff
+--- falcon180b-598.c   2023-10-12 12:00:00.000000000 +0000
++++ falcon180b-598-fixed.c   2023-10-12 12:00:00.000000000 +0000
+@@ -42,11 +42,11 @@
+         if (client_socket == -1) {
+             printf("Error accepting connection.\n");
+             continue;
+         }
+ 
+-        if (num_clients >= MAX_CLIENTS) {
++        pthread_mutex_lock(&client_lock);
++        if (num_clients >= MAX_CLIENTS) {
+             close(client_socket);
+             printf("Maximum number of clients reached.\n");
++            pthread_mutex_unlock(&client_lock);
+             continue;
+         }
+ 
+         clients[num_clients++] = client_socket;
+         pthread_mutex_unlock(&client_lock);
+@@ -94,9 +94,11 @@
+         if (client_socket == -1) {
+             printf("Error accepting connection.\n");
+             continue;
+         }
+ 
++        pthread_mutex_lock(&client_lock);
+         if (num_clients >= MAX_CLIENTS) {
+             close(client_socket);
+             printf("Maximum number of clients reached.\n");
++            pthread_mutex_unlock(&client_lock);
+             continue;
+         }
+ 
+         clients[num_clients++] = client_socket;
++        pthread_mutex_unlock(&client_lock);
+         pthread_t thread_id;
+         pthread_create(&thread_id, NULL, handle_client, (void *)&client_socket);
+     }
+
+     return 0;
+ }
+```
+explanation-suggested-fix: The proposed fix involves using a mutex (client_lock) to lock the section of code where the client connection count is checked and updated. Locking this section of code ensures that the count check and update operation are atomic, effectively preventing race conditions and ensuring that the maximum number of clients cannot be exceeded.
+method: UNKNOWN

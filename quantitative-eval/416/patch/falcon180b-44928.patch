@@ -1,0 +1,27 @@
+ 
+
+diff --git a/falcon180b-44928 b/falcon180b-44928
+index abcdef1..1234567 100644
+--- a/falcon180b-44928
++++ b/falcon180b-44928
+@@ -42,10 +42,13 @@ void accept_connections(int server_socket) {
+         int client_socket = accept(server_socket, NULL, NULL);
+         if (client_socket == -1) {
+             break;
+         }
++        int added_socket;
+         if (num_clients >= MAX_CLIENTS) {
+             close(client_socket);
+             continue;
+         }
++        added_socket = num_clients;
++        pthread_mutex_lock(&clients_mutex);
+         clients[num_clients] = client_socket;
+         num_clients++;
++        pthread_mutex_unlock(&clients_mutex);
+         pthread_t thread_id;
+-        pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
++        pthread_create(&thread_id, NULL, handle_client, (void *) &added_socket);
+     }
+ }
+

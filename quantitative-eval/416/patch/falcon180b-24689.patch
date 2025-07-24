@@ -1,0 +1,53 @@
+ 
+    
+    --- falcon180b-24689
+    +++ falcon180b-24689
+    @@ -18,16 +18,24 @@
+         while (1) {
+             memset(buffer, 0, sizeof(buffer));
+             int bytes_received = recv(client_socket, buffer, MAX_COMMAND_LENGTH, 0);
+     
+             if (bytes_received <= 0) {
+                 break;
+             }
+     
+             char *command = strtok(buffer, " ");
+             if (command == NULL) {
+                 continue;
+             }
+     
+    -        if (strcmp(command, "ON") == 0) {
+    -            system("echo 1 > /sys/class/leds/led0/brightness");
+    -        } else if (strcmp(command, "OFF") == 0) {
+    -            system("echo 0 > /sys/class/leds/led0/brightness");
+    -        } else if (strcmp(command, "DIM") == 0) {
+    -            system("echo 50 > /sys/class/leds/led0/brightness");
+    -        } else if (strcmp(command, "QUIT") == 0) {
+    +        // Validate the input strictly against expected values
+    +        if (strcmp(command, "ON") == 0) {
+    +            FILE *fp = fopen("/sys/class/leds/led0/brightness", "w");
+    +            if (fp != NULL) {
+    +                fputs("1", fp);
+    +                fclose(fp);
+    +            }
+    +        } else if (strcmp(command, "OFF") == 0) {
+    +            FILE *fp = fopen("/sys/class/leds/led0/brightness", "w");
+    +            if (fp != NULL) {
+    +                fputs("0", fp);
+    +                fclose(fp);
+    +            }
+    +        } else if (strcmp(command, "DIM") == 0) {
+    +            FILE *fp = fopen("/sys/class/leds/led0/brightness", "w");
+    +            if (fp != NULL) {
+    +                fputs("50", fp);
+    +                fclose(fp);
+    +            }
+    +        } else if (strcmp(command, "QUIT") == 0) {
+                 close(client_socket);
+                 break;
+             }
+     
+             close(client_socket);
+         }
+    
+    

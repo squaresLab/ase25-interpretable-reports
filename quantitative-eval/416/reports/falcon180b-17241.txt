@@ -1,0 +1,84 @@
+markdown
+vuln-fix: Unbounded Write (CWE-120, CWE-787, CWE-805) in falcon180b-17241 (severity: High)
+
+what: The code contains multiple buffer write operations that do not control the length of data written, which may lead to buffer overflows. Specifically, user input is written to fixed-size character arrays without checking if the input exceeds the array's capacity.
+
+where:
+- Line 97: `scanf("%s", symbol);`
+- Line 103: `scanf("%s", symbol);`
+- Line 18: `scanf("%s", companies[n].name);`
+- Line 20: `scanf("%s", companies[n].symbol);`
+
+why: If not resolved, an attacker could exploit these buffer overflows to cause the program to crash, corrupt data, or potentially execute arbitrary code, leading to a complete compromise of the system.
+
+how: An attacker could supply input strings that are longer than the allocated buffer sizes for `name`, `symbol`, and `symbol` in the relevant locations. When the input length exceeds the allocated buffer size, it can overwrite adjacent memory, leading to exploitable conditions.
+
+code-sources:
+- Line 97: `scanf("%s", symbol);` in the case `choice == 1` block.
+- Line 18: `scanf("%s", companies[n].name);` in `add_company`.
+- Line 20: `scanf("%s", companies[n].symbol);` in `add_company`.
+
+code-sinks:
+- Line 18: `companies[n].name` being assigned potential overflow data.
+- Line 20: `companies[n].symbol` being assigned potential overflow data.
+- Line 97: `symbol` receiving unchecked input in the `buy_shares` case.
+- Line 103: `symbol` receiving unchecked input in the `sell_shares` case.
+
+suggested-fix:
+```diff
+--- falcon180b-17241.original.c
++++ falcon180b-17241.fixed.c
+@@ -15,9 +15,12 @@
+ void add_company(struct company companies[], int n){
+     printf("Enter company name: ");
+-    scanf("%s", companies[n].name);
++    scanf("%19s", companies[n].name);
+     printf("Enter company symbol: ");
+-    scanf("%s", companies[n].symbol);
++    scanf("%9s", companies[n].symbol);
+     printf("Enter company price per share: ");
+     scanf("%f", &companies[n].price);
+     printf("Enter number of shares: ");
+     scanf("%d", &companies[n].shares);
+ }
+ 
+ void main(){
+     // ... existing code ...
+
+@@ -94,14 +98,16 @@
+     while(1){
+         system("clear");
+         printf("\nCompany\tSymbol\tPrice per share\tShares\n");
+         display_companies(companies, n);
+         printf("\nWhat do you want to do?\n1. Buy shares\n2. Sell shares\n3. Exit\n");
+         int choice;
+         scanf("%d", &choice);
+
+         switch(choice){
+             case 1:
+                 printf("\nEnter company symbol: ");
+-                char symbol[10];
+-                scanf("%s", symbol);
++                char symbol[10] = {0};
++                scanf("%9s", symbol);
+                 buy_shares(companies, n, symbol);
+                 break;
+             case 2:
+                 printf("\nEnter company symbol: ");
++                // Re-initialize symbol to ensure no residual data
++                memset(symbol, 0, sizeof(symbol));
+                 scanf("%9s", symbol);
+                 sell_shares(companies, n, symbol);
+                 break;
+             case 3:
+                 exit(0);
+             default:
+                 printf("\nInvalid choice!");
+         }
+     }
+ }
+```
+
+explanation-suggested-fix: The proposed fix ensures that the `scanf` functions limit the number of characters read, preventing buffer overflow. By specifying the maximum number of characters that can be read +1 (for null terminator) in the `scanf` format string (e.g., `%9s` for `symbol`), we ensure that the input does not exceed the buffer's allocated size. 
+
+method: CODEQL

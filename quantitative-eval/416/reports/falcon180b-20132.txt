@@ -1,0 +1,75 @@
+
+vuln-fix: Information Exposure (CWE-200) in falcon180b-20132 (severity: Medium)
+what: The vulnerability here is a possible Information Exposure resulting from race condition on the shared variable `shared_var`. Multiple threads may access and modify `shared_var` concurrently without properly synchronized access, leading to unpredictable or unintended value updates and potential information leakage.
+where: 
+    - Lines 20-22: The critical section where `shared_var` is incremented.
+    - Line 13: Assignment of thread ID from the shared variable `arg`.
+    - Lines 34-35: Thread creation with shared memory for the thread IDs.
+why: If not addressed, this race condition could result in data inconsistency, application crashes, and potential exposure of sensitive information such as the precise order of thread execution and the internal state of shared variables.
+how: An attacker might exploit this by creating a scenario with high thread contention, causing the race condition to manifest more frequently. This can lead to repeated incorrect increments and inconsistent states being exposed or leveraged.
+code-sources: 
+- Line 34: `pthread_create(&threads[i], NULL, thread_func, (void*) &i);`
+code-sinks: 
+- Lines 20-22: Access and modification of `shared_var`.
+
+suggested-fix: 
+```diff
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+
+// Mutex lock for critical section
+pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+
+// Condition variable for thread synchronization
+pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
+
+// Global variable shared by all threads
+int shared_var = 0;
+
+// Function executed by each thread
+void* thread_func(void* arg) {
+    int id = *(int*) arg;
+
+    printf("Thread %d started\n", id);
+
+    // Lock the mutex before entering critical section
+    pthread_mutex_lock(&lock);
+
+    // Wait for turn using condition variable
+    printf("Thread %d waiting...\n", id);
+    pthread_cond_wait(&cond, &lock);
+    printf("Thread %d got the lock\n", id);
+
+    // Critical section
+    shared_var++;
+    printf("Thread %d incremented shared_var to %d\n", id, shared_var);
+
+    // Signal next thread and unlock mutex
+    pthread_cond_signal(&cond);
+    pthread_mutex_unlock(&lock);
+
+    return NULL;
+}
+
+int main() {
+    int num_threads = 5;
+    pthread_t threads[num_threads];
+    int ids[num_threads];  // Array to hold thread ids
+
+    // Create threads
+    for (int i = 0; i < num_threads; i++) {
+        ids[i] = i;  // Assign unique id to each thread
+        pthread_create(&threads[i], NULL, thread_func, (void*) &ids[i]);
+    }
+
+    // Join threads
+    for (int i = 0; i < num_threads; i++) {
+        pthread_join(threads[i], NULL);
+    }
+
+    return 0;
+}
+```
+explanation-suggested-fix: The main fix involves allocating an array `ids` to hold each thread's unique identifier. Instead of passing the address of the loop variable `i` to `pthread_create()`, we pass the address of a unique identifier for each thread. This prevents data races on the shared loop variable `i`, which could lead to undefined behavior and race conditions.
+method: UNKNOWN

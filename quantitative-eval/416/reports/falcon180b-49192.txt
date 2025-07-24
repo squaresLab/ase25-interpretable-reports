@@ -1,0 +1,27 @@
+
+    vuln-fix: CWE-134 Uncontrolled Format String in falcon180b-49192, handle_client function (severity: High)
+    what: The vulnerability arises because user input is directly passed to `printf` as the format string. An attacker can exploit this by sending a carefully crafted string containing format specifiers, leading to potential arbitrary code execution or information disclosure.
+    where: The vulnerability is located in the `handle_client` function, specifically at the line: `printf("Received message: %s\n", buffer);`
+    why: If not resolved, an attacker could exploit this vulnerability to execute arbitrary code, leading to a full compromise of the system. Additionally, sensitive information could be leaked if format specifiers such as `%x` or `%p` are used.
+    how: An attacker would send a formatted string containing format specifiers like `%x` or `%n` via the socket connection. These specifiers can be used to read the stack or write arbitrary values, potentially leading to further exploits.
+    code-sources: The source of user input in the code is the `recv` function where data is read into the `buffer` from the network connection.
+    code-sinks: The sink in the code is the `printf` function where the received message is printed.
+    suggested-fix: 
+    ```diff
+    --- falcon180b-49192.c
+    +++ falcon180b-49192-fixed.c
+    @@ -18,7 +18,7 @@
+             int bytes_received = recv(client_sock, buffer, BUFFER_SIZE, 0);
+
+             if (bytes_received <= 0) {
+                 break;
+             }
+
+    -        printf("Received message: %s\n", buffer);
+    +        printf("Received message: %.*s\n", bytes_received, buffer);
+         }
+
+         close(client_sock);
+    ```
+    explanation-suggested-fix: By using `printf("Received message: %.*s\n", bytes_received, buffer);` the format string is controlled, and the number of characters printed from `buffer` is limited to the actual number of received bytes, thus preventing the attacker from using format specifiers.
+    method: UNKNOWN

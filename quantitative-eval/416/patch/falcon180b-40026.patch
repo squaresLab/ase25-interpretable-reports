@@ -1,0 +1,26 @@
+ 
+
+--- falcon180b-40026.old.c 2023-10-31
++++ falcon180b-40026.new.c 2023-10-31
+@@ -33,7 +33,7 @@
+ 
+         g_clients[g_num_clients++] = client_socket;
+         pthread_t thread_id;
+-        pthread_create(&thread_id, NULL, handle_client, (void *)&client_socket);
++        int *client_sock_ptr = malloc(sizeof(int));
++        *client_sock_ptr = client_socket;
++        pthread_create(&thread_id, NULL, handle_client, (void *)client_sock_ptr);
+     }
+ }
+ 
+@@ -21,7 +21,7 @@
+         printf("Client %d: %s\n", client_socket, buffer);
+     }
+ 
+-    close(client_socket);
++    close(client_socket);
++    free(param);
+     return NULL;
+ }
+ 
+    

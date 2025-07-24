@@ -1,0 +1,32 @@
+
+    
+    diff --git a/falcon180b-21884 b/falcon180b-21884
+    index abcdefg..hijklmn 100644
+    --- a/falcon180b-21884
+    +++ b/falcon180b-21884
+    @@ -48,14 +48,23 @@ void accept_connections() {
+             send(client_socket, "Server is full. Please try again later.\n", 45, 0);
+             close(client_socket);
+             continue;
+         }
+    
+         client_sockets[num_clients] = client_socket;
+         num_clients++;
+    
+         pthread_t thread_id;
+    +    int* new_client_socket = malloc(sizeof(int));
+    +    if (new_client_socket == NULL) {
+    +        perror("Failed to allocate memory for client socket");
+    +        close(client_socket);
+    +        continue;
+    +    }
+    +    *new_client_socket = client_socket;
+    +    pthread_create(&thread_id, NULL, handle_client, (void*)new_client_socket);
+    +    pthread_detach(thread_id);
+         pthread_create(&thread_id, NULL, handle_client, (void *)&client_socket);
+     }
+    }
+    
+    int main() {
+    
+    

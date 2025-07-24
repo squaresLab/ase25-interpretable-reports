@@ -1,0 +1,27 @@
+ 
+    
+    --- falcon180b-18286 2023-10-01 20:44:59.335269993 +0000
+    +++ falcon180b-18286_fixed 2023-10-01 20:45:59.335269993 +0000
+    @@ -18,7 +18,7 @@
+         char buffer[BUF_SIZE];
+         
+         while (1) {
+    -        memset(buffer, 0, BUF_SIZE);
+    +        memset(buffer, 0, BUF_SIZE + 1);
+             int bytes_received = recv(client_socket, buffer, BUF_SIZE, 0);
+             
+             if (bytes_received <= 0) {
+    @@ -24,7 +24,10 @@
+                 return NULL;
+             }
+         
+    +        buffer[bytes_received] = '\0'; // Null-terminate the buffer
+    +        if (bytes_received > BUF_SIZE) bytes_received = BUF_SIZE; // Prevent buffer overflow
+             for (int i = 0; i < num_clients; i++) {
+    -            if (clients[i]!= client_socket) {
+    +            if (clients[i] != client_socket) {
+                     send(clients[i], buffer, strlen(buffer), 0);
+                 }
+             }
+    
+    

@@ -1,0 +1,24 @@
+
+vuln-fix: CWE-200: Information Exposure in falcon180b-9182 (severity: Medium)
+what: The received data from the client is printed to the standard output without proper sanitization or validation.
+where: The vulnerability is located in the handle_client function, specifically the line containing `printf("Client %d: %s", client_socket, buffer);` in the file falcon180b-9182.
+why: Not resolving this weakness could lead to sensitive information leakage if the printed data contains unexpected or private information, and potentially enable further exploit mechanisms like log injection attacks.
+how: An attacker would connect to the server and send crafted data containing sensitive information or special characters that could be executed or logged in an unintended way.
+code-sources: The user input enters the application through the `recv` function call.
+code-sinks: The user input from the buffer is utilized and exposed through the `printf` function call.
+suggested-fix: 
+```diff
+--- falcon180b-9182	2023-10-08 10:00:00.000000000 +0000
++++ falcon180b-9182-fixed	2023-10-08 10:00:00.000000000 +0000
+@@ -17,7 +17,7 @@
+         if (bytes_received <= 0) {
+             break;
+         }
+-        printf("Client %d: %s", client_socket, buffer);
++        printf("Client %d: %.*s", client_socket, bytes_received, buffer);
+     }
+ 
+     close(client_socket);
+```
+explanation-suggested-fix: The suggested code diff limits the number of characters printed from the buffer to the actual number of bytes received. This prevents potential buffer overreads and ensures that no extra characters or malicious input can be misconstrued.
+method: UNKNOWN

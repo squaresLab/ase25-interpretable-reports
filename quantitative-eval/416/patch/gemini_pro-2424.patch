@@ -1,0 +1,25 @@
+
+    
+    --- gemini_pro-2424.c
+    +++ gemini_pro-2424-fixed.c
+    @@ -28,7 +28,8 @@
+         while (1) {
+             int bytes_read = recv(conn->fd, buffer, MAX_BUFFER_SIZE, 0);
+     
+    -        if (bytes_read <= 0) {
+    +        if (bytes_read <= 0 || bytes_read >= MAX_BUFFER_SIZE) {
+    +            buffer[MAX_BUFFER_SIZE - 1] = '\0'; // Ensure null-termination
+                 break;
+             }
+     
+    @@ -47,6 +48,9 @@
+             int connfd = accept(listenfd, (struct sockaddr *)&cliaddr, &clilen);
+     
+             if (connfd < 0) {
+    +                if (errno == EMFILE || errno == ENFILE) {
+    +                    continue; // If maximum number of files are opened, continue
+    +                }
+                 perror("accept");
+                 continue;
+             }
+    

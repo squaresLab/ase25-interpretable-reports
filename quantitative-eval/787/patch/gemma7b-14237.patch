@@ -1,0 +1,18 @@
+ 
+
+--- gemma7b-14237.c
++++ gemma7b-14237.c
+@@ -30,7 +30,8 @@
+         reader->rows++;
+         token = strtok(line, ",");
+         reader->cols = (token ? atoi(token) : 0) + 1;
+-        reader->data = realloc(reader->data, reader->rows * sizeof(char*));
++        reader->data = realloc(reader->data, reader->rows * sizeof(char*));
++        reader->data[reader->rows - 1] = malloc(reader->cols * sizeof(char*));
+-        strcpy(reader->data[reader->rows - 1], line);
++        strncpy(reader->data[reader->rows - 1], line, sizeof(reader->data[reader->rows - 1]) - 1);
++        reader->data[reader->rows-1][sizeof(reader->data[reader->rows-1]) - 1] = '\0';
+         i = 0;
+         token = strtok(line, ",");
+         while (token) {
+

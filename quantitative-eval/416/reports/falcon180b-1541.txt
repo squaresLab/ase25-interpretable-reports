@@ -1,0 +1,48 @@
+
+vuln-fix: CWE-362: Race Condition in falcon180b-1541 (severity: High)
+what: The given code has a race condition vulnerability in the `accept_connections` function when accessing and modifying the global variable `g_num_clients`, without synchronization mechanisms in place.
+where: Located in file `falcon180b-1541` at the `accept_connections` function, particularly within the block that increments `g_num_clients` and stores values into `g_client_sockets[g_num_clients]`.
+why: Failure to resolve this weakness can lead to inconsistent updates to the `g_num_clients` and `g_client_sockets` within a multi-threaded environment, leading to potential data corruption, undefined behavior, and program crashes.
+how: An attacker could exploit this vulnerability by rapidly establishing connections causing multiple threads to access and modify the global variables simultaneously. Without proper locking mechanisms, this can lead to inconsistent or corrupted state information.
+code-sources: 
+- `recv(client_socket, buffer, BUFFER_SIZE, 0)` in `thread_func()`.
+code-sinks: 
+- `g_client_sockets[g_num_clients] = client_socket;` in `accept_connections()`.
+- `g_num_clients++;` in `accept_connections()`.
+suggested-fix: 
+```diff
+#include <pthread.h>
+
+// ... [rest of your code]
+
+pthread_mutex_t client_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+void accept_connections() {
+    while (g_num_clients < MAX_CLIENTS) {
+        int client_socket = accept(g_socket, NULL, NULL);
+
+        if (client_socket == -1) {
+            printf("Error accepting connection\n");
+            continue;
+        }
+
+        pthread_mutex_lock(&client_mutex);
+        
+        if (g_num_clients >= MAX_CLIENTS) {
+            pthread_mutex_unlock(&client_mutex);
+            close(client_socket);
+            continue;
+        }
+
+        g_client_sockets[g_num_clients] = client_socket;
+        g_num_clients++;
+        
+        pthread_mutex_unlock(&client_mutex);
+
+        pthread_t thread_id;
+        pthread_create(&thread_id, NULL, thread_func, (void*)&client_socket);
+    }
+}
+```
+explanation-suggested-fix: The suggested code diff introduces a mutex `client_mutex` to ensure that the critical section modifying `g_client_sockets` and `g_num_clients` is accessed by only one thread at a time. This prevents the race condition by locking the mutex before accessing or modifying these variables and unlocking it when done.
+method: UNKNOWN

@@ -1,0 +1,88 @@
+
+vuln-fix: CWE-787: Out-of-Bounds Write in gemini_pro-4687 (severity: High)
+what: The code is performing out-of-bounds writes in the `init_game` function by incorrectly initializing the positions of player's pieces on the board. There is also an issue in the `print_board` function where it prints outside the boundaries of the array.
+where: 
+  - In `init_game` function, lines within `gemini_pro-4687` where `game->players[0].pieces[i].position.x = i % 4 + 1;` and `game->players[0].pieces[i].position.y` and similarly for `game->players[1]`.
+  - In `print_board` function, lines within `gemini_pro-4687` where `for (int j = 1; j <= BOARD_SIZE; j++) {` impacts the `printf("%c  ", game->board[i - 1][j - 1].type);`.
+why: Not resolving this weakness could lead to undefined behavior, crashes, or potential code execution by attackers due to writing outside the bounds of allocated memory.
+how: An attacker might feed crafted input data or exploit the code paths that manipulate the `game` object's board and pieces structure, leading to overwriting critical parts of memory.
+code-sources: The initialization loop in `init_game` where it sets the positions for `game->players[0].pieces[i].position` and `game->players[1].pieces[i].position`.
+code-sinks: The printing loop in `print_board` where the values from `game->board` are accessed without bounds checking.
+suggested-fix:
+```diff
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+
+#define BOARD_SIZE 8
+#define NUM_PIECES_PER_PLAYER 12
+
+typedef struct {
+    int x;
+    int y;
+} Position;
+
+typedef struct {
+    char type;
+    Position position;
+} Piece;
+
+typedef struct {
+    Piece pieces[NUM_PIECES_PER_PLAYER];
+    int num_pieces;
+} Player;
+
+typedef struct {
+    Player players[2];
+    Piece board[BOARD_SIZE][BOARD_SIZE];
+} Game;
+
+void init_game(Game *game) {
+    for (int i = 0; i < BOARD_SIZE; i++) {
+        for (int j = 0; j < BOARD_SIZE; j++) {
+            game->board[i][j].type = ' ';
+        }
+    }
+
+    for (int i = 0; i < NUM_PIECES_PER_PLAYER; i++) {
+        game->players[0].pieces[i].type = 'b';
+        game->players[0].pieces[i].position.x = i % BOARD_SIZE;
+        game->players[0].pieces[i].position.y = 1 + (i / 4);
+
+        game->players[1].pieces[i].type = 'w';
+        game->players[1].pieces[i].position.x = i % BOARD_SIZE;
+        game->players[1].pieces[i].position.y = BOARD_SIZE - (1 + (i / 4));
+    }
+}
+
+void print_board(Game *game) {
+    printf("  ");
+    for (int i = 0; i < BOARD_SIZE; i++) {
+        printf("%2d ", i + 1);
+    }
+    printf("\n");
+
+    for (int i = 0; i < BOARD_SIZE; i++) {
+        printf("%2d ", i + 1);
+        for (int j = 0; j < BOARD_SIZE; j++) {
+            printf("%c  ", game->board[i][j].type);
+        }
+        printf("\n");
+    }
+}
+
+int main() {
+    Game game;
+    init_game(&game);
+    print_board(&game);
+
+    for (int i = 0; i < BOARD_SIZE; i++) {
+        printf("A   B   C   D   E   F   G   H\n");
+    }
+
+    return 0;
+}
+```
+explanation-suggested-fix: The suggested code changes ensure that index values do not exceed the array bounds by adjusting initialization loops to correctly map within boundary limits (0 to BOARD_SIZE-1). It also corrects the off-by-one error in the `print_board` function by starting loop indices from 0 instead of 1.
+method: UNKNOWN
+`

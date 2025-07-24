@@ -1,0 +1,31 @@
+ 
+
+29c29
+< void *handle_client(void *arg) {
+---
+> void *handle_client(void *arg) {
+>     int client_socket = *(int *) arg;
+45c46,48
+<     close(client_socket);
+---
+>     int actual_client_socket = *(int *) arg;
+>     free(arg);
+>     close(actual_client_socket);
+55c58,59
+< while (1) {
+---
+> while (1) {
+>     int *client_socket_ptr = malloc(sizeof(int));
+56a61,67
+>     *client_socket_ptr = accept(server_socket, NULL, NULL);
+> 
+>     if (*client_socket_ptr == -1) {
+>         printf("Error accepting connection\n");
+>         free(client_socket_ptr);
+>         continue;
+>     }
+64c75
+<     pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+---
+>     pthread_create(&thread_id, NULL, handle_client, (void *) client_socket_ptr);
+

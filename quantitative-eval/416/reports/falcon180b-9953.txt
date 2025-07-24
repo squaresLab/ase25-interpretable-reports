@@ -1,0 +1,39 @@
+
+vuln-fix: CWE-787: Out-of-bounds Write in falcon180b-9953 (severity: High)
+what: The vulnerability is an out-of-bounds write that occurs when the program attempts to access write locations in memory that are outside the bounds of an allocated array.
+where: The vulnerability exists in the file falcon180b-9953, specifically within the handle_client function where the client_sockets array is accessed.
+why: If this vulnerability is not resolved, an attacker could exploit it to execute arbitrary code, cause a denial-of-service condition, or corrupt memory, potentially leading to system crashes or other unpredictable behavior.
+how: An attacker connected to the server could send specially crafted data to cause the buffer to overflow, leading to an out-of-bounds write. This could result in overwriting adjacent memory and potentially lead to remote code execution or crashing the server.
+code-sources: 
+- Accept function (`int client_socket = accept(server_socket, NULL, NULL);` in main function)
+- Receive function (`int bytes_received = recv(client_socket, buffer, BUF_SIZE, 0);` in handle_client function)
+code-sinks: 
+- Send function (`send(client_sockets[i], buffer, strlen(buffer), 0);` in handle_client function)
+suggested-fix: 
+```
+diff --git a/falcon180b-9953 b/falcon180b-9953
+index 1234567..89abcdef 100644
+--- a/falcon180b-9953
++++ b/falcon180b-9953
+@@ -13,6 +13,7 @@ void *handle_client(void *arg) {
+         memset(buffer, 0, BUF_SIZE);
+         int bytes_received = recv(client_socket, buffer, BUF_SIZE, 0);
+         if (bytes_received <= 0) {
+             break;
+         }
+         printf("Client %d sent: %s\n", client_socket, buffer);
++        buffer[BUF_SIZE-1] = '\0'; // Ensure null-termination
+         for (int i = 0; i < num_clients; i++) {
+-            if (i != client_socket) {
++            if (client_sockets[i] != client_socket) { // Correct the comparison condition
+                 send(client_sockets[i], buffer, strlen(buffer), 0);
+             }
+         }
+    }
+    close(client_socket);
+    return NULL;
+}
+ 
+```
+explanation-suggested-fix: The suggested code diff resolves the vulnerability by ensuring the buffer is null-terminated, preventing potential out-of-bounds writes. Additionally, changing the comparison condition in the loop ensures it correctly checks the sockets, preventing incorrect memory accesses.
+method: UNKNOWN

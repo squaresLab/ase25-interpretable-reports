@@ -1,0 +1,13 @@
+ 
+
+--- gpt35-23994.c
++++ gpt35-23994_fixed.c
+@@ -66,7 +66,7 @@
+                printf("Enter expense description: ");
+                // Use a safer function to prevent buffer overflow
+-               scanf("%s", description);
++               scanf("%49s", description); // Ensure it doesn't exceed the buffer size
+                // Update total expense variable and category total
+                totalExpense += amount;
+                categoryTotals[category-1] += amount;
+

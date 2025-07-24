@@ -1,0 +1,40 @@
+
+    vuln-fix: CWE-362: Concurrent Execution using Shared Resource with Improper Synchronization ('Race Condition') in falcon180b-1538 (severity: High)
+    what: The vulnerable code has a race condition due to improper handling and synchronization of the `client_sock` variable passed to `pthread_create`.
+    where: 
+    - Vulnerability lines: entire `handle_client` function, and lines 64-68 in the `main` function where `pthread_create` is called.
+    - File: falcon180b-1538
+    why: One possible consequence of not resolving this weakness is that multiple threads could potentially overwrite each other’s `client_sock` value, leading to incorrect client handling, potential data leaks, or unexpected program crashes.
+    how: An attacker could exploit this vulnerability by initiating multiple connections at nearly the same time, creating a scenario where the `client_sock` variable has not been properly synchronized across threads, leading to race conditions and improper handling of client sockets.
+    code-sources: The `accept` function at line 54 accepts user connections, providing an entry point for user input when creating new client sockets.
+    code-sinks: The `client_sock` values are used in the `pthread_create` function on line 68 to create new threads to handle client communication, and in the `recv` function in `handle_client`, where data from clients is read.
+    suggested-fix: 
+    ```diff
+    64,68c64,72
+    < if(num_clients >= MAX_CLIENTS) {
+    <     close(client_sock);
+    <     printf("Maximum number of clients reached\n");
+    <     continue;
+    < }
+    <
+    ---
+    > if(num_clients >= MAX_CLIENTS) {
+    >     close(client_sock);
+    >     printf("Maximum number of clients reached\n");
+    >     continue;
+    > }
+    > 
+    > int *client_sock_ptr = malloc(sizeof(int));
+    > if (client_sock_ptr == NULL) {
+    >     printf("Error allocating memory\n");
+    >     close(client_sock);
+    >     continue;
+    > }
+    > *client_sock_ptr = client_sock;
+    > 
+    69a74
+    > pthread_detach(thread_id);
+    > free(client_sock_ptr);
+    ```
+    explanation-suggested-fix: The suggested code diff resolves the vulnerability by dynamically allocating memory for each client socket, ensuring that each thread has its own unique copy of `client_sock` to work with. This prevents the race condition caused by passing the same `client_sock` variable to multiple threads. The `pthread_detach` call ensures thread resources are cleaned up, and the pointer is freed to prevent memory leaks.
+    method: UNKNOWN

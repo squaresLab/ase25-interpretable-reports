@@ -1,0 +1,25 @@
+
+    
+    --- gpt35-71973.c
+    +++ gpt35-71973-fixed.c
+    @@ -102,7 +102,7 @@
+         } else {
+             // add new client to clients array
+             clients[client_index].socket = client_socket;
+             clients[client_index].client_address = client_address;
+
+             int *pclient_index = malloc(sizeof(int));
+             *pclient_index = client_index;
+
+             // create new thread to handle client
+    -        if (pthread_create(&threads[client_index], NULL, client_handler, &client_index) != 0) {
+    +        if (pthread_create(&threads[client_index], NULL, client_handler, pclient_index) != 0) {
+                 printf("Error creating thread to handle client\n");
+                 close(client_socket);
+                 clients[client_index].socket = 0; // mark slot as available
+             }
+         }
+         pthread_mutex_unlock(&mutex);
+
+    
+    

@@ -1,0 +1,43 @@
+ 
+
+@@ -41,7 +41,7 @@ void addAccount(Account* passwords, int numPasswords) {
+         return;
+     }
+ 
+     printf("Enter username: ");
+-    scanf("%s", passwords[numPasswords].username);
++    scanf("%49s", passwords[numPasswords].username);
+ 
+     printf("Do you want to generate a random password? (y/n) ");
+     char choice;
+@@ -55,7 +55,7 @@ void addAccount(Account* passwords, int numPasswords) {
+         strcpy(passwords[numPasswords].password, password);
+         printf("Generated password: %s\n", password);
+         free(password);
+     } else {
+         // Otherwise, ask the user to enter a password
+         printf("Enter password: ");
+-        scanf("%s", passwords[numPasswords].password);
++        scanf("%49s", passwords[numPasswords].password);
+     }
+     
+     printf("Account added successfully.\n");
+@@ -144,7 +144,7 @@ int main() {
+                 break;
+             case 2:
+                 printf("Enter username of account to delete: ");
+-                scanf("%s", username);
++                scanf("%49s", username);
+                 deleteAccount(passwords, numPasswords, username);
+                 numPasswords--;
+                 break;
+@@ -150,7 +150,7 @@ int main() {
+                 break;
+             case 3:
+                 printf("Enter username of account to change password: ");
+-                scanf("%s", username);
++                scanf("%49s", username);
+                 changePassword(passwords, numPasswords, username);
+                 break;
+             case 4:
+

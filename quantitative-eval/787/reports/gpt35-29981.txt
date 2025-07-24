@@ -1,0 +1,72 @@
+  
+vuln-fix: Buffer Write Overflow (CWE-120, CWE-787, CWE-805) in gpt35-29981:81-90 (severity: High)
+what: The vulnerabilities are buffer write overflows where data is copied into a fixed-size buffer without proper validation and length checks.
+where: The vulnerabilities are located in line 81 and line 90 in the gpt35-29981 file:
+```c
+81: strcpy(hostname, host_entities->h_name);
+90: strcpy(ipaddr, inet_ntoa(*(struct in_addr *)host_entities->h_addr));
+```
+why: If these buffer overflows are not resolved, an attacker could exploit them to execute arbitrary code, which could lead to system compromise, data leakage, or system crashes.
+how: An attacker could exploit these vulnerabilities by crafting input that exceeds the buffer's length, triggering an overflow. For instance, supplying a long hostname or malicious IP address could overwrite portions of the stack, manipulating program execution flow.
+code-sources: The user input enters through the `dns_lookup` function's `host_ip` parameter.
+code-sinks: The sink points where the input is used unsafely are the `strcpy` calls on lines 81 and 90.
+suggested-fix: Here is a code diff file showing the necessary code changes to fix the vulnerability:
+```diff
+--- gpt35-29981.c    (original)
++++ gpt35-29981.c    (fixed)
+@@ -11,6 +11,7 @@
+ #include <errno.h>
+ #include <sys/time.h>
+ #include <sys/socket.h>
++#include <limits.h>
+ #include <arpa/inet.h>
+ #include <netdb.h>
+ #include <unistd.h>
+@@ -69,6 +70,14 @@
+   return 0;
+ }
+
++#define HOSTNAME_MAX_LEN 256 /* A reasonable length for a hostname */
++#define IPADDR_MAX_LEN 16    /* Max length for an IPv4 address string (xxx.xxx.xxx.xxx) */
++
+ /* Converts an IP address from a struct ip_address to dotted decimal notation */
+ void print_ip_address(struct ip_address ip) 
+ {
+@@ -78,8 +87,12 @@
+ char *dns_lookup(char *host_ip, struct sockaddr_in *hostaddr) 
+ {
+     struct hostent *host_entities;
+-    char *hostname = malloc(MAX_HOP), *ipaddr = malloc(MAX_HOP);
++    char *hostname = malloc(HOSTNAME_MAX_LEN), *ipaddr = malloc(IPADDR_MAX_LEN);
+ 
+     if (get_ip_address(host_ip, (struct ip_address *)hostaddr) == 0) 
+     {
+-        strcpy(ipaddr, host_ip);
++        if (strlen(host_ip) >= IPADDR_MAX_LEN) {
++            free(hostname);
++            free(ipaddr);
++            return NULL;
++        }
++        strncpy(ipaddr, host_ip, IPADDR_MAX_LEN - 1);
+         return ipaddr;
+     }
+
+@@ -78,8 +87,12 @@
+         return NULL;
+     }
+ 
+-    strcpy(hostname, host_entities->h_name);
+-    strcpy(ipaddr, inet_ntoa(*(struct in_addr *)host_entities->h_addr));
++    if (strlen(host_entities->h_name) >= HOSTNAME_MAX_LEN) {
++        free(hostname);
++        free(ipaddr);
++        return NULL;
++    }
++    strncpy(hostname, host_entities->h_name, HOSTNAME_MAX_LEN - 1);
++    strncpy(ipaddr, inet_ntoa(*(struct in_addr *)host_entities->h_addr), IPADDR_MAX_LEN - 1);
+ 
+     return ipaddr;
+ }
+```
+explanation-suggested-fix: The proposed fix replaces `strcpy` with `strncpy`, limiting the number of bytes copied to avoid overflowing the buffer. Furthermore, we check the lengths of source strings and ensure they do not exceed the destination buffer sizes. The buffer sizes are predefined with reasonable limits to provide a boundary for valid data. This prevents any overflow and truncates the data if it exceeds the buffer size.
+method: CODEQL

@@ -1,0 +1,48 @@
+
+vuln-fix: Buffer Overflow (CWE-120) in falcon180b-17765 (severity: High)
+what: The vulnerability is due to a potential buffer overflow in the `handle_client` function, specifically in the use of `recv` and `send` functions without proper boundary checks.
+where: Located in lines 15-30 of the file falcon180b-17765:
+```c
+15: void *handle_client(void *arg) {
+16:     int client_socket = *(int *) arg;
+17:     char buffer[BUFFER_SIZE];
+18:
+19:     while (1) {
+20:         memset(buffer, 0, BUFFER_SIZE);
+21:         int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+22:         if (bytes_received == 0) {
+23:             close(client_socket);
+24:             pthread_exit(0);
+25:         }
+26:
+27:         for (int i = 0; i < num_clients; i++) {
+28:             if (client_sockets[i] != client_socket) {
+29:                 send(client_sockets[i], buffer, strlen(buffer), 0);
+30:             }
+31:         }
+32:     }
+33: }
+```
+why: If the vulnerability is not resolved, an attacker could exploit the buffer overflow to execute arbitrary code, potentially gaining control over the system or causing it to crash. This could lead to severe security breaches and data loss.
+how: An attacker would craft and send a specially crafted input that exceeds the `BUFFER_SIZE`, causing a buffer overflow when the `recv` function reads the input. This can lead to overwriting adjacent memory, controlling the flow of execution, and executing malicious code.
+code-sources: The entry point for user input is the `recv` function in line 21, where data is received from the client and stored in the `buffer`.
+code-sinks: The `send` function in line 29 uses the potentially overflowed `buffer` to send data to other clients.
+suggested-fix: 
+```diff
+21c21
+-        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
++        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE - 1, 0);
+22a22
++        if (bytes_received < 0) {
++            perror("recv");
++            close(client_socket);
++            pthread_exit(0);
++        }
++        buffer[bytes_received] = '\0';
+
+29c29
+-                send(client_sockets[i], buffer, strlen(buffer), 0);
++                send(client_sockets[i], buffer, bytes_received, 0);
+```
+explanation-suggested-fix: The suggested code diff ensures that the buffer is not overflowed by adjusting the `recv` call to read one less byte than the buffer size. Additionally, it checks and handles potential errors from `recv`. Also, it correctly terminates the buffer with a null character. The `send` function now uses the actual number of bytes received, preventing it from sending excessive data.
+method: UNKNOWN

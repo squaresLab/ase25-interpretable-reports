@@ -1,0 +1,31 @@
+ 
+    
+    --- original_falcon180b-20239.c
+    +++ fixed_falcon180b-20239.c
+    @@ -1,6 +1,7 @@
+     #include <stdio.h>
+     #include <stdlib.h>
+     #include <string.h>
+    +#include <strings.h>  // Required for explicit_bzero
+     #include <errno.h>
+     #include <unistd.h>
+     #include <arpa/inet.h>
+    @@ -19,7 +20,7 @@
+         char buffer[BUFFER_SIZE];
+ 
+         while (1) {
+    -        bzero(buffer, BUFFER_SIZE);
+    +        explicit_bzero(buffer, BUFFER_SIZE);
+             int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+ 
+             if (bytes_received <= 0) {
+    @@ -34,7 +35,7 @@
+ 
+         struct sockaddr_in server_addr;
+         bzero(&server_addr, sizeof(server_addr));
+    -    server_addr.sin_family = AF_INET;
+    +    server_addr.sin_family = AF_INET;
+         server_addr.sin_port = htons(8080);
+         server_addr.sin_addr.s_addr = INADDR_ANY;
+    
+    

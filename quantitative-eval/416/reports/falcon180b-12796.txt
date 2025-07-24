@@ -1,0 +1,45 @@
+
+    vuln-fix: CWE-839 in falcon180b-12796 (severity: high)
+    what: The code has a vulnerability where an incorrect argument is passed to `pthread_join`, leading to undefined behavior.
+    where: In the `main` function, lines where `pthread_join(task_ids[i], NULL);` is called.
+    why: If not fixed, this can cause the program to crash or hang because `pthread_join` requires a `pthread_t` identifier, but an `int` is being used instead.
+    how: An attacker could exploit this by running a malformed program designed to cause denial of service on the system.
+    code-sources: The initialization of task IDs as integers in `main`.
+    code-sinks: The usage of task IDs in `pthread_join` in `main` and `pthread_create` in `schedule_task`.
+    suggested-fix: 
+    ```
+    diff --git a/falcon180b-12796 b/falcon180b-12796
+    index 1234567..89abcde 100644
+    --- a/falcon180b-12796
+    +++ b/falcon180b-12796
+    @@ -14,11 +14,13 @@ int main() {
+         int intervals[num_tasks];
+         int durations[num_tasks];
+         pthread_t threads[num_tasks];
+     
+         // Initialize task IDs, intervals, and durations
+         for (int i = 0; i < num_tasks; i++) {
+             task_ids[i] = i + 1;
+    -        intervals[i] = 1000; // 1 second
+    +        intervals[i] = 1000;
+    -        durations[i] = 5000; // 5 seconds
+    +        durations[i] = 5000;
+         }
+     
+         // Schedule tasks
+         for (int i = 0; i < num_tasks; i++) {
+    -        schedule_task(task_ids[i], intervals[i], durations[i]);
+    +        pthread_create(&threads[i], NULL, run_task, &task_ids[i]);
+         }
+     
+         // Join scheduled tasks
+         for (int i = 0; i < num_tasks; i++) {
+    -        pthread_join(task_ids[i], NULL);
+    +        pthread_join(threads[i], NULL);
+         }
+     
+         return 0;
+     }
+    ```
+    explanation-suggested-fix: The fix changes the `task_ids` array to `threads`, which holds `pthread_t` identifiers for each thread. This ensures that the correct data type is passed to both `pthread_create` and `pthread_join`, resolving the type mismatch and preventing undefined behavior.
+    method: UNKNOWN

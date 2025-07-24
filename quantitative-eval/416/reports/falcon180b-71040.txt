@@ -1,0 +1,38 @@
+    
+vuln-fix: Buffer Overflow (CWE-120) in falcon180b-71040 at handle_client function (severity: High)
+
+what: The vulnerability is caused by improper handling of received data, leading to a buffer overflow when the received data exceeds the buffer size.
+
+where: The vulnerability occurs on lines 15-25 within the handle_client function in the file falcon180b-71040.
+
+why: If not resolved, this weakness may allow an attacker to execute arbitrary code, cause a denial of service, or take over the affected system.
+
+how: An attacker could send specially crafted packets with a size larger than the buffer array (1024 bytes). Since the code does not properly check the length of data received before storing it in the buffer, this can lead to a buffer overflow.
+
+code-sources: Data is received from the network via the recv() function on line 17.
+
+code-sinks: The received data is copied to the buffer array and later used in the send() function on line 21.
+
+suggested-fix: 
+```diff
+--- falcon180b-71040.c
++++ falcon180b-71040_fixed.c
+@@ -16,10 +16,12 @@
+     while (1) {
+         memset(buffer, 0, sizeof(buffer));
+         int bytes_received = recv(client_socket, buffer, sizeof(buffer) - 1, 0);
+-        if (bytes_received <= 0) {
++        if (bytes_received <= 0 || bytes_received >= sizeof(buffer)) {
+             break;
+         }
+-        printf("Client %d sent: %s\n", client_socket, buffer);
++        buffer[bytes_received] = '\0'; // Null-terminate the buffer
++        printf("Client %d sent: %s\n", client_socket, buffer); // Safe to print now
+         for (int i = 0; i < num_clients; i++) {
+             if (i != client_socket) {
+                 send(client_sockets[i], buffer, strlen(buffer), 0);
+```
+
+explanation-suggested-fix: The suggested code diff resolves the vulnerability by ensuring that the buffer is null-terminated, preventing overflow. Additionally, it adds a condition to break the loop if bytes_received is greater than or equal to the buffer size, thus preventing potential overflow scenarios.
+
+method: UNKNOWN

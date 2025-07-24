@@ -1,0 +1,26 @@
+ 
+
+diff --git a/gpt35-25058 b/gpt35-25058
+index 1234567..89abcde 100644
+--- a/gpt35-25058
++++ b/gpt35-25058
+@@ -21,6 +21,17 @@
+ #define MAX_PROBES 20
+ 
+
+@@ -42,6 +42,7 @@
+    int main(){
++      //Validate circuit configuration
++      if (num_nodes > MAX_NODES || num_sources > MAX_SOURCES || num_probes > MAX_PROBES) {
++          fprintf(stderr, "Error: One of the parameters (num_nodes, num_sources, or num_probes) exceeds the maximum allowed value.\n");
++          return -1;
++      }
+
+    //Create Circuit
+    circuit my_circuit;
+    my_circuit.num_nodes = 4;
+    my_circuit.num_sources = 1;
+    my_circuit.num_probes = 2;
+ 
+
+ 

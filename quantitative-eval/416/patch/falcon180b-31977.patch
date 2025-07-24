@@ -1,0 +1,35 @@
+ 
+
+--- falcon180b-31977.c
++++ falcon180b-31977-fixed.c
+@@ -33,7 +33,12 @@
+     }
+ 
+     close(client_socket);
++    
++    // Remove client socket from the array
++    for (int i = 0; i < num_clients; i++) {
++        if (clients[i] == client_socket) {
++            clients[i] = clients[num_clients-1];
++            break;
++        }
++    }
++    num_clients--;
+     return NULL;
+ }
+
+@@ -53,10 +58,10 @@
+        int client_socket = accept(server_socket, NULL, NULL);
+ 
+        if (num_clients >= MAX_CLIENTS) {
+            send(client_socket, "Server is full", strlen("Server is full"), 0);
+            close(client_socket);
+        } else {
++            pthread_t thread_id;
++            int* new_sock = malloc(1);
++            *new_sock = client_socket;
++            clients[num_clients++] = client_socket;
+            pthread_create(&thread_id, NULL, handle_client, (void*) new_sock);
+        }
+    }
+

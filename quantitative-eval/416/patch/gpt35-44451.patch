@@ -1,0 +1,19 @@
+ 
+    
+    --- gpt35-44451.c
+    +++ gpt35-44451_fixed.c
+    @@ -19,7 +19,9 @@
+      while(1) {
+        memset(buff, 0, 1024);
+        int read_size = read(sock, buff, 1024);
+    -   if(read(sock, buff, 1024) == 0) {
+    +   if(read_size <= 0) {
+          // client disconnected
+          printf("Client disconnected.\n");
+    +     close(sock);
+    +     pthread_exit(NULL); 
+        }
+        printf("Message: %s\n", buff);
+        pthread_mutex_lock(&mutex);
+    
+    

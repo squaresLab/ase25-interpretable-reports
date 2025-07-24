@@ -1,0 +1,26 @@
+
+    vuln-fix: Unbounded write (CWE-120, CWE-787, CWE-805) in falcon180b-24943:48 (severity: High)
+    what: The code performs unbounded write operations by using `strcpy()` on `sentenceData.sentence` without checking if the input buffer size exceeds the maximum allowed sentence length. This can lead to buffer overflow.
+    where: The vulnerability occurs at line 48 in falcon180b-24943.
+    why: Exploiting this vulnerability can lead to potential buffer overflow, resulting in arbitrary code execution, crashes, or corruption of data. This can compromise the security and stability of the application.
+    how: An attacker could craft a specially-designed input file with lines longer than the maximum sentence length. When these lines are processed by the application, they could overflow the buffer `sentenceData.sentence`, potentially leading to arbitrary code execution or application crash.
+    code-sources: Line 37: `fgets(inputBuffer, MAX_SENTENCE_LENGTH, inputFile)`, as it reads input data that is then processed and copied.
+    code-sinks: Line 48: `strcpy(sentenceData.sentence, inputBuffer)`, where the input data is copied without length checking.
+    suggested-fix: 
+    ```diff
+    --- falcon180b-24943
+    +++ falcon180b-24943
+    @@ -45,7 +45,9 @@
+    
+        // Create sentence data struct
+        SentenceData sentenceData;
+    -   strcpy(sentenceData.sentence, inputBuffer);
+    +   // Ensure we do not write beyond the maximum sentence length
+    +   strncpy(sentenceData.sentence, inputBuffer, MAX_SENTENCE_LENGTH - 1);
+    +   sentenceData.sentence[MAX_SENTENCE_LENGTH - 1] = '\0';  // Ensure null-termination
+        sentenceData.length = strlen(inputBuffer);
+    
+        // Add sentence to thread queue
+    ```
+    explanation-suggested-fix: The suggested code diff replaces `strcpy` with `strncpy` to ensure that no more than `MAX_SENTENCE_LENGTH - 1` characters are copied. Moreover, it explicitly sets the last character of the buffer to `'\0'` to guarantee null-termination. This prevents buffer overflow by ensuring that the buffer limit is not exceeded.
+    method: CODEQL

@@ -1,0 +1,40 @@
+
+    
+    --- falcon180b-54782.c (original)
+    +++ falcon180b-54782.c (fixed)
+    @@ -47,7 +47,7 @@
+             int client_socket = accept(server_socket, NULL, NULL);
+
+             if (num_clients >= MAX_CLIENTS) {
+                 send(client_socket, "Server is full. Please try again later.\n", strlen("Server is full. Please try again later.\n"), 0);
+                 close(client_socket);
+                 continue;
+             }
+
+    -        client_sockets[num_clients] = client_socket;
+    -        num_clients++;
+    -
+    +        int *client_sock = malloc(sizeof(int));
+    +        *client_sock = client_socket;
+            pthread_t thread_id;
+    -        pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+    +        pthread_create(&thread_id, NULL, handle_client, (void *) client_sock);
+         }
+     
+         return 0;
+    }
+    
+    @@ -55,7 +55,7 @@
+         }
+     
+         printf("Received message from client: %s\n", buffer);
+     }
+     
+     close(client_socket);
+    -    return NULL;
+    +    free(socket_desc);
+    +    return NULL;
+    }
+    
+
+    

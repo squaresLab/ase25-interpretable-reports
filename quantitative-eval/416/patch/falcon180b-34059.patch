@@ -1,0 +1,28 @@
+ 
+    
+    --- falcon180b-34059.c
+    +++ falcon180b-34059_fixed.c
+    @@ -44,7 +44,12 @@
+             int client_socket = accept(server_socket, NULL, NULL);
+    
+             if (num_connections >= MAX_CONNECTIONS) {
+    -            send(client_socket, "Server is full\n", 16, 0);
+    +            send(client_socket, "Server is full\n", strlen("Server is full\n"), 0);
+                 close(client_socket);
+             } else {
+    +            // Check array bounds before incrementing num_connections
+    +            if (num_connections < 0 || num_connections >= MAX_CONNECTIONS) {
+    +                fprintf(stderr, "Error: Invalid number of connections detected.\n");
+    +                close(client_socket);
+    +                continue;
+    +            }
+                 connections[num_connections++] = client_socket;
+                 pthread_t thread_id;
+    -            pthread_create(&thread_id, NULL, handle_client, (void*) &client_socket);
+    +            int* client_sock_ptr = malloc(sizeof(int));
+    +            *client_sock_ptr = client_socket;
+    +            pthread_create(&thread_id, NULL, handle_client, (void*) client_sock_ptr);
+             }
+         }
+    
+    

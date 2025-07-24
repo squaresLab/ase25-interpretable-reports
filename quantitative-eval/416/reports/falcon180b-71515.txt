@@ -1,0 +1,36 @@
+
+    vuln-fix: CWE-120: Buffer Overflow in falcon180b-71515 at handle_client() (severity: High)
+    what: The vulnerability is a potential buffer overflow when the `recv` function reads data into the `buffer` without proper length checks.
+    where: falcon180b-71515, line numbers around: 18-26
+    why: A buffer overflow can lead to arbitrary code execution, crashes, or data corruption.
+    how: An attacker could send specially crafted data that exceeds the BUFFER_SIZE limit, causing the application to overwrite adjacent memory.
+    code-sources: Entry point is the `recv` function, which reads user input from the network into the `buffer`.
+    code-sinks: The input read by `recv` is directly used when calling `send` to broadcast the message to other clients.
+    suggested-fix:
+    ```diff
+    --- falcon180b-71515-original.c
+    +++ falcon180b-71515-fixed.c
+    @@ -19,7 +19,7 @@
+         while (1) {
+             memset(buffer, 0, BUFFER_SIZE);
+             int bytes_received = recv(client_socket, buffer, BUFFER_SIZE - 1, 0);
+     
+    -        if (bytes_received <= 0) {
+    +        if (bytes_received <= 0 || bytes_received >= BUFFER_SIZE) {
+                 break;
+             }
+     
+    @@ -34,8 +34,8 @@
+         close(client_socket);
+     
+         for (int i = 0; i < num_clients; i++) {
+             if (clients[i] == client_socket) {
+                 clients[i] = -1;
+                 break;
+             }
+         }
+    +    num_clients--;
+     }
+    ```
+    explanation-suggested-fix: The suggested fix adds a check to ensure the number of bytes received does not exceed the buffer limit (BUFFER_SIZE - 1). This prevents a buffer overflow by ensuring that the received data fits within the bounds of the buffer.
+    method: UNKNOWN

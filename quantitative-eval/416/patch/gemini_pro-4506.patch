@@ -1,0 +1,55 @@
+ 
+    
+    --- gemini_pro-4506.c
+    +++ gemini_pro-4506_fixed.c
+    @@ -20,12 +20,16 @@
+     int subtract_matrices(int a[3][3], int b[3][3], int c[3][3])
+     {
+         for (int i = 0; i < 3; i++) {
+             for (int j = 0; j < 3; j++) {
+                 c[i][j] = a[i][j] - b[i][j];
+             }
+         }
+     }
+     
+     int multiply_matrices(int a[3][3], int b[3][3], int c[3][3])
+     {
+         for (int i = 0; i < 3; i++) {
+             for (int j = 0; j < 3; j++) {
+                 c[i][j] = 0;
+                 for (int k = 0; k < 3; k++) {
+                     c[i][j] += a[i][k] * b[k][j];
+                 }
+             }
+         }
+     }
+     
+     // Main function
+     int main()
+     {
+         // Add the two matrices
+         int sum[3][3];
+         add_matrices(romeo, juliet, sum);
+     
+         // Subtract the two matrices
+         int difference[3][3];
+         subtract_matrices(romeo, juliet, difference);
+     
+         // Multiply the two matrices
+         int product[3][3];
+         multiply_matrices(romeo, juliet, product);
+     
+         // Print the results
+         printf("The sum of the two matrices is:\n");
+         print_matrix(sum);
+     
+         printf("The difference of the two matrices is:\n");
+         print_matrix(difference);
+     
+         printf("The product of the two matrices is:\n");
+         print_matrix(product);
+     
+         return 0;
+     }
+    
+    

@@ -1,0 +1,104 @@
+
+vuln-fix: CWE-362: Concurrent Execution using Shared Resource with Improper Synchronization ('Race Condition') in falcon180b-3491 (severity: High)
+what: The vulnerability lies in the improper synchronization of shared resources, specifically the `client_sockets` array and `num_clients` variable, in a multi-threaded context. Multiple threads can access and modify these shared resources concurrently, leading to race conditions.
+where: The vulnerability is located in the following lines:
+- `client_sockets[num_clients] = client_socket;` (line 59)
+- `num_clients++;` (line 60)
+- `for (int i = 0; i < num_clients; i++) {` (line 22)
+why: If this vulnerability is not resolved, it can lead to unexpected behavior such as crashes, incorrect data distribution among clients, or other unpredictable outcomes that might compromise the server's stability and reliability.
+how: An attacker could exploit this vulnerability by creating multiple connections simultaneously to the server, thereby increasing the likelihood of race conditions. This could lead to erratic behavior and potentially allow an attacker to disrupt the service or cause it to behave incorrectly.
+code-sources: 
+- `int client_socket = accept(server_socket, (struct sockaddr *)&client_addr, &addr_size);` (line 52)
+- `int bytes_received = recv(client_socket, buffer, 1024, 0);` (line 16)
+code-sinks: 
+- `client_sockets[num_clients] = client_socket;` (line 59)
+- `num_clients++;` (line 60)
+- `for (int i = 0; i < num_clients; i++) {` (line 22)
+suggested-fix: 
+```diff
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <errno.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <pthread.h>
+
+#define MAX_CLIENTS 10
+#define PORT 8888
+
+int client_sockets[MAX_CLIENTS];
+int num_clients = 0;
+pthread_mutex_t client_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+void *handle_client(void *arg) {
+    int client_socket = *(int *) arg;
+    char buffer[1024];
+
+    while (1) {
+        memset(buffer, 0, 1024);
+        int bytes_received = recv(client_socket, buffer, 1024, 0);
+
+        if (bytes_received <= 0) {
+            break;
+        }
+
+        printf("Client %d sent: %s\n", client_socket, buffer);
+
+        pthread_mutex_lock(&client_mutex);
+        for (int i = 0; i < num_clients; i++) {
+            if (i != client_socket) {
+                send(client_sockets[i], buffer, strlen(buffer), 0);
+            }
+        }
+        pthread_mutex_unlock(&client_mutex);
+    }
+
+    close(client_socket);
+    pthread_mutex_lock(&client_mutex);
+    num_clients--;
+    pthread_mutex_unlock(&client_mutex);
+}
+
+int main() {
+    int server_socket = socket(AF_INET, SOCK_STREAM, 0);
+
+    struct sockaddr_in server_addr;
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(PORT);
+    server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+
+    bind(server_socket, (struct sockaddr *)&server_addr, sizeof(server_addr));
+
+    listen(server_socket, MAX_CLIENTS);
+
+    printf("Server is listening on port %d\n", PORT);
+
+    while (1) {
+        struct sockaddr_in client_addr;
+        socklen_t addr_size = sizeof(client_addr);
+        int client_socket = accept(server_socket, (struct sockaddr *)&client_addr, &addr_size);
+
+        if (num_clients >= MAX_CLIENTS) {
+            close(client_socket);
+            printf("Server is full. Please try again later.\n");
+            continue;
+        }
+
+        pthread_mutex_lock(&client_mutex);
+        client_sockets[num_clients] = client_socket;
+        num_clients++;
+        pthread_mutex_unlock(&client_mutex);
+
+        pthread_t thread_id;
+        pthread_create(&thread_id, NULL, handle_client, (void *)&client_socket);
+    }
+
+    return 0;
+}
+```
+explanation-suggested-fix: The suggested code introduces a mutex lock (`client_mutex`) to ensure that the shared resources (`client_sockets` array and `num_clients` variable) are properly synchronized. By locking the mutex before modifying these resources and unlocking it afterwards, we prevent race conditions, ensuring that the data remains consistent and the server operates correctly under concurrent connections.
+method: UNKNOWN

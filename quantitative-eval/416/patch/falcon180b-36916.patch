@@ -1,0 +1,11 @@
+ 
+
+38c38,42
+<     task->function = function;
+---
+>     if (task == NULL) {
+>         fprintf(stderr, "Failed to allocate memory for task\n");
+>         exit(EXIT_FAILURE);
+>     }
+>     task->function = function;
+

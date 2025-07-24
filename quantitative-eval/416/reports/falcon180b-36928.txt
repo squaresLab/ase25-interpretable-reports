@@ -1,0 +1,29 @@
+
+vuln-fix: CWE-362: Race Condition in falcon180b-36928 (severity: High)
+what: The vulnerability is a race condition that occurs due to the improper handling of the `client_socket` variable passed to the `handle_request` function in a multithreaded environment.
+where: The vulnerability is located in the `accept_connections` function starting from line 29.
+why: One possible consequence of not resolving this weakness is that multiple threads can end up using the same value of `client_socket`, leading to unexpected behavior, data corruption, or crashes.
+how: An attacker could exploit this vulnerability by connecting multiple clients simultaneously, causing threads to interfere with each other and resulting in undefined behavior or the crash of the application.
+code-sources: `accept(server_socket, NULL, NULL)` at line 30
+code-sinks: `recv(client_socket, request, MAX_REQUEST_SIZE, 0)` at line 12, `send(client_socket, "Request processed.", strlen("Request processed."), 0)` at line 22
+suggested-fix: 
+```diff
+--- falcon180b-36928.c
++++ falcon180b-36928-fixed.c
+@@ -31,7 +31,7 @@
+         
+         if (client_socket == -1) {
+             printf("Error accepting connection.\n");
+             continue;
+         }
+
++        int *client_socket_ptr = malloc(sizeof(int));
++        *client_socket_ptr = client_socket;
+
+-        pthread_create(&thread_id, NULL, handle_request, (void*) &client_socket);
++        pthread_create(&thread_id, NULL, handle_request, (void*) client_socket_ptr);
+     }
+ }
+```
+explanation-suggested-fix: The suggested code diff resolves the vulnerability by dynamically allocating memory for each `client_socket` pointer and passing that pointer to the `pthread_create` function. This ensures that each thread receives a unique value of `client_socket` and prevents race conditions.
+method: UNKNOWN

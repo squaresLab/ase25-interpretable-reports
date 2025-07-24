@@ -1,0 +1,51 @@
+
+vuln-fix: Buffer Overflow (CWE-121) in falcon180b-24511 at lines 15-17 (severity: High)
+what: The code reads data from a socket into a fixed-size buffer `request` of 1024 bytes without checking if the received data exceeds the buffer size, leading to a potential buffer overflow vulnerability.
+where: The vulnerability is located at lines 15-17 in the file falcon180b-24511:
+```c
+recv(client_socket, request, MAX_REQUEST_SIZE, 0);
+```
+why: If this vulnerability is not resolved, an attacker could overflow the buffer with more data than it can hold, leading to memory corruption. This could result in a crash, arbitrary code execution, or even a complete system compromise.
+how: An attacker would proceed to exploit this vulnerability by sending a crafted payload to the target server that exceeds the buffer size of 1024 bytes, causing the buffer overflow:
+```python
+import socket
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.connect(('target_ip', 8080))
+payload = b'A' * 2048  # Exceeding the buffer size
+s.send(payload)
+s.close()
+```
+code-sources: The entry point where user input enters the application is the `recv` function called within `handle_client` function (line 15):
+```c
+recv(client_socket, request, MAX_REQUEST_SIZE, 0);
+```
+code-sinks: The action performed by the application using this user input is the `printf` function where it outputs the received request (line 16):
+```c
+printf("Received request from client %d: %s\n", client_socket, request);
+```
+suggested-fix: 
+```diff
+--- falcon180b-24511	2023-01-10 12:00:00.000000000 -0600
++++ falcon180b-24511	2023-01-10 12:00:00.000000000 -0600
+@@ -15,7 +15,11 @@
+ void *handle_client(void *arg) {
+     int client_socket = *(int *) arg;
+     char request[MAX_REQUEST_SIZE];
+-    memset(request, 0, MAX_REQUEST_SIZE);
+-    recv(client_socket, request, MAX_REQUEST_SIZE, 0);
+-    printf("Received request from client %d: %s\n", client_socket, request);
++    ssize_t bytes_received = recv(client_socket, request, MAX_REQUEST_SIZE - 1, 0);
++    if (bytes_received < 0) {
++        perror("recv");
++        close(client_socket);
++        pthread_exit(0);
++    }
++    request[bytes_received] = '\0';
++    printf("Received request from client %d: %s\n", client_socket, request);
+     close(client_socket);
+     pthread_exit(0);
+ }
+```
+explanation-suggested-fix: The suggested code diff ensures that the buffer `request` will not overflow by limiting the `recv` call to `MAX_REQUEST_SIZE - 1` bytes and properly null-terminating the string. It also handles the case where `recv` returns an error.
+
+method: UNKNOWN

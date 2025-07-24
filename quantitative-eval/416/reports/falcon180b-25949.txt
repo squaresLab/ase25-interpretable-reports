@@ -1,0 +1,26 @@
+
+vuln-fix: CWE-362: Race Condition in falcon180b-25949 at line numbers 42-45 (severity: High)
+what: The vulnerability exists in the way the `client_socket` is passed to the new thread without proper synchronization. This can lead to a race condition where multiple threads may access/modify the `client_socket` variable concurrently, causing undefined behavior or security issues.
+where: Line 42-45 of file falcon180b-25949 in the `while` loop of the `main` function, specifically at the following lines:
+```c
+pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+```
+why: Not addressing this vulnerability can cause crashes, data corruption, or unauthorized access since the variables shared between threads can be altered unexpectedly, leading to unpredictable program behavior.
+how: An attacker could exploit this race condition by rapidly connecting and disconnecting multiple clients. This can cause multiple threads to interfere with each other while accessing the shared `client_socket` variable, potentially leading to crashes or data corruption.
+code-sources: The entry point for user input is the client's data received via the `recv` function inside the `handle_client` function.
+code-sinks: The action performed by the application using user input is the call to `send` function in the `handle_client` function, where it sends the received data back to the client.
+suggested-fix: 
+```diff
+40a41,42
+>     int* client_socket_copy;
+> 
+44c46,49
+<             pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+---
+>             client_socket_copy = malloc(sizeof(int));
+>             *client_socket_copy = client_socket;
+>             pthread_create(&thread_id, NULL, handle_client, (void *)client_socket_copy);
+>             pthread_detach(thread_id);
+```
+explanation-suggested-fix: The suggested code diff resolves the vulnerability by allocating a new memory space for each `client_socket` and passing a pointer to this space to the thread. This ensures each thread has its own copy of the `client_socket` value, thus eliminating the race condition.
+method: UNKNOWN

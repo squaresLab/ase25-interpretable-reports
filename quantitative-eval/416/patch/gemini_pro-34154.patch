@@ -1,0 +1,48 @@
+ 
+    
+    --- gemini_pro-34154.c
+    +++ gemini_pro-34154-fixed.c
+    @@ -34,7 +34,7 @@
+         int client_socket = *(int *)arg;
+
+         voter_t voter;
+    -    recv(client_socket, &voter, sizeof(voter), 0);
+    +    int received_bytes = recv(client_socket, &voter, sizeof(voter), 0);
+    +    if (received_bytes != sizeof(voter)) {
+    +        perror("recv");
+    +        close(client_socket);
+    +        return NULL;
+    +    }
+
+         // Check if voter has already voted
+         int voted = 0;
+    @@ -42,10 +42,10 @@
+             if (strcmp(voter.name, voters[i].name) == 0) {
+                 voted = 1;
+                 break;
+             }
+         }
+
+         // If voter has not already voted, add their votes to the candidates
+         if (!voted) {
+             for (int i = 0; i < MAX_VOTES; i++) {
+    -            if (voter.votes[i] >= 0 && voter.votes[i] < num_candidates) {
+    +            if (voter.votes[i] >= 0 && voter.votes[i] < num_candidates && i < MAX_VOTES) {
+                     candidates[voter.votes[i]].votes++;
+                 }
+             }
+
+             // Add voter to list of voters
+    +        if(num_voters < MAX_VOTERS) {
+                 voters[num_voters] = voter;
+                 num_voters++;
+    +        } else {
+    +             perror("Too many voters");
+    +             close(client_socket);
+    +             return NULL;
+    +        }
+         }
+
+         // Send the updated candidate list to the client
+    
+    

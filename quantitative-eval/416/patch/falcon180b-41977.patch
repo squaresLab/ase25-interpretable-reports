@@ -1,0 +1,78 @@
+ 
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+
+#define NUM_THREADS 3
+#define MAX_ITEMS 10
+#define MAX_PRICE 100
+
+typedef struct {
+    char name[20];
+    int price;
+} MenuItem;
+
+void *customer(void *arg) {
+    int id = *(int *) arg;
+    printf("Customer %d is ordering...\n", id);
+    sleep(1);
+    printf("Customer %d ordered %s for $%d\n", id, "Burger", 5);
+    return NULL;
+}
+
+void *cook(void *arg) {
+    int id = *(int *) arg;
+    printf("Cook %d is cooking...\n", id);
+    sleep(2);
+    printf("Cook %d finished cooking %s\n", id, "Burger");
+    return NULL;
+}
+
+void *waiter(void *arg) {
+    int id = *(int *) arg;
+    printf("Waiter %d is serving...\n", id);
+    sleep(1);
+    printf("Waiter %d served %s to Customer %d\n", id, "Burger", id);
+    return NULL;
+}
+
+void *billing(void *arg) {
+    int id = *(int *) arg;
+    printf("Billing for Customer %d...\n", id);
+    sleep(1);
+    printf("Total bill for Customer %d is $%d\n", id, 5);
+    return NULL;
+}
+
+int main() {
+    pthread_t threads[NUM_THREADS * 4];
+    int i;
+
+    // Initialize menu items
+    MenuItem menu[MAX_ITEMS] = {{"Burger", 5}, {"Fries", 3}, {"Drink", 2}};
+    
+    int customer_ids[NUM_THREADS];
+
+    // Create threads
+    for (i = 0; i < NUM_THREADS; i++) {
+        customer_ids[i] = i + 1;
+        
+        pthread_create(&threads[i * 4], NULL, customer, &customer_ids[i]);
+        sleep(1);
+        pthread_create(&threads[i * 4 + 1], NULL, cook, &customer_ids[i]);
+        sleep(1);
+        pthread_create(&threads[i * 4 + 2], NULL, waiter, &customer_ids[i]);
+        sleep(1);
+        pthread_create(&threads[i * 4 + 3], NULL, billing, &customer_ids[i]);
+    }
+
+    // Join threads
+    for (i = 0; i < NUM_THREADS * 4; i++) {
+        pthread_join(threads[i], NULL);
+    }
+
+    return 0;
+}
+
+    

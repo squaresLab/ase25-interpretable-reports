@@ -1,0 +1,43 @@
+ 
+    
+    --- falcon180b-46681.c
+    +++ falcon180b-46681_fixed.c
+    @@ -40,6 +40,7 @@
+             struct sockaddr_in server_addr;
+             memset(&server_addr, 0, sizeof(server_addr));
+             server_addr.sin_family = AF_INET;
+             server_addr.sin_addr.s_addr = INADDR_ANY;
+             server_addr.sin_port = htons(8080);
+
+             bind(server_socket, (struct sockaddr *) &server_addr, sizeof(server_addr));
+             listen(server_socket, MAX_CLIENTS);
+
+             printf("Server started on port 8080\n");
+
+             while (1) {
+                 socklen_t client_size = sizeof(client_sockets[0]);
+    -            int new_client = accept(server_socket, (struct sockaddr *) &client_sockets[num_clients], &client_size);
+    +            if (num_clients >= MAX_CLIENTS) {
+    +                printf("Max clients reached. Rejecting new client.\n");
+    +                close(new_client);
+    +                continue;
+    +            }
+    +            int new_client = accept(server_socket, (struct sockaddr *) NULL, NULL);
+
+                 if (new_client > 0) {
+                     client_sockets[num_clients] = new_client;
+                     num_clients++;
+    -                client_color[num_clients - 1] = 0;
+    +                client_color[num_clients] = 0;
+                     printf("Client %d connected\n", new_client);
+
+                     pthread_t thread_id;
+                     pthread_create(&thread_id, NULL, handle_client, (void *) &new_client);
+                 }
+             }
+
+             return 0;
+         }
+    
+
+    

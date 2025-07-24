@@ -1,0 +1,21 @@
+
+vuln-fix: Unchecked Return Value (CWE-252) in falcon180b-39984 (severity: High)
+what: The code does not handle the potential failure of the `accept()` system call properly. If `accept()` fails, it returns -1, but the code proceeds to handle this erroneous socket descriptor as if it were valid, leading to undefined behavior.
+where: The vulnerability is located in the `main()` function:
+```c
+int client_socket = accept(server_socket, (struct sockaddr *) &client_addr, &addr_size);
+```
+why: If the `accept()` call fails and the return value is not checked, it could lead to invalid memory access, crashes, or unpredictable behavior of the application.
+how: An attacker could potentially exploit this vulnerability by causing the `accept()` call to fail (e.g., by overwhelming the server with connection attempts), leading to a system crash or unpredictable behavior, thereby creating a denial of service.
+code-sources: The entry point where user input enters the application is through the network socket on the server.
+code-sinks: The sink is the use of the `client_socket` variable after the `accept()` call without checking if it is valid.
+suggested-fix: 
+```diff
+ int client_socket;
++ if ((client_socket = accept(server_socket, (struct sockaddr *) &client_addr, &addr_size)) < 0) {
++     perror("accept");
++     continue;
++ }
+```
+explanation-suggested-fix: The suggested fix adds a check to verify the return value of `accept()`. If the return value is negative, indicating an error, the program logs the error using `perror` and continues to accept the next incoming connection. This prevents any invalid memory access or undefined behavior due to an erroneous socket descriptor.
+method: UNKNOWN

@@ -1,0 +1,24 @@
+
+    
+    --- gemini_pro-643
+    +++ gemini_pro-643-fixed
+    @@ -26,7 +26,13 @@
+            // Get the file path
+            char file_path[1024];
+            if (strcmp(path, "/") == 0) {
+                strcpy(file_path, "index.html");
+            } else {
+    -           strcpy(file_path, path);
+    +           // Validate and sanitize the user-supplied path
+    +           if (strstr(path, "..") != NULL) {
+    +               write(client_fd, "HTTP/1.1 400 Bad Request\r\n\r\n", 28);
+    +               pthread_mutex_unlock(&mutex);
+    +               close(client_fd);
+    +               return NULL;
+    +           }
+    +           snprintf(file_path, sizeof(file_path), ".%s", path);
+            }
+            
+            // Open the file
+    
+    

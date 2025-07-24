@@ -1,0 +1,22 @@
+ 
+vuln-fix: CWE-787: Out-of-bounds Write in falcon180b-26935 (severity: High)
+what: The vulnerability is an out-of-bounds write due to improper handling of client indices when sending messages to other clients. Specifically, the `send` function attempts to use `client_sockets[i]`, which can be incorrect since `i` is an index but `client_socket` is a file descriptor.
+where: The vulnerability is located in the `handle_client` function, around the lines where `send` is called with `client_sockets[i]` as a parameter.
+why: An attacker might exploit this vulnerability to cause unpredictable behavior, crashes, or potentially overwrite memory leading to code execution.
+how: An attacker would connect several clients to the server, and then send crafted inputs to the server. If the client_socket values are manipulated appropriately, they could cause out-of-bounds access in the `client_sockets` array.
+code-sources: The code entry point for user input is via the `recv` function call in the `handle_client` function.
+code-sinks: The vulnerable actions are primarily in the `send` function call within the loop that iterates through `client_sockets`.
+suggested-fix: 
+```diff
+--- falcon180b-26935.c
++++ falcon180b-26935.c
+@@ -13,7 +13,8 @@
+         for (int i = 0; i < num_clients; i++) {
+-            if (i != client_socket) {
++            if (client_sockets[i] != client_socket) {
+                 send(client_sockets[i], buffer, strlen(buffer), 0);
+             }
+         }
+```
+explanation-suggested-fix: The suggested code change ensures that the `send` function call inside the loop compares `client_socket` with the values in `client_sockets` array, thus preventing errors caused by comparing an index to a socket descriptor.
+method: UNKNOWN

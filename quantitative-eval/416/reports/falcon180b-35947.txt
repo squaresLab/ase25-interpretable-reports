@@ -1,0 +1,60 @@
+
+    vuln-fix: CWE-825: Return of Stack Variable Address in falcon180b-35947:39 (severity: High)
+    what: A function returns a pointer to a stack-allocated region of memory.
+    where: falcon180b-35947:39
+    why: This memory is deallocated at the end of the function, which may lead to the caller dereferencing a dangling pointer, resulting in undefined behavior and potential security vulnerabilities.
+    how: An attacker could exploit this by causing the program to use the invalid memory address, leading to unexpected behavior, crashes, or even code execution.
+    code-sources: get_input function
+    code-sinks: return statement in get_input function
+    suggested-fix: 
+    ```diff
+    --- a/falcon180b-35947
+    +++ b/falcon180b-35947
+    @@ -37,7 +37,7 @@ void sanitize_input(char* input) {
+    
+    char* get_input(char* prompt) {
+        char* input = (char*)malloc(MAX_INPUT * sizeof(char)); // Allocate memory on the heap
+        printf("%s", prompt);
+        fgets(input, MAX_INPUT, stdin);
+        sanitize_input(input);
+        return input;
+    }
+    ```
+    explanation-suggested-fix: Allocating memory on the heap instead of the stack ensures that the returned memory address remains valid after the function exits, preventing the use of a dangling pointer.
+
+    vuln-fix: CWE-120, CWE-787, CWE-805: Buffer Overflow in falcon180b-35947:48 (severity: High)
+    what: Buffer write operations that do not control the length of data written may overflow.
+    where: falcon180b-35947:48
+    why: Uncontrolled data writes may lead to buffer overflow, corrupting memory and potentially allowing arbitrary code execution.
+    how: An attacker could exploit this by providing input that exceeds the buffer length, overwriting adjacent memory and altering program execution flow.
+    code-sources: strcpy function calls
+    code-sinks: strcpy function
+
+    vuln-fix: CWE-120, CWE-787, CWE-805: Buffer Overflow in falcon180b-35947:50 (severity: High)
+    what: Buffer write operations that do not control the length of data written may overflow.
+    where: falcon180b-35947:50
+    why: Uncontrolled data writes may lead to buffer overflow, corrupting memory and potentially allowing arbitrary code execution.
+    how: An attacker could exploit this by providing input that exceeds the buffer length, overwriting adjacent memory and altering program execution flow.
+    code-sources: strcpy function calls
+    code-sinks: strcpy function
+    suggested-fix: 
+    ```diff
+    --- a/falcon180b-35947
+    +++ b/falcon180b-35947
+    @@ -46,7 +46,7 @@ int main() {
+    
+        // Get user input
+        printf("Enter your name: ");
+        strncpy(name, get_input(""), MAX_INPUT - 1); // Limited to buffer size
+        name[MAX_INPUT - 1] = '\0'; // Ensure null termination
+        printf("Enter your address: ");
+        strncpy(address, get_input(""), MAX_INPUT - 1); // Limited to buffer size
+        address[MAX_INPUT - 1] = '\0'; // Ensure null termination
+
+        // Check if input is valid
+        if (is_valid_input(name) && is_valid_input(address)) {
+            printf("Name: %s\nAddress: %s\n", name, address);
+    ```
+    explanation-suggested-fix: Using `strncpy` instead of `strcpy` limits the length of data written to the buffer, thus preventing buffer overflow. Adding a null-termination guarantees the string is properly terminated within buffer limits.
+
+    method: UNKNOWN

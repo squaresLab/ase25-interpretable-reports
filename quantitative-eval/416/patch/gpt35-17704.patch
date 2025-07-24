@@ -1,0 +1,17 @@
+ Add proper synchronization mechanisms, such as mutexes, to ensure that `client_socket` is accessed in a thread-safe manner. A code diff showing the necessary changes is as follows:
+
+#include <pthread.h>
+
+// Mutex for synchronization
+pthread_mutex_t client_socket_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+void *handle_client(void *_client_socket)
+{
+    // Lock the mutex before accessing the shared resource
+    pthread_mutex_lock(&client_socket_mutex);
+    int client_socket = *(int *)_client_socket;
+    // Unlock the mutex after accessing the shared resource
+    pthread_mutex_unlock(&client_socket_mutex);
+
+    ...
+

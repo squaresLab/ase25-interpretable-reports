@@ -1,0 +1,36 @@
+ 
+
+--- gpt35-35536.c	2023-10-14 18:30:00.000000000 +0200
++++ gpt35-35536-fixed.c	2023-10-14 18:40:00.000000000 +0200
+@@ -65,10 +65,24 @@
+ char recv_buf[BUF_SIZE];
+
+ //get the name of the file to be received from the client
+ memset(filename, '\0', BUF_SIZE);
+ if (recv(client_sock, filename, BUF_SIZE, 0) == -1) {
+     perror("Error: File name receipt failed");
+     return NULL;
+ }
+ 
++// Ensure the filename does not contain illegal characters
++char *illegal_chars = "../";
++if (strstr(filename, illegal_chars) != NULL) {
++    perror("Error: Illegal filename");
++    return NULL;
++}
++
++// Ensure the filename is a valid filename
++for (char *p = filename; *p; p++) {
++    if (*p == '/' || *p == '\\') {
++        perror("Error: Illegal filename");
++        return NULL;
++    }
++}
+ 
+ //open file or create if not present
+ FILE *fp;
+ if ((fp = fopen(filename, "wb")) == NULL) {
+     perror("Error: File creation failed");
+     return NULL;
+ }
+ 

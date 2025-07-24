@@ -1,0 +1,13 @@
+ 
+
+@@ -19,6 +19,8 @@ void *handle_client(void *client_socket) {
+        memset(buffer, 0, BUFFER_SIZE);
+        int bytes_received = recv(client_socket_copy, buffer, BUFFER_SIZE, 0);
+
+-        if (bytes_received <= 0) {
++        if (bytes_received <= 0 || bytes_received >= BUFFER_SIZE) {
++            printf("Buffer overflow attempt detected\n");
+            break;
+        }
+
+

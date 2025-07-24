@@ -1,0 +1,27 @@
+
+vuln-fix: Race Condition (CWE-362) in falcon180b-37286 at lines 2-46 (severity: High)
+what: The code creates multiple threads that increment elements of a shared array without properly synchronizing access to the thread IDs. This can lead to race conditions because all threads are using the same memory location for the ID.
+where: The vulnerability is located in the `main` function at lines 30-33.
+why: If this weakness is not resolved, it can lead to undefined behavior, causing inconsistent and unpredictable results due to improper synchronization across threads.
+how: An attacker could exploit this by manipulating the scheduling of threads and potentially causing data corruption, incorrect results, or crashes.
+code-sources: The `main` function, where thread creation is initiated and thread function is called with `(void *) &i`.
+code-sinks: The `thread_function` which uses the `(int *) arg` to get thread ID and modifies `shared_data` array.
+suggested-fix: 
+```
+--- falcon180b-37286
++++ falcon180b-37286_fixed
+@@ -27,6 +27,7 @@
+ int main() {
+     // Create an array to store the thread IDs
+     pthread_t threads[NUM_THREADS];
++    int thread_ids[NUM_THREADS]; 
+
+     // Create the threads
+     for (int i = 0; i < NUM_THREADS; i++) {
+-        pthread_create(&threads[i], NULL, thread_function, (void *) &i);
++        thread_ids[i] = i;
++        pthread_create(&threads[i], NULL, thread_function, (void *) &thread_ids[i]);
+     }
+```
+explanation-suggested-fix: The suggested fix addresses the race condition by removing the direct use of the loop variable's address as the thread ID argument. Instead, it introduces an array to hold the thread IDs and passes each unique thread ID to the `pthread_create` function. This ensures that each thread gets a unique and correct thread ID without conflict.
+method: UNKNOWN

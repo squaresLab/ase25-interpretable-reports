@@ -1,0 +1,79 @@
+ 
+
+diff --git a/gpt35-65290.c b/gpt35-65290-fixed.c
+index f3b6e5d..8d25e45 100644
+--- a/gpt35-65290.c
++++ b/gpt35-65290-fixed.c
+@@ -81,6 +81,9 @@ void readEmail(int index) {
+     if(head == NULL) {
+         printf("You have no emails.\n");
+     } else {
++        if (index <= 0) {
++            printf("Invalid email index.\n");
++            return;
+         int current = 1;
+         Node *currentNode = head;
+         while(currentNode != NULL && current != index) {
+@@ -85,6 +88,9 @@ void readEmail(int index) {
+             current++;
+         }
+         if(currentNode == NULL) {
++            printf("Invalid email index.\n");
++            return;
++        }
+         while(currentNode != NULL && current != index) {
+             currentNode = currentNode->next;
+             current++;
+@@ -92,6 +98,9 @@ void deleteEmail(int index) {
+     if(head == NULL) {
+         printf("You have no emails.\n");
+     } else {
++        if (index <= 0) {
++            printf("Invalid email index.\n");
++            return;
+         int current = 1;
+         Node *currentNode = head;
+         Node *previousNode = NULL;
+@@ -97,6 +106,9 @@ void deleteEmail(int index) {
+             current++;
+         }
+         if(currentNode == NULL) {
++            printf("Invalid email index.\n");
++            return;
++        }
+             currentNode = currentNode->next;
+             current++;
+@@ -113,6 +125,9 @@ int main() {
+     while(true) {
+         printf("\n");
+         printf("1. List Emails\n");
+         printf("2. Read Email\n");
+         printf("3. Delete Email\n");
+@@ -119,7 +132,9 @@ int main() {
+         printf("Enter your choice: ");
+         int choice;
+         scanf("%d", &choice);
+@@ -127,9 +142,13 @@ int main() {
+             case 1:
+                 listEmails();
+                 break;
+             case 2:
+                 printf("Enter email index: ");
+                 int index;
++                if (scanf("%d", &index) != 1 || index <= 0) {
++                    printf("Invalid email index.\n");
++                    while(getchar() != '\n');
++                    break;
++                }
+                 readEmail(index);
+                 break;
+             case 3:
+                 printf("Enter email index: ");
++                if (scanf("%d", &index) != 1 || index <= 0) {
++                    printf("Invalid email index.\n");
++                    while(getchar() != '\n');
++                    break;
++                }
+                 deleteEmail(index);
+                 break;
+             case 4:

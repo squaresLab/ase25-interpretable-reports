@@ -1,0 +1,55 @@
+
+vuln-fix: CWE-835: Infinite Loop in falcon180b-28655 at line 33 (severity: high)
+what: The code contains an infinite loop that continuously accepts new client connections without proper bounds checking or termination conditions.
+where: 
+```
+```c
+    while (1) {
+        int client_socket = accept(server_socket, NULL, NULL);
+        if (client_socket == -1) {
+            break;
+        }
+        if (num_clients >= MAX_CLIENTS) {
+            close(client_socket);
+            continue;
+        }
+        clients[num_clients] = client_socket;
+        num_clients++;
+
+        pthread_t thread_id;
+        pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+    }
+```
+```
+why: If this issue is not resolved, the server could get stuck in an infinite loop, potentially leading to denial of service (DoS) where legitimate clients are unable to connect, ultimately affecting server availability.
+how: An attacker could exploit this by continuously making connection attempts to the server, causing it to reach its resource limits and potentially exhaust system resources.
+code-sources: The entry point where user input enters the application is the `accept(server_socket, NULL, NULL)` call in the `accept_connections` function.
+code-sinks: The usage of user input is seen in the `handle_client` function, specifically in `recv(client_socket, buffer, sizeof(buffer), 0)` and subsequently `printf("Client %d: %s\n", client_socket, buffer);`.
+suggested-fix: 
+```
+diff
+--- original/falcon180b-28655.c
++++ fixed/falcon180b-28655.c
+@@ -38,6 +38,10 @@
+         }
+
+         clients[num_clients] = client_socket;
++        if (clients[num_clients] == NULL) {
++            close(client_socket);
++            continue;
++        }
+         num_clients++;
+
+         pthread_t thread_id;
+@@ -49,6 +53,8 @@
+     } 
+
+     close(server_socket);
++    // Termination Condition
++    pthread_exit(NULL);
+ }
+ 
+ int main() {
+```
+explanation-suggested-fix: The suggested changes ensure that if `clients[num_clients]` is NULL, the client socket is closed and the loop continues. Additionally, it adds a proper termination condition by calling `pthread_exit(NULL)` after closing the server socket.
+method: UNKNOWN

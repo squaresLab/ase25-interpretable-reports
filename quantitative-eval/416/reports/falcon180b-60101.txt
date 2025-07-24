@@ -1,0 +1,94 @@
+ 
+vuln-fix: CWE-362: Race Condition in falcon180b-60101, lines 16-45 (severity: High)
+what: The vulnerable code is susceptible to a race condition when accessing and modifying the `client_sockets` array and the `num_clients` variable without proper synchronization, especially when handling multiple clients in separate threads.
+where: Lines 16-45 in `falcon180b-60101`
+why: Not resolving this weakness can lead to data corruption, inconsistent state, or crashes, as multiple threads might read and write to shared variables concurrently without proper synchronization.
+how: An attacker could exploit this vulnerability by rapidly connecting and disconnecting clients, causing race conditions that might lead to abnormal behavior or server crashes.
+code-sources: `recv()` function call receiving data from clients on line 24.
+code-sinks: `send()` function call sending data to clients on line 31.
+suggested-fix: 
+```diff
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <pthread.h>
+
+#define BUFFER_SIZE 1024
+#define PORT 8080
+#define MAX_CLIENTS 10
+
+pthread_mutex_t client_mutex = PTHREAD_MUTEX_INITIALIZER;  // Add mutex
+
+int client_sockets[MAX_CLIENTS];
+int num_clients = 0;
+
+void *handle_client(void *arg) {
+    int client_socket = *(int *) arg;
+    char buffer[BUFFER_SIZE];
+
+    while (1) {
+        memset(buffer, 0, BUFFER_SIZE);
+        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+
+        if (bytes_received <= 0) {
+            break;
+        }
+
+        printf("Client %d sent: %s\n", client_socket, buffer);
+
+        pthread_mutex_lock(&client_mutex);  // Lock before modifying shared variables
+        for (int i = 0; i < num_clients; i++) {
+            if (client_sockets[i] != client_socket) {
+                send(client_sockets[i], buffer, strlen(buffer), 0);
+            }
+        }
+        pthread_mutex_unlock(&client_mutex);  // Unlock after modifying shared variables
+    }
+
+    close(client_socket);
+    return NULL;
+}
+
+int main() {
+    int server_socket = socket(AF_INET, SOCK_STREAM, 0);
+
+    struct sockaddr_in server_addr;
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(PORT);
+    server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+
+    bind(server_socket, (struct sockaddr *) &server_addr, sizeof(server_addr));
+    listen(server_socket, 3);
+
+    printf("Server is listening on port %d\n", PORT);
+
+    while (1) {
+        int client_socket = accept(server_socket, NULL, NULL);
+
+        pthread_mutex_lock(&client_mutex);  // Lock before modifying shared variables
+
+        if (num_clients >= MAX_CLIENTS) {
+            printf("Maximum number of clients reached\n");
+            close(client_socket);
+            pthread_mutex_unlock(&client_mutex);  // Unlock before continuing
+            continue;
+        }
+
+        client_sockets[num_clients] = client_socket;
+        num_clients++;
+
+        pthread_mutex_unlock(&client_mutex);  // Unlock after modifying shared variables
+
+        pthread_t thread_id;
+        pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+    }
+
+    return 0;
+}
+```
+explanation-suggested-fix: The suggested fix introduces a mutex (`client_mutex`) to synchronize access to the `client_sockets` array and the `num_clients` variable, ensuring that only one thread can access these shared resources at a time. This avoids concurrent modifications that could lead to race conditions.
+method: UNKNOWN

@@ -1,0 +1,32 @@
+
+    vuln-fix: Unbounded Write (CWE-120, CWE-787, CWE-805) in falcon180b-6553 (severity: high)
+    what: Buffer write operations that do not control the length of data written may overflow.
+    where: 
+        - Line 69: `scanf("%s", nodes[num_nodes].name);`
+        - Line 76: `scanf("%s", nodes[num_nodes-1].name);`
+        - Line 80: `scanf("%s", nodes[num_nodes].name);`
+    why: Attackers can exploit buffer overflow vulnerabilities to cause a program to crash or to execute malicious code, leading to possible denial-of-service or unauthorized access.
+    how: An attacker can exploit these vulnerabilities by providing input strings longer than the allocated buffer for the `name` array, which can overwrite adjacent memory locations, potentially causing the program to crash or execute arbitrary code.
+    code-sources: 
+        - Line 69: `scanf("%s", nodes[num_nodes].name);`
+        - Line 76: `scanf("%s", nodes[num_nodes-1].name);`
+        - Line 80: `scanf("%s", nodes[num_nodes].name);`
+    code-sinks:
+        - Buffer access at the lines mentioned above without any length checks on the input leads directly to the vulnerability.
+    suggested-fix: 
+    ```diff
+    69c69
+    <                scanf("%s", nodes[num_nodes].name);
+    ---
+    >                scanf("%19s", nodes[num_nodes].name);
+    76c76
+    <                scanf("%s", nodes[num_nodes-1].name);
+    ---
+    >                scanf("%19s", nodes[num_nodes-1].name);
+    80c80
+    <                scanf("%s", nodes[num_nodes].name);
+    ---
+    >                scanf("%19s", nodes[num_nodes].name);
+    ```
+    explanation-suggested-fix: The suggested changes limit the number of characters read by `scanf` to 19, which is the maximum number of characters that can fit in the `name` array (considering the terminating null byte). This prevents the buffer overflow by ensuring that no more than the allocated space is written.
+    method: CODEQL

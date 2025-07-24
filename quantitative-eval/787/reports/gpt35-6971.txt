@@ -1,0 +1,52 @@
+ 
+    vuln-fix: Out-of-bounds Write (CWE-787) in gpt35-6971.c (severity: High)
+    what: The issue lies in the array indexing of the 'make_move' function, where the index values from user input can go beyond the valid range of the board array, because input values aren't being properly checked/validated.
+    where: Vulnerability is in the 'make_move' function, and lines impacted include `make_move(&board, from_x - 1, from_y - 1, to_x - 1, to_y - 1);` in `main`.
+    why: If this vulnerability is not resolved, it could lead to a buffer overflow condition, potentially allowing an attacker to corrupt the application's memory, leading to unexpected behavior or even remote code execution.
+    how: An attacker could manipulate the input coordinates to fall outside of the allowed range (0-7), which would cause an out-of-bounds write operation, corrupting memory and potentially executing arbitrary code.
+    code-sources: `scanf("%d %d %d %d", from_x, from_y, to_x, to_y);` in `get_move_input` function.
+    code-sinks: `make_move(&board, from_x - 1, from_y - 1, to_x - 1, to_y - 1);` in `main` function.
+    suggested-fix:
+    ```diff
+    --- gpt35-6971.c
+    +++ gpt35-6971.c
+    @@ -75,6 +75,10 @@
+         scanf("%d %d %d %d", from_x, from_y, to_x, to_y);
+         printf("\n");
+     }
+    
+    +int is_valid_coordinate(int x, int y) {
+    +    return x >= 0 && x < BOARD_SIZE && y >= 0 && y < BOARD_SIZE;
+    +}
+    +
+    // Function to make a move on the chess board
+    void make_move(ChessBoard* board, int from_x, int from_y, int to_x, int to_y) {
+    +    if (is_valid_coordinate(from_x, from_y) && is_valid_coordinate(to_x, to_y)) {
+           board->squares[to_x][to_y].piece = board->squares[from_x][from_y].piece;
+           board->squares[from_x][from_y].piece.type = EMPTY;
+           board->squares[from_x][from_y].piece.symbol = ' ';
+    +    } else {
+    +        printf("Invalid move coordinates!\n");
+    +    }
+    }
+    
+    int main() {
+         ChessBoard board;
+         init_board(&board);
+         display_board(&board);
+    @@ -120,12 +129,12 @@
+    
+         while (1) {
+             get_move_input(&from_x, &from_y, &to_x, &to_y);
+             if ((from_x < 1 || from_x > 8) || (to_x < 1 || to_x > 8) || (from_y < 1 || from_y > 8) || (to_y < 1 || to_y > 8)) {
+                 printf("Invalid move!!!\n");
+                 continue;
+             }
+    -        make_move(&board, from_x - 1, from_y - 1, to_x - 1, to_y - 1);
+    +        make_move(&board, from_x - 1, from_y - 1, to_x - 1, to_y - 1);  // Coordinate validation done inside make_move
+             display_board(&board);
+         }
+         return 0;
+    ```
+    explanation-suggested-fix: The suggested fix adds a new function `is_valid_coordinate` to check if the given coordinates are within the valid range of the board. It then updates the `make_move` function to use this validator, ensuring that only valid moves are made. If the coordinates are invalid, an error is printed, and no move is made. This prevents out-of-bounds write operations.
+    method: UNKNOWN

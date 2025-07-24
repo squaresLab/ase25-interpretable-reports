@@ -1,0 +1,51 @@
+ 
+
+--- gpt35-51180.c
++++ gpt35-51180-fixed.c
+@@ -31,6 +31,19 @@
+ #include <time.h>
+ #include <pthread.h>
+ 
++#include <unistd.h>
++#include <errno.h>
++#include <sys/types.h>
++#include <sys/wait.h>
++
+ #define TASK_NAME_MAX_LENGTH 50
+ #define MAX_TASKS 100
+ #define MAX_THREAD_POOL_SIZE 10
+@@ -64,18 +69,36 @@
+ void* run_task(void* task) {
+     Task* current_task = (Task*)task;
+ 
++    char* argv[3];
++    argv[0] = "/bin/sh";
++    argv[1] = "-c";
++    argv[2] = current_task->task_location;
++    argv[3] = NULL;
++
+     printf("Executing task: %s\n", current_task->task_name);
+-    system(current_task->task_location);
++
++    pid_t pid = fork();
++    if (pid == -1) {
++        perror("fork failed");
++        pthread_exit(NULL);
++    }
++    if (pid == 0) {
++        // Child process
++        execv("/bin/sh", argv);
++        perror("execv failed");
++        exit(EXIT_FAILURE);
++    }
++    else {
++        // Parent process
++        int status;
++        waitpid(pid, &status, 0);
++    }
+ 
+     current_task->is_running = false;
+ 
+     return NULL;
+ }
+

@@ -1,0 +1,33 @@
+ 
+    
+    --- falcon180b-4177.c
+    +++ falcon180b-4177_fixed.c
+    @@ -11,10 +11,12 @@
+     
+     void *handle_client(void *arg) {
+         int client_socket = *(int *)arg;
+    -    char buffer[BUFFER_SIZE];
+    +    char buffer[BUFFER_SIZE] = {0};
+
+    +    ssize_t bytes_received;
+
+         while (1) {
+             memset(buffer, 0, BUFFER_SIZE);
+    -        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+    +        bytes_received = recv(client_socket, buffer, BUFFER_SIZE - 1, 0);
+
+             if (bytes_received <= 0) {
+                 break;
+    @@ -24,7 +26,7 @@
+             }
+
+             printf("Client %d sent: %s\n", client_socket, buffer);
+             for (int i = 0; i < num_clients; i++) {
+                 if (clients[i] != client_socket) {
+    -                send(clients[i], buffer, strlen(buffer), 0);
+    +                send(clients[i], buffer, bytes_received, 0);
+                 }
+             }
+         }
+    
+    

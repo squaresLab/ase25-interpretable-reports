@@ -1,0 +1,48 @@
+ 
+
+4c4
+< #include <stdio.h>
+---
+> #include <stdio.h>
+> #include <string.h>
+> #include <stdbool.h>
+12c14,15
+< void print_house(struct house h) {
+---
+> bool is_valid_input(struct house* h, char* room_name, char* device_name) {
+>     bool room_found = false;
+>     bool device_found = false;
+
+>     for (int i = 0; i < h->n_rooms; i++) {
+>         if (strcmp(h->rooms[i].name, room_name) == 0) {
+>             room_found = true;
+>             for (int j = 0; j < h->rooms[i].n_devices; j++) {
+>                 if (strcmp(h->rooms[i].devices[j].name, device_name) == 0) {
+>                     device_found = true;
+>                     break;
+>                 }
+>             }
+>             break;
+>         }
+>     }
+>     return room_found && device_found;
+> }
+
+13a17
+> 
+21c25,27
+<     for (int i = 0; i < h->n_rooms; i++) {
+---
+>     if (!is_valid_input(h, room_name, device_name)) {
+>         printf("Error: Invalid room or device name\n");
+>         return;
+>     }
+86,88c92,114
+<     toggle_device(&my_house, "Living Room", "TV");
+---
+>     toggle_device(&my_house, "Living Room", "TV"); // valid
+>     toggle_device(&my_house, "Living Room", "InvalidDevice"); // Invalid
+>     toggle_device(&my_house, "InvalidRoom", "TV"); // Invalid
+
+65a133,136
+

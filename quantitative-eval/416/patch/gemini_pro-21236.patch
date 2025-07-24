@@ -1,0 +1,49 @@
+
+    
+    diff --git a/gemini_pro-21236 b/gemini_pro-21236
+    index 1234567..89abcde 100644
+    --- a/gemini_pro-21236
+    +++ b/gemini_pro-21236
+    @@ -52,12 +52,14 @@ void displayQuestion(struct Question question) {
+    
+    // Function to get the user's answer
+    -char* getAnswer() {
+    -    char answer[64];
+    -    scanf("%s", answer);
+    -    return answer;
+    +void getAnswer(char *buffer, size_t size) {
+    +    if (fgets(buffer, size, stdin) != NULL) {
+    +        size_t len = strlen(buffer);
+    +        if (len > 0 && buffer[len - 1] == '\n') {
+    +            buffer[len - 1] = '\0';
+    +        }
+         }
+    }
+    
+    @@ -66,16 +68,17 @@ int checkAnswer(char* answer, char* correctAnswer) {
+    
+    int main() {
+         // Initialize the score
+         int score = 0;
+         char answer[64];
+    
+         // Loop through the questions
+         for (int i = 0; i < sizeof(questions) / sizeof(struct Question); i++) {
+             // Display the question and options
+             displayQuestion(questions[i]);
+    
+             // Get the user's answer
+    -        char* answer = getAnswer(answer, sizeof(answer));
+    +        getAnswer(answer, sizeof(answer));
+    
+             // Check if the answer is correct
+             if (checkAnswer(answer, questions[i].answer)) {
+                 // Increment the score
+                 score++;
+             }
+         }
+    
+         // Display the result
+         displayResult(score);
+    
+    

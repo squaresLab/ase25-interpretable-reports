@@ -1,0 +1,13 @@
+ 
+
+--- gemini_pro-6979
++++ gemini_pro-6979
+@@ -29,6 +29,7 @@
+   // Read the message from the client
+   char message[MAX_MESSAGE_SIZE];
+   int n = read(sockfd, message, MAX_MESSAGE_SIZE);
++  message[n] = '\0';
+   if (n < 0) {
+     perror("read");
+     exit(1);
+

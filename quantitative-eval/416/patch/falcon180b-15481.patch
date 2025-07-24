@@ -1,0 +1,25 @@
+ 
+<code>
+diff --git a/falcon180b-15481 b/falcon180b-15481
+index abcdef..ghijkl 100644
+--- a/falcon180b-15481
++++ b/falcon180b-15481
+@@ -38,6 +38,10 @@ int main() {
+ 
+-    printf("The top 10 most frequent words are:\n");
+-    for (int i = 0; i < numWords; i++) {
+-        printf("%s: %d\n", words[i], rand() % 100 + 1);
+-    }
++    printf("The top 10 most frequent words are:\n");
++    for (int i = 0; i < numWords; i++) {
++        printf("%s: %d\n", words[i], rand() % 100 + 1);
++        free(words[i]);
++    }
++
++    for (int i = 0; i < numWords; i++) {
++        free(frequency[i].word);
++        free(&frequency[i]);
++    }
+
+     return 0;
+

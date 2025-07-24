@@ -1,0 +1,58 @@
+ 
+    vuln-fix: Buffer Overflow (CWE-120) in gemini_pro-34154 (severity: High)
+    what: The buffer overflow occurs because the recv function reads data directly into the voter structure without proper bounds checks, possibly exceeding the memory allocated for certain fields within the structure.
+    where: Lines within the function handle_client in gemini_pro-34154
+    why: If this weakness is not resolved, an attacker could exploit it to execute arbitrary code, causing system crashes, or leading to data corruption.
+    how: An attacker can send a specially crafted packet with more data for the voter fields than expected, causing a buffer overflow which could overwrite adjacent memory.
+    code-sources: The user input enters the application through the recv call in the handle_client function.
+    code-sinks: The application uses this input to manipulate the candidates array and send data back to the client.
+    suggested-fix: 
+    ```diff
+    --- gemini_pro-34154.c
+    +++ gemini_pro-34154-fixed.c
+    @@ -34,7 +34,7 @@
+         int client_socket = *(int *)arg;
+
+         voter_t voter;
+    -    recv(client_socket, &voter, sizeof(voter), 0);
+    +    int received_bytes = recv(client_socket, &voter, sizeof(voter), 0);
+    +    if (received_bytes != sizeof(voter)) {
+    +        perror("recv");
+    +        close(client_socket);
+    +        return NULL;
+    +    }
+
+         // Check if voter has already voted
+         int voted = 0;
+    @@ -42,10 +42,10 @@
+             if (strcmp(voter.name, voters[i].name) == 0) {
+                 voted = 1;
+                 break;
+             }
+         }
+
+         // If voter has not already voted, add their votes to the candidates
+         if (!voted) {
+             for (int i = 0; i < MAX_VOTES; i++) {
+    -            if (voter.votes[i] >= 0 && voter.votes[i] < num_candidates) {
+    +            if (voter.votes[i] >= 0 && voter.votes[i] < num_candidates && i < MAX_VOTES) {
+                     candidates[voter.votes[i]].votes++;
+                 }
+             }
+
+             // Add voter to list of voters
+    +        if(num_voters < MAX_VOTERS) {
+                 voters[num_voters] = voter;
+                 num_voters++;
+    +        } else {
+    +             perror("Too many voters");
+    +             close(client_socket);
+    +             return NULL;
+    +        }
+         }
+
+         // Send the updated candidate list to the client
+    ```
+    explanation-suggested-fix:
+    The suggested code diff adds checks to ensure that the amount of data received matches the expected size of the voter structure. It also includes bounds checking when adding a voter to the voters array to prevent exceeding the array limit. By validating the size of received data and bounds checking array indices, we prevent the buffer overflow and maintain data integrity.
+    method: UNKNOWN

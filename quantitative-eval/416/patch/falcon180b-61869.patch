@@ -1,0 +1,36 @@
+ 
+
+diff --git a/falcon180b-61869 b/falcon180b-61869
+index e69de29..a0232dd 100644
+--- a/falcon180b-61869
++++ b/falcon180b-61869
+@@ -7,6 +7,7 @@
+ #include <arpa/inet.h>
+ #include <pthread.h>
+ #include <unistd.h>
++#include <pthread.h>
+
+ #define BUF_SIZE 1024
+ #define MAX_CONNECTIONS 10
+@@ -16,6 +17,8 @@ int num_clients = 0;
+ pthread_mutex_t client_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+ void *handle_client(void *arg) {
+     int client_socket = *(int *) arg;
+@@ -30,11 +33,11 @@ void accept_connections() {
+         if (num_clients >= MAX_CONNECTIONS) {
+             close(client_socket);
+             printf("Maximum number of clients reached\n");
+             continue;
+         }
+
++        pthread_mutex_lock(&client_mutex);
+         client_sockets[num_clients] = client_socket;
+         num_clients++;
++        pthread_mutex_unlock(&client_mutex);
+
+         pthread_t thread_id;
+         pthread_create(&thread_id, NULL, handle_client, &client_socket);
+     }
+ }
+

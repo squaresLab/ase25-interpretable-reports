@@ -1,0 +1,30 @@
+
+    vuln-fix: CWE-415: Double Free in falcon180b-45195 (severity: High)
+    what: The `client_socket` pointer is dereferenced from the stack variable in the `handle_client` function and passed to the `pthread_create` method. Once in the new thread, the `client_socket` is directly modified. If the thread attempts to close the socket, but the parent thread also closes it, a double free can occur.
+    where: The vulnerability is located in the `handle_accept` and `handle_client` functions of the `falcon180b-45195` file.
+    why: A double free vulnerability can lead to undefined behavior, including crashes and potential arbitrary code execution.
+    how: An attacker can use timing attacks to exploit this vulnerability by causing threads to execute in an unexpected order, leading to multiple deallocation attempts for the same resource.
+    code-sources: The incoming connections accepted by the `accept` function call in the `handle_accept` function.
+    code-sinks: The `recv` and `close` function calls in the `handle_client` function. The `pthread_create` call in `handle_accept`.
+    suggested-fix: 
+    ```diff
+    --- falcon180b-45195.c
+    +++ falcon180b-45195_fixed.c
+    @@ -35,7 +35,7 @@
+             continue;
+         }
+ 
+    -    client_sockets[num_clients] = client_socket;
+    +    int *pclient = malloc(sizeof(int));
+    +    *pclient = client_socket;
+    +    client_sockets[num_clients] = *pclient;
+         num_clients++;
+ 
+         pthread_t thread_id;
+    -    pthread_create(&thread_id, NULL, handle_client, (void *)&client_socket);
+    +    pthread_create(&thread_id, NULL, handle_client, pclient);
+     }
+ }
+    ```
+    explanation-suggested-fix: The suggested fix modifies the `handle_accept` function to dynamically allocate memory for the client socket file descriptor. This allows each thread to work with its own copy of the socket descriptor. Additionally, this ensures that the socket descriptor pointer is not shared among threads, preventing double free scenarios.
+    method: UNKNOWN

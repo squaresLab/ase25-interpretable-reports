@@ -1,0 +1,15 @@
+ 
+
+--- gpt35-10672.c.orig 2023-10-05 12:00:00.000000000 +0000
++++ gpt35-10672.c      2023-10-05 12:05:00.000000000 +0000
+@@ -61,7 +61,7 @@
+ 
+     while ((read_size = recv(client_socket, client_message, 2000, 0)) > 0) {
+         if (read_size < sizeof(client_message)) {
+-            client_message[read_size] = '\0';
++            client_message[read_size] = '\0'; // Null terminate only if there is space
+         } else {
+             client_message[sizeof(client_message) - 1] = '\0';
+         }
+         printf("Client message: %s", client_message);
+

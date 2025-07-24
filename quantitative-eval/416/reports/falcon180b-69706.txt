@@ -1,0 +1,25 @@
+
+vuln-fix: Uncontrolled Format String (CWE-134) in falcon180b-69706 (severity: High)
+what: The vulnerability lies in the call to `printf` within the `handle_client` function. If the buffer contains user-supplied input, this can lead to an uncontrolled format string vulnerability, where an attacker can potentially execute arbitrary code or cause a crash.
+where: Lines 18-21 of falcon180b-69706
+why: If not resolved, an attacker could exploit this vulnerability by sending specially crafted input to the server, leading to arbitrary code execution or crashing the application. This can compromise the security of the server and its data.
+how: An attacker would connect to the server and send a payload containing format specifiers (e.g., `%s`, `%x`, `%n`). The `printf("Received message: %s\n", buffer);` line would interpret these format specifiers, leading to unintended behavior or crashes.
+code-sources: The `recv` function call in the `handle_client` function on line 19 where user input is read into the `buffer`.
+code-sinks: The `printf` function call in the `handle_client` function on line 20 where the content of `buffer` is used without validation.
+suggested-fix: 
+```diff
+--- falcon180b-69706
++++ falcon180b-69706
+@@ -18,7 +18,7 @@
+         if (bytes_received <= 0) {
+             break;
+         }
+ 
+-        printf("Received message: %s\n", buffer);
++        printf("Received message: %.*s\n", BUFFER_SIZE, buffer);
+     }
+ 
+     close(client_socket);
+```
+explanation-suggested-fix: The suggested fix ensures that only the content of `buffer` is used as the string to be printed, mitigating the potential for format string vulnerabilities. The `%.*s` format specifier safely limits the number of characters printed from `buffer` to `BUFFER_SIZE`.
+method: UNKNOWN

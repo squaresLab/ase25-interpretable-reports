@@ -1,0 +1,15 @@
+ 
+
+58c58,62
+<     return (void*) &res;
+---
+>     read_response *pres = (read_response *)malloc(sizeof(read_response));
+>     if (pres == NULL) {
+>         perror("malloc");
+>         exit(EXIT_FAILURE);
+>     }
+>     *pres = res;
+>     return (void*) pres;
+113a118
+>     free(response);
+

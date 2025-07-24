@@ -1,0 +1,26 @@
+
+vuln-fix: Buffer Overflow (CWE-120) in gemini_pro-11823 at lines 47-52 (severity: High)
+what: The vulnerability is a buffer overflow that occurs because the `deal_cards` function does not properly check the number of cards left in the deck before dealing.
+where: The vulnerability is located in the `deal_cards` function, lines 47-52 in the file gemini_pro-11823.
+why: Failing to resolve this weakness can lead to writing beyond the bounds of the array, potentially causing a crash, data corruption, or enabling an attacker to take control of the application.
+how: An attacker can manipulate the number of players or cards dealt so that the `num_cards_in_deck` becomes less than zero, causing overwrites in memory and possibly executing arbitrary code.
+code-sources: The entry point is the `main` function where `shuffle_deck` and `deal_cards` are called.
+code-sinks: The vulnerable actions occur in the `deal_cards` function when the card from an empty deck is assigned to a player's hand.
+suggested-fix: 
+```diff
+--- gemini_pro-11823    2023-10-12 12:00:00.000000000 +0000
++++ gemini_pro-11823_fixed    2023-10-12 12:05:00.000000000 +0000
+@@ -47,6 +47,8 @@
+ void deal_cards(Game *game) {
+     for (int i = 0; i < game->num_players; i++) {
+         for (int j = 0; j < MAX_HAND_SIZE; j++) {
++            if (game->num_cards_in_deck <= 0) {
++                fprintf(stderr, "Error: Not enough cards in deck to deal.\n");
++                exit(1);
++            }
+             game->hands[i].cards[j] = game->deck[game->num_cards_in_deck - 1];
+             game->num_cards_in_deck--;
+             game->hands[i].num_cards++;
+```
+explanation-suggested-fix: The suggested fix adds a check to ensure the deck still has cards before dealing. If the deck is empty, it prints an error message and exits the program, preventing the buffer overflow.
+method: CODEQL

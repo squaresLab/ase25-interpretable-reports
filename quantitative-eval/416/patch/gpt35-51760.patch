@@ -1,0 +1,18 @@
+ 
+    --- gpt35-51760.c    (original)
+    +++ gpt35-51760.c    (fixed)
+    @@ -57,10 +57,10 @@
+         continue;
+     }
+
+    - // Create a new thread to process the packet
+    - pthread_create(&thread_id, NULL, packet_handler, buffer);
+    + // Process the packet in the main thread or use a thread pool
+    + packet_handler(buffer);
+    -}
+    +}
+     
+    void *packet_handler(void *arg) {
+         char *buffer = (char *) arg;
+    
+    

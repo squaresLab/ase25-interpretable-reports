@@ -1,0 +1,18 @@
+ 
+
+--- falcon180b-41923
++++ falcon180b-41923_fixed
+@@ -22,6 +22,10 @@
+             continue;
+         }
+
++        if (num_clients >= MAX_CLIENTS) {
++            printf("Too many clients connected, cannot accept more.\n");
++            close(client_socket);
++            continue;
++        }
++
+         clients[num_clients++] = client_socket;
+
+         pthread_t thread_id;
+

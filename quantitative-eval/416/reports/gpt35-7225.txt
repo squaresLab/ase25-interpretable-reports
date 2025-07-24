@@ -1,0 +1,45 @@
+
+vuln-fix: CWE-562 Return of Stack Variable Address in gpt35-7225 (severity: High)
+what: The function `removeSpecialChar` returns a local stack variable's address (`newString`), which leads to undefined behavior.
+where: The vulnerability is in the `removeSpecialChar` function starting at line 6.
+why: Returning the address of a stack-allocated variable leads to undefined behavior, potentially causing the application to crash or behave unpredictably. This is because the memory used by local variables is reclaimed when the function exits.
+how: An attacker could exploit this vulnerability to cause a crash or execute arbitrary code by manipulating the stack memory once it's out of scope.
+code-sources: An entry point for user input is the `fgets` function in the `main` function at line 29.
+code-sinks: The `removeSpecialChar` function at line 6 processes user input.
+suggested-fix:
+```
+--- gpt35-7225-fixed.c
++++ gpt35-7225.c
+@@ -6,14 +6,16 @@
+ char removeSpecialChar(char s[], int len, char* newString) {
+   int j = 0;
+ 
+   for (int i = 0; i < len; i++) {
+     if (isalnum(s[i])) {
+       newString[j] = tolower(s[i]);
+       j++;
+     }
+   }
+ 
+   newString[j] = '\0';
+-  return;
++  // No return of local variable address
+ }
+ 
+ int isPalindrome(char s[]) {
+@@ -32,7 +34,7 @@
+ 
+   int len = strlen(s);
+   if (s[len - 1] == '\n') {
+     s[len - 1] = '\0';
+   }
+ 
+   char newString[MAX_LEN];
+-  strcpy(newString, removeSpecialChar(s, len));
++  removeSpecialChar(s, len, newString);
+ 
+   if (isPalindrome(newString)) {
+     printf("%s is a palindrome\n", s);
+```
+explanation-suggested-fix: By modifying the `removeSpecialChar` function to accept an additional parameter for `newString`, we avoid returning the address of a local stack variable. This change ensures that `newString` is populated within the context of the caller, thus eliminating the undefined behavior.
+method: UNKNOWN

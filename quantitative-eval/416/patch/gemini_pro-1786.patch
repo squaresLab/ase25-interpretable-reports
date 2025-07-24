@@ -1,0 +1,18 @@
+ 
+
+diff --git a/gemini_pro-1786 b/gemini_pro-1786
+index abcdefg..hijklmn 100644
+--- a/gemini_pro-1786
++++ b/gemini_pro-1786
+@@ -32,7 +32,7 @@ void *handle_client(void *arg) {
+     printf("Suspicious activity detected: %s\n", buffer);
+
+     // Send an alert to the administrator
+-    char message[256];
+-    sprintf(message, "Suspicious activity detected: %s", buffer);
++    char message[512];
++    snprintf(message, sizeof(message), "Suspicious activity detected: %s", buffer);
+     send(sockfd, message, strlen(message), 0);
+   }
+
+

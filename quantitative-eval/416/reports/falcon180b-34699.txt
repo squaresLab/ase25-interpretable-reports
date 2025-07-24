@@ -1,0 +1,35 @@
+ 
+vuln-fix: Buffer Overflow (CWE-120) in falcon180b-34699 (severity: High)
+what: The vulnerability arises from the usage of the `strtok` and `recv` functions without proper boundary checks on the `buffer` array, posing a risk of a buffer overflow.
+where: Lines involving `recv` and `strtok` in the `handle_client` function within falcon180b-34699.
+why: Failing to address this vulnerability may allow an attacker to execute arbitrary code, potentially taking control of the server or crashing the application.
+how: An attacker could send specially crafted packets containing long or malformed strings to overflow the buffer, overwriting memory and leading to execution of injected code or causing a crash.
+code-sources: `recv(client_socket, buffer, BUFFER_SIZE, 0);`
+code-sinks: `strtok` usage following the `recv` call in the `handle_client` function.
+suggested-fix: 
+```diff
+--- falcon180b-34699
++++ falcon180b-34699
+@@ -13,8 +13,14 @@
+     int client_socket = *(int *) arg;
+     char buffer[BUFFER_SIZE];
+ 
+-    while (1) {
++    while (1) {
++        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE - 1, 0);
++
++        if (bytes_received <= 0) {
++            break;
++        }
++
++        buffer[bytes_received] = '\0';  // Null-terminate the buffer
+ 
+         memset(buffer, 0, BUFFER_SIZE);
+-        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+ 
+         if (bytes_received <= 0) {
+             break;
+```
+ 
+explanation-suggested-fix: The suggested fix ensures the buffer is null-terminated after the `recv` call, preventing any overflow from unbounded reads. It also reinforces buffer size limits during the `recv` function call.
+method: UNKNOWN

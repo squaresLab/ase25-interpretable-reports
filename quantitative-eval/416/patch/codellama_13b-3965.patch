@@ -1,0 +1,18 @@
+ 
+
+diff --git a/codellama_13b-3965.c b/codellama_13b-3965.c
+index 1f2e15a..3a5b7b5 100644
+--- a/codellama_13b-3965.c
++++ b/codellama_13b-3965.c
+@@ -83,15 +83,16 @@ void display_periodic_table(char** periodic_table) {
+ char* input_element() {
+     // Prompt the user for a chemical element
+-    char element[100];
++    char* element = malloc(sizeof(char) * 100);
+     printf("Enter a chemical element: ");
+     fgets(element, 100, stdin);
+ 
+     // Return the element's symbol
+     return element;
+ }
+ 

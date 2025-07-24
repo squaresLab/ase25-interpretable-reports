@@ -1,0 +1,29 @@
+
+vuln-fix: Improper Null Termination (CWE-170) in falcon180b-38783, line 14 (severity: Medium)
+what: The code reads data into a buffer with `recv` but does not ensure proper null termination, which can lead to buffer over-reads and undefined behavior.
+where: Line 14, in `handle_client` function within falcon180b-38783.
+why: Not fixing this issue can lead to buffer over-reads, data leakage, or application crashes due to undefined behavior when handling strings.
+how: An attacker can exploit this vulnerability by sending a specially crafted message that does not contain a null-terminating character, causing the program to read beyond the buffer's end.
+code-sources: The `recv` function call in the `handle_client` function.
+code-sinks: The `printf` and `send` function calls where the buffer is used.
+suggested-fix: 
+```diff
+--- falcon180b-38783.c
++++ falcon180b-38783.c
+@@ -11,6 +11,7 @@
+     while (1) {
+         memset(buffer, 0, MAX_MESSAGE_SIZE);
+         int bytes_received = recv(client_socket, buffer, MAX_MESSAGE_SIZE, 0);
++
+         if (bytes_received <= 0) {
+             break;
+         }
++
++        buffer[bytes_received] = '\0'; // Ensure null-termination of the buffer
++ 
+         printf("Client %d sent message: %s\n", client_socket, buffer);
+         send(client_socket, buffer, strlen(buffer), 0);
+     }
+```
+explanation-suggested-fix: The suggested code diff ensures that the buffer is properly null-terminated by adding a null character at the position indicated by `bytes_received`. This prevents buffer over-reads and ensures safe string operations.
+method: UNKNOWN

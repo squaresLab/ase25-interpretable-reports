@@ -1,0 +1,34 @@
+ 
+    
+    --- falcon180b-59281
+    +++ falcon180b-59281
+    @@ -55,9 +55,11 @@
+            int client_socket = accept(server_socket, NULL, NULL);
+    
+            if (client_socket == -1) {
+                printf("Error accepting connection\n");
+                continue;
+            }
+    
+    +       pthread_mutex_lock(&client_mutex); // Lock
+            num_clients++;
+    
+            if (num_clients >= MAX_CLIENTS) {
+                printf("Maximum number of clients reached\n");
+                close(client_socket);
+                num_clients--; // Decrement num_clients for rejected connection
+                pthread_mutex_unlock(&client_mutex); // Unlock before continuing
+                continue;
+            }
+    
+            clients[num_clients-1] = client_socket;
+    +       pthread_mutex_unlock(&client_mutex); // Unlock
+    
+            pthread_t thread_id;
+            pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+        }
+    
+        return 0;
+    
+
+    

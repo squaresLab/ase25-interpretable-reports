@@ -1,0 +1,35 @@
+
+vuln-fix: Buffer Overflow (CWE-120) in falcon180b-26756.c (severity: Medium)
+what: The code reads data into a fixed-size buffer `buffer[BUFFER_SIZE]` without validating the length of data received from clients. If the length of received data exceeds `BUFFER_SIZE`, it may lead to a buffer overflow.
+where: 
+Line 22: `int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);`
+Line 28: `send(client_socket, buffer, strlen(buffer), 0);`
+why: If not resolved, a buffer overflow can lead to undefined behavior, crashes, or even allow attackers to execute arbitrary code on the server.
+how: An attacker can exploit this vulnerability by sending data larger than `BUFFER_SIZE` to the server, potentially overflowing the buffer and causing crashes or executing malicious code.
+code-sources: The user input enters the application through the `recv` function call on line 22.
+code-sinks: The application sends data using the `send` function call on line 28.
+suggested-fix: 
+```diff
+--- falcon180b-26756.c
++++ falcon180b-26756_fixed.c
+@@ -22,6 +22,11 @@
+        memset(buffer, 0, BUFFER_SIZE);
+        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE - 1, 0);
+
++       if (bytes_received < 0) {
++           printf("Receive failed\n");
++           close(client_socket);
++           return NULL;
++       }
++
+        if (bytes_received <= 0) {
+            break;
+        }
++
++       buffer[bytes_received] = '\0';
+        printf("Client %d sent: %s\n", client_socket, buffer);
+
+        send(client_socket, buffer, strlen(buffer), 0);
+```
+explanation-suggested-fix: This fix ensures that the buffer will always have a null terminator by reducing the amount of data received by one byte less than the buffer size and explicitly setting the last byte to null. This prevents potential overflows as well as the use of uninitialized buffer data.
+method: UNKNOWN

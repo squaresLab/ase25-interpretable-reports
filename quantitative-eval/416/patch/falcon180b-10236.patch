@@ -1,0 +1,32 @@
+ 
+
+--- falcon180b-10236.c
++++ falcon180b-10236-fixed.c
+@@ -21,7 +21,7 @@
+     char buffer[BUFFER_SIZE];
+
+     while (1) {
+-        memset(buffer, 0, BUFFER_SIZE);
++        memset(buffer, 0, sizeof(buffer));
+         int bytes_received = recv(client_socket, buffer, BUFFER_SIZE-1, 0);
+
+         if (bytes_received <= 0) {
+@@ -26,7 +26,9 @@
+             break;
+         }
+
++        buffer[bytes_received] = '\0'; // Null terminate buffer to prevent overflow
++
+         printf("Client %d: %s\n", client_socket, buffer);
+
+         for (int i = 0; i < num_clients; i++) {
+@@ -59,6 +61,8 @@
+         client_sockets[num_clients] = client_socket;
+         num_clients++;
+
++        // Create a copy of client socket to avoid race condition
++        int *client_sock_copy = malloc(sizeof(int));
++        *client_sock_copy = client_socket;
+         pthread_create(&thread_ids[num_clients - 1], NULL, handle_client, (void *) client_sock_copy);
+     }
+

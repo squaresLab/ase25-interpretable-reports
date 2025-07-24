@@ -1,0 +1,44 @@
+
+    vuln-fix: CWE-362: Race Condition in falcon180b-8171 (severity: High)
+    what: The vulnerability is a race condition in the `handle_client` function. Specifically, the `client_socket` variable is shared between the main thread and the newly created thread that handles the client communication. This can lead to inconsistencies and undefined behavior when multiple clients are connected simultaneously.
+    where: The race condition occurs in `falcon180b-8171` in the `handle_client` function, and also due to the handling of `client_sockets` and `client_socket` in `main()`.
+    why: If this race condition is not resolved, it can lead to unpredictable program behavior such as corrupted data, crashes, or even security breaches where one client's data might be leaked to another client.
+    how: An attacker could exploit this vulnerability by rapidly connecting and disconnecting multiple clients, causing the server to handle concurrent client connections improperly, which could lead to information leakage or loss of service.
+    code-sources: The code sources where user input enters the application include the `recv` function in the `handle_client` function.
+    code-sinks: The code sinks involving user input from sources include `send` and `printf` functions within the `handle_client` function.
+    suggested-fix: 
+    ```diff
+    --- old_falcon180b-8171.c
+    +++ new_falcon180b-8171.c
+    @@ -31,7 +31,7 @@
+             break;
+         }
+     
+    -    printf("Client %d sent: %s\n", client_socket, buffer);
+    +    printf("Client %d sent: %s\n", client_socket, buffer);  // This is relatively safe, no changes here.
+         for (int i = 0; i < num_clients; i++) {
+    -        if (client_sockets[i]!= client_socket) {
+    +        if (client_sockets[i] != client_socket) {
+                 send(client_sockets[i], buffer, strlen(buffer), 0);
+             }
+         }
+    @@ -45,8 +45,15 @@
+     
+         client_sockets[num_clients++] = client_socket;
+         pthread_t thread_id;
+    -    pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+    -}
+    +    
+    +    // Use a heap-allocated copy of client_socket to avoid race conditions
+    +    int *client_sock_copy = malloc(sizeof(int));
+    +    if (client_sock_copy == NULL) {
+    +        perror("Failed to allocate memory for client socket");
+    +        close(client_socket);
+    +        continue;
+    +    }
+    +    *client_sock_copy = client_socket;
+    +    pthread_create(&thread_id, NULL, handle_client, (void *) client_sock_copy);
+     }
+     ```
+    explanation-suggested-fix: The provided code diff introduces a dynamically allocated copy of the `client_socket` on the heap for each client. This ensures that each thread operates on a unique `client_socket` value, thus avoiding the race condition that occurs due to shared `client_socket` variable.
+    method: CODEQL

@@ -1,0 +1,36 @@
+
+    
+    --- falcon180b-18483-orig.c
+    +++ falcon180b-18483-fixed.c
+    @@ -51,7 +51,7 @@
+            continue;
+        }
+
+    -    if (thread_count >= MAX_CLIENTS) {
+    +    if (thread_count >= MAX_CLIENTS) {
+            printf("Maximum number of clients reached\n");
+            close(client_socket);
+            continue;
+        }
+    @@ -73,6 +73,7 @@
+            printf("Error accepting connection\n");
+            continue;
+        }
+
+    +   int *new_client_socket = malloc(sizeof(int));
+    +   *new_client_socket = client_socket;
+        if (thread_count >= MAX_CLIENTS) {
+            printf("Maximum number of clients reached\n");
+            close(client_socket);
+            continue;
+        }
+
+    -    pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+    +    pthread_create(&thread_id, NULL, handle_client, (void *) new_client_socket);
+        thread_count++;
+    }
+
+    return 0;
+    
+
+    

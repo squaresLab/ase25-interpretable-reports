@@ -1,0 +1,24 @@
+ 
+vuln-fix: CWE-134: Uncontrolled Format String in falcon180b-47821, lines 12-17 (severity: High)
+what: The code directly passes user-supplied input to the `printf` function, leading to a potential format string vulnerability.
+where: The vulnerability resides in the file falcon180b-47821, specifically in the `handle_client` function, lines 24-25.
+
+why: If not resolved, this weakness can allow an attacker to execute arbitrary code, read memory contents, or crash the application by leveraging format string specifiers.
+
+how: An attacker can craft a specially formatted string as input to include format specifiers like `%x`, `%n`, etc. When this string is passed to `printf`, it causes the program to exhibit unintended behaviors, such as revealing memory contents or modifying memory locations.
+
+code-sources: The entry point for user input is the `recv` function on line 22, which receives data from the network into the `buffer`.
+
+code-sinks: The `printf` function on line 25 prints out the contents of `buffer` without any sanitization or validation.
+
+suggested-fix:
+```diff
+24c24
+<         printf("Received message: %s\n", buffer);
+---
+>         printf("Received message: %.1024s\n", buffer);
+```
+
+explanation-suggested-fix: The proposed code change ensures that only a limited amount of user input (`buffer`) is printed, and treating it as a string (`%.1024s`). This prevents format string specifiers in the input data from being processed by `printf`.
+
+method: UNKNOWN

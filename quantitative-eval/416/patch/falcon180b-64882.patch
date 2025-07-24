@@ -1,0 +1,38 @@
+ 
+
+--- falcon180b-64882.c
++++ falcon180b-64882-fixed.c
+@@ -16,6 +16,7 @@
+     int client_socket = *(int *) arg;
+     char buffer[BUFFER_SIZE];
+
++    // Add validation variables
++    int message_length = 0;
+
+     while (1) {
+         memset(buffer, 0, BUFFER_SIZE);
+-        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
++        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE - 1, 0); // allocate space for null terminator
+
+         if (bytes_received <= 0) {
+             break;
+         }
+  
++        buffer[BUFFER_SIZE - 1] = '\0'; // Ensure null-termination
++
++        // Validate input length or content if necessary
++        message_length = strlen(buffer);
++        if (message_length <= 0 || message_length >= BUFFER_SIZE) {
++            printf("Invalid message length received from client %d\n", client_socket);
++            continue; // Ignore invalid messages
++        }
++
+         printf("Client %d sent message: %s\n", client_socket, buffer);
+
+         for (int i = 0; i < num_clients; i++) {
+             if (clients[i]!= client_socket) {
+                 send(clients[i], buffer, strlen(buffer), 0);
+             }
+         }
+     }
+

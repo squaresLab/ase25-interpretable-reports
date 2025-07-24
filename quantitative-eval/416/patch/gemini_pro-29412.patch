@@ -1,0 +1,38 @@
+ 
+    
+    --- gemini_pro-29412.c
+    +++ gemini_pro-29412_fixed.c
+    @@ -19,6 +19,11 @@
+       scanf("%d", &choice);
+    
+       // Receive the numbers thou wishest to operate upon
+    +  if (choice < 1 || choice > 6) {
+    +    printf("Invalid choice, brave soul. Try again.\n");
+    +    return 1;
+    +  }
+    +
+       printf("Enter the first number, brave soul: ");
+       scanf("%u", &n);
+       printf("Enter the second number, valiant warrior: ");
+    @@ -36,6 +41,10 @@
+         case 5:
+           printf("Enter the number of bits to shift left: ");
+           int shift;
+    +      scanf("%d", &shift);
+    +      if (shift < 0 || shift >= sizeof(unsigned int) * 8) {
+    +        printf("Invalid shift value.\n");
+    +        return 1;
+    +      }
+           result = n << shift;
+           printf("The left shift of %u by %d is %u\n", n, shift, result);
+           break;
+         case 6:
+           printf("Enter the number of bits to shift right: ");
+    +      scanf("%d", &shift);
+    +      if (shift < 0 || shift >= sizeof(unsigned int) * 8) {
+    +        printf("Invalid shift value.\n");
+    +        return 1;
+    +      }    
+           result = n >> shift;
+
+    

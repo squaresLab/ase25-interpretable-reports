@@ -1,0 +1,21 @@
+
+vuln-fix: CWE-134: Use of Externally-Controlled Format String in falcon180b-47817 (severity: High)
+what: The code uses user-supplied input in a `printf` statement without proper sanitization. This exposes the application to format string vulnerabilities, which an attacker can exploit by injecting format specifiers.
+where: The vulnerability is found in the `handle_client` function, specifically at the line: `printf("Client %d said: %s\n", client_socket, buffer);`.
+why: If this weakness is not resolved, an attacker could potentially execute arbitrary code or crash the application by crafting a malicious string that contains format specifiers.
+how: An attacker would connect to the server and send a message containing format specifiers such as `%x`, `%n`, etc., which could read or modify memory from the application's address space.
+code-sources: The entry point for user input in the code is the `recv` function in the `handle_client` function.
+code-sinks: The user input from `recv` is directly used in the `printf` function.
+suggested-fix: 
+```diff
+--- falcon180b-47817.c
++++ falcon180b-47817.c
+@@ -18,7 +18,7 @@
+ 
+         printf("Client %d said: %s\n", client_socket, buffer);
+ 
+-        printf("Client %d said: ", client_socket);
+-        printf("%s\n", buffer);
+```
+explanation-suggested-fix: The suggested fix separates the format string from the user input by splitting the `printf` statement into two calls. This prevents user-controlled data from being interpreted as the format string.
+method: UNKNOWN

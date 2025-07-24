@@ -1,0 +1,32 @@
+ 
+
+#include <stdbool.h>
+// Additional necessary headers for sanitization
+
+void *handle_client(void *arg) {
+    int client_socket = *(int *) arg;
+    char buffer[1024];
+
+    while (1) {
+        memset(buffer, 0, sizeof(buffer));
+        recv(client_socket, buffer, sizeof(buffer), 0);
+        printf("Client %d sent: %s\n", client_socket, buffer);
+
+        if (strcmp(buffer, "light on") == 0) {
+            // Safely control LED instead of using system command
+            FILE *led = fopen("/sys/class/leds/led1/brightness", "w");
+            if (led != NULL) {
+                fputs("1", led);
+                fclose(led);
+            }
+        } else if (strcmp(buffer, "light off") == 0) {
+            // Safely control LED instead of using system command
+            FILE *led = fopen("/sys/class/leds/led1/brightness", "w");
+            if (led != NULL) {
+                fputs("0", led);
+                fclose(led);
+            }
+        }
+    }
+}
+

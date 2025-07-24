@@ -1,0 +1,32 @@
+ 
+    
+    --- gpt35-11289.c.orig  2023-01-01 12:00:00.000000000 +0000
+    +++ gpt35-11289.c.new   2023-01-01 12:01:00.000000000 +0000
+    @@ -48,7 +48,7 @@
+    void receive_ping_packet(int sockfd, struct sockaddr *src_addr, uint16_t seq_no)
+    {
+        struct icmp_echo_packet recv_buff;
+    -    size_t recv_buff_size = sizeof(recv_buff);
+    +    size_t recv_buff_size = MAX_PACK_SIZE;
+        struct timeval time_sent, time_recv;
+        double rtt;
+        socklen_t src_addr_len;
+        fd_set readfds;
+    
+    @@ -58,6 +58,8 @@
+            default:
+                if (FD_ISSET(sockfd, &readfds)) {
+                    if (recvfrom(sockfd, &recv_buff, recv_buff_size, 0, src_addr, &src_addr_len) < 0) {
+    -                   perror("recvfrom");
+    +                       perror("recvfrom");
+                    } else {
+    +                       if (recv_buff_size > sizeof(struct icmp_echo_packet)) {
+    +                           fprintf(stderr, "Packet size exceeds the buffer size.\n");
+    +                           break;
+    +                       }
+                        gettimeofday(&time_recv, NULL);
+                        struct icmp_echo_packet *recv_packet = (struct icmp_echo_packet *)recv_buff;
+                        if (ntohs(recv_packet->seq_no) == seq_no && ntohs(recv_packet->identifier) == getpid()) {
+                            rtt = calculate_time_diff(time_sent, time_recv);
+    
+    

@@ -1,0 +1,23 @@
+ 
+
+--- gpt35-4002.c
++++ gpt35-4002.c
+@@ -78,9 +78,9 @@
+     char input;
+     while (true) {
+-        input = getchar();
++        wait_for_enter(); // Ensures user has pressed enter before proceeding
+         switch (input) {
+-            case 'w':
++            case 'w':
+                 move_player(&map, 0, -1);
+                 break;
+             case 'a':
+@@ -94,6 +94,7 @@
+                 continue;
+         }
++        input = getchar(); // Move getchar here to ensure input is acquired every iteration
+         printf("\033[H\033[J");
+         print_map(map);
+     }
+

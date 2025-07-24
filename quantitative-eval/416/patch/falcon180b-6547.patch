@@ -1,0 +1,28 @@
+ 
+    
+    --- a/falcon180b-6547
+    +++ b/falcon180b-6547
+    @@ -45,11 +45,12 @@
+       while (1) {
+           printf("Waiting for client connection...\n");
+           int client_socket = accept(server_socket, NULL, NULL);
+           if (client_socket == -1) {
+               printf("Error accepting client connection\n");
+               continue;
+           }
+    
+           lock_semaphore();
+           if (g_client_count < MAX_CLIENTS) {
+               g_client_sockets[g_client_count] = client_socket;
+               g_client_count++;
+    
+               pthread_t thread_id;
+    -          pthread_create(&thread_id, NULL, handle_client_request, (void *)&client_socket);
+    +              pthread_create(&thread_id, NULL, handle_client_request, (void *)&client_socket);
+    +      } else {
+    +          close(client_socket); // Reject client if max limit reached
+           }
+           unlock_semaphore();
+       }
+    
+    

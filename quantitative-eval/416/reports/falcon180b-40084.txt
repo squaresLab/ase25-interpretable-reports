@@ -1,0 +1,43 @@
+
+vuln-fix: CWE-362: Race Condition in falcon180b-40084 at lines 39-44 (severity: High)
+what: The vulnerability is a race condition occurring due to improper handling of the `client_socket` variable, shared between the main thread and the newly created thread.
+where: Lines 39-44 in `falcon180b-40084`:
+39: client_sockets[num_clients] = client_socket;
+40: num_clients++;
+41: pthread_t thread_id;
+42: pthread_create(&thread_id, NULL, handle_client, (void *)&client_socket);
+why: If not resolved, this race condition may lead to unpredictable behavior, crashes, and security risks as multiple threads access and modify the same `client_socket` variable concurrently.
+how: An attacker could exploit this race condition by rapidly connecting multiple clients to the server, causing the server to modify shared variables in an unpredictable and unsafe manner.
+code-sources: The `client_socket` variable defined at line 36 and used at line 43 is the primary entry point.
+code-sinks: The `client_socket` variable is used in handling client data within the `handle_client` function, specifically at lines 12-29.
+suggested-fix: 
+```diff
+--- falcon180b-40084.c
++++ falcon180b-40084.c
+@@ -39,12 +39,13 @@
+             pthread_t thread_id;
+             
+             // Allocate memory for the client socket to pass to the thread
+-            int *client_sock_ptr = malloc(sizeof(int));
+-            if (client_sock_ptr == NULL) {
+-                perror("malloc");
+-                close(client_socket);
+-                continue;
+-            }
+-            *client_sock_ptr = client_socket;
++            int *new_client_socket = malloc(sizeof(int));
++            if (new_client_socket == NULL) {
++                perror("malloc");
++                close(client_socket);
++                continue;
++            }
++            *new_client_socket = client_socket;
+ 
+-            pthread_create(&thread_id, NULL, handle_client, (void *)client_sock_ptr);
++            client_sockets[num_clients] = client_socket;
++            num_clients++;
++            pthread_create(&thread_id, NULL, handle_client, (void *)new_client_socket);
+         }
+ ```
+explanation-suggested-fix: The suggested fix involves dynamically allocating memory for the client socket pointer inside the main loop before passing it to the thread creation function. This prevents a race condition since each thread gets its dedicated memory space, ensuring `client_socket` values are handled independently.
+method: UNKNOWN

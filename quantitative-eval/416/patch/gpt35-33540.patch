@@ -1,0 +1,23 @@
+ 
+    
+    --- a/gpt35-33540
+    +++ b/gpt35-33540
+    @@ -49,12 +49,14 @@
+       while(1) {
+         int client_fd = accept(server_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen);
+         if(client_fd < 0) {
+           perror("accept failed");
+           exit(EXIT_FAILURE);
+         }
+    +    int *new_sock = malloc(sizeof(int));
+    +    *new_sock = client_fd;
+         pthread_t thread_id;
+    -    if(pthread_create(&thread_id, NULL, handle_client, (void *)&client_fd) < 0) {
+    +    if(pthread_create(&thread_id, NULL, handle_client, (void *)new_sock) < 0) {
+           perror("pthread_create failed");
+           exit(EXIT_FAILURE);
+         }
+         pthread_detach(thread_id);
+       }
+    
+    

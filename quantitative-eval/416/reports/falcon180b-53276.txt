@@ -1,0 +1,66 @@
+
+vuln-fix: CWE-459: Incomplete Cleanup in falcon180b-53276, thread_func function, lines 17-36 (severity: high)
+what: The vulnerability stems from an incomplete cleanup of resources upon a client disconnect. Once a client disconnects, its socket is closed, but its entry in the client_sockets array is not removed, nor is num_clients decremented accordingly. This can lead to unauthorized access and denial of service.
+where: The vulnerability is located in the thread_func function of the falcon180b-53276 file, specifically in the lines 17-36.
+why: One possible consequence of not resolving this weakness is that it would allow for resource leakage, which could eventually exhaust the system resources, leading to a denial of service. Additionally, since the array of sockets is not properly managed, there could be unintended reuse of socket descriptors which might lead to unauthorized data access.
+how: An attacker could exploit this vulnerability by repeatedly connecting and disconnecting clients, causing the server to run out of available slots in the client_sockets array, eventually preventing new clients from connecting or causing old sockets to be referenced unintentionally by new clients.
+code-sources: The main entry points for user input are the accept function call in the main function that returns client_socket and subsequent recv calls in the thread_func function which receive data from the connected clients.
+code-sinks: The vulnerable actions performed using user input include the send function calls in the thread_func function which send received data to other connected clients.
+suggested-fix: 
+```diff
+diff --git a/falcon180b-53276 b/falcon180b-53276
+index abcdefg..xyz1234 100644
+--- a/falcon180b-53276
++++ b/falcon180b-53276
+@@ -14,7 +14,8 @@ int num_clients = 0;
+ int max_clients = 0;
+ 
+ void *thread_func(void *arg) {
+-    int client_socket = *(int *) arg;
++    int client_socket = *(int *)arg;
++    int index = -1;
+     char buffer[BUFFER_SIZE];
+     while (1) {
+         memset(buffer, 0, BUFFER_SIZE);
+@@ -23,6 +24,9 @@ void *thread_func(void *arg) {
+         }
+         printf("Client %d sent message: %s\n", client_socket, buffer);
+         for (int i = 0; i < num_clients; i++) {
+-            if (i!= client_socket) {
++            if (client_sockets[i] == client_socket) {
++                index = i;
++            }
++            if (client_sockets[i] != client_socket) {
+                 send(client_sockets[i], buffer, bytes_received, 0);
+             }
+         }
+@@ -30,6 +34,11 @@ void *thread_func(void *arg) {
+     close(client_socket);
++    if (index != -1) {
++        for (int i = index; i < num_clients - 1; i++) {
++            client_sockets[i] = client_sockets[i + 1];
++        }
++        num_clients--;
++    }
+     return NULL;
+ }
+ 
+@@ -41,6 +50,7 @@ int main() {
+     setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+ 
+     while (1) {
++        printf("Waiting for clients...\n");
+         struct sockaddr_in client_addr;
+         socklen_t addr_len = sizeof(client_addr);
+         int client_socket = accept(server_socket, (struct sockaddr *) &client_addr, &addr_len);
+@@ -51,6 +64,8 @@ int main() {
+ 
+         pthread_t thread_id;
+         pthread_create(&thread_id, NULL, thread_func, (void *) &client_socket);
++        client_sockets[num_clients++] = client_socket;
+     }
+ 
+     return 0;
+ ```
+explanation-suggested-fix: The suggested code diff resolves the vulnerability by ensuring that the client_sockets array and num_clients variable are properly maintained when a client disconnects. An index is found for the socket in the array, and the subsequent elements are shifted to fill the gap, effectively removing the socket from the list. The num_clients variable is decremented to reflect the correct number of active clients.
+method: CODEQL

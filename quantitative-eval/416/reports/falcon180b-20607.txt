@@ -1,0 +1,52 @@
+
+vuln-fix: CWE-391 Unchecked Error Condition in falcon180b-20607 at line 15 (severity: High)
+what: The application does not check for errors when creating a new socket connection with `accept`.
+where: Lines 43-45 in falcon180b-20607.
+why: If the `accept` call fails, the application may proceed with incorrect or uninitialized socket values, leading to undefined behavior or crashes.
+how: An attacker could exploit this by forcing the server into a state where it blindly accepts faulty connections, potentially leading to service disruption or unintended memory access.
+code-sources: The entry point in the code where user input enters the application is the `accept` function at line 43.
+code-sinks: The actions performed using the user input from the source include adding the socket to `client_sockets`, creating a new thread, and handling client messages in the `handle_client` function.
+suggested-fix: 
+```diff
+int main() {
+    int opt = 1;
+    setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+
+    struct sockaddr_in server_addr, client_addr;
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(8080);
+    server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+
+    bind(server_socket, (struct sockaddr *) &server_addr, sizeof(server_addr));
+    listen(server_socket, 10);
+
+    printf("Server is listening on port 8080\n");
+
+    while (1) {
+        struct sockaddr_in client_addr;
+        socklen_t addr_size = sizeof(client_addr);
+        int client_socket = accept(server_socket, (struct sockaddr *) &client_addr, &addr_size);
+
++       if (client_socket < 0) {
++           perror("accept");
++           continue;
++       }
+
+        if (num_clients >= MAX_CLIENTS) {
+            close(client_socket);
+            printf("Maximum clients reached\n");
+            continue;
+        }
+
+        client_sockets[num_clients] = client_socket;
+        num_clients++;
+
+        pthread_t thread_id;
+        pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+    }
+
+    return 0;
+}
+```
+explanation-suggested-fix: Checking the return value of `accept`, and calling `perror` if it fails, ensures that the server does not proceed with an invalid socket descriptor and properly logs the error. This prevents undefined behavior and potential crashes caused by faulty socket connections.
+method: UNKNOWN

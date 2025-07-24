@@ -1,0 +1,32 @@
+
+vuln-fix: CWE-459: Incomplete Cleanup in falcon180b-755 (severity: Medium)
+what: The program's `handle_client` function does not properly clean up resources by removing the client from the global `clients` array and decrementing `num_clients` when the connection is closed.
+where: `handle_client` function in `falcon180b-755` - lines related to removing the client's data from `clients` array are missing.
+why: Failure to properly clean up might lead to resource leaks, where inactive client sockets remain tracked, eventually exhausting resources and preventing new client connections from being handled.
+how: An attacker could exploit this vulnerability by repeatedly connecting and disconnecting from the server. This behavior would fill up the `clients` array, causing service denial to legitimate users when the limit of `MAX_CLIENTS` is reached.
+code-sources: `recv(client_socket, buffer, BUFFER_SIZE, 0);` in `handle_client` function and `accept(main_socket, NULL, NULL);` in the main loop.
+code-sinks: `printf("Client %d sent message: %s\n", client_socket, buffer);` and the absence of cleaning up the `clients` array when the client disconnects.
+suggested-fix: 
+```diff
+--- falcon180b-755.original.c
++++ falcon180b-755.fixed.c
+@@ -29,9 +29,17 @@
+         printf("Client %d sent message: %s\n", client_socket, buffer);
+     }
+
++    // Clean up client from the clients array
++    close(client_socket);
++    for (int i = 0; i < num_clients; ++i) {
++        if (clients[i] == client_socket) {
++            clients[i] = clients[num_clients - 1];
++            num_clients--;
++            break;
++        }
++    }
++    
+     close(client_socket);
+     return NULL;
+ }
+ ```
+explanation-suggested-fix: The suggested code diff resolves the vulnerability by cleaning up the `clients` array and updating the `num_clients` count after closing the client socket. This ensures that disconnected clients are removed from tracking, preventing resource leakage.
+method: UNKNOWN

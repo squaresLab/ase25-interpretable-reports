@@ -1,0 +1,25 @@
+
+vuln-fix: CWE-787: Out-of-bounds Write in gpt35-10672 (severity: High)
+what: The code contains a potential out-of-bounds write vulnerability when processing client messages.
+where: Specifically, in the function `connection_handler` at the line where `client_message[read_size] = '\0';` is set.
+why: An attacker could send a message that exactly fills the buffer, causing an additional null terminator to be written out of bounds, potentially leading to memory corruption, crashes, or further exploitation.
+how: An attacker would send a message of exactly 2000 bytes. When the server attempts to null-terminate the buffer, it would write one byte beyond the allocated space for `client_message`, corrupting adjacent memory.
+code-sources: User input is received at `recv(client_socket, client_message, 2000, 0)` in the `connection_handler` function.
+code-sinks: User input is used directly at `printf("Client message: %s", client_message);` and `write(client_socket, client_message, strlen(client_message));` in the `connection_handler` function.
+suggested-fix: 
+```diff
+--- gpt35-10672.c.orig 2023-10-05 12:00:00.000000000 +0000
++++ gpt35-10672.c      2023-10-05 12:05:00.000000000 +0000
+@@ -61,7 +61,7 @@
+ 
+     while ((read_size = recv(client_socket, client_message, 2000, 0)) > 0) {
+         if (read_size < sizeof(client_message)) {
+-            client_message[read_size] = '\0';
++            client_message[read_size] = '\0'; // Null terminate only if there is space
+         } else {
+             client_message[sizeof(client_message) - 1] = '\0';
+         }
+         printf("Client message: %s", client_message);
+```
+explanation-suggested-fix: This fix ensures that the buffer is only null-terminated within its bounds. If the received message exactly fills the buffer, it sets the last character of the buffer to null terminator, preventing an out-of-bounds write.
+method: UNKNOWN

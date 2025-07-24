@@ -1,0 +1,48 @@
+
+
+diff --git a/gemini_pro-12630.c b/gemini_pro-12630.c
+index abcdefg..hijklmn 100644
+--- a/gemini_pro-12630.c
++++ b/gemini_pro-12630.c
+@@ -55,7 +55,7 @@ uint16_t calculate_checksum(struct icmp_packet *packet) {
+   uint16_t *words = (uint16_t *)packet;
+   int i;
+ 
+-  for (i = 0; i < sizeof(struct icmp_packet) / sizeof(uint16_t); i++) {
++  for (i = 0; i < offsetof(struct icmp_packet, data) / sizeof(uint16_t); i++) {
+     sum += words[i];
+   }
+ 
+@@ -113,6 +113,14 @@ int send_icmp_echo_request(int sockfd, struct sockaddr_in *addr, struct icmp_packet *packet) {
+ 
+   // Set the ICMP packet checksum to 0
+   packet->checksum = 0;
++  
++  // Ensure data does not exceed MAX_BYTES
++  size_t data_size = strlen(packet->data);
++  if (data_size > MAX_BYTES) {
++    fprintf(stderr, "Error: Data size exceeds maximum allowable bytes\n");
++    return -1;
++  }
++
+   // Calculate the ICMP packet checksum
+   packet->checksum = calculate_checksum(packet);
+ 
+@@ -138,6 +146,13 @@ int receive_icmp_echo_reply(int sockfd, struct sockaddr_in *addr, struct icmp_packet *packet) {
+   // Receive the ICMP echo reply packet
+   if (recvfrom(sockfd, packet, sizeof(struct icmp_packet), 0, (struct sockaddr *)addr, sizeof(struct sockaddr_in)) < 0) {
+     perror("recvfrom");
+     
+     return -1;
+   }
++ 
++   // Ensure data does not exceed MAX_BYTES
++   size_t data_size = strlen(packet->data);
++   if (data_size > MAX_BYTES) {
++     fprintf(stderr, "Error: Received data size exceeds maximum allowable bytes\n");
++     return -1;
++   }
+ 
+   return 0;
+ }
+

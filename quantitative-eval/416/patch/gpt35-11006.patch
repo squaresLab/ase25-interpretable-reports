@@ -1,0 +1,17 @@
+ 
+
+--- gpt35-11006.c
++++ gpt35-11006_fixed.c
+@@ -13,6 +13,7 @@
+ 
+ void *client_handler(void *arg) {
+     int sock_fd = *(int *)arg;
+-    char buffer[1024];
++    char buffer[1025];
+     while (1) {
+         int len = read(sock_fd, buffer, 1024);
+         if (len <= 0) break;
++        if (len >= 1024) len = 1023; // Ensure there is space for the null-terminator
+         buffer[len] = '\0';
+
+ 

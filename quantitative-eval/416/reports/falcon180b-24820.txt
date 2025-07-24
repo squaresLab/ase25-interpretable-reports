@@ -1,0 +1,54 @@
+
+vuln-fix: CWE-416: Use After Free in falcon180b-24820 (severity: High)
+what: The code contains a Use After Free vulnerability. When `client_socket` is closed (using `close(client_socket)`), the file descriptor could be reused by the system for new connections. However, the same `client_socket` that was closed is later passed to the `handle_client` function, possibly leading to undefined behavior.
+where: Lines 38-47 in falcon180b-24820.
+why: Not resolving this weakness can lead to undefined behavior in the program, including potential application crashes, data corruption, or unexpected code execution.
+how: An attacker can exploit this vulnerability by creating multiple connections to the server, causing the `client_socket` file descriptor to be reused after being closed. This could lead to executing unintended commands or corrupting data in the application.
+code-sources: Accept connections on `server_socket` at line 33.
+code-sinks: Close the `client_socket` and break the loop after receiving data from the client at line 26.
+suggested-fix: 
+```diff
+--- falcon180b-24820.c     (original)
++++ falcon180b-24820.c     (fixed)
+@@ -22,6 +22,8 @@
+         if (bytes_received <= 0) {
+             close(client_socket);
+             break;
+         }
+         printf("Client %d sent: %s\n", client_socket, buffer);
+         send(client_socket, buffer, strlen(buffer), 0);
+     }
++    // Ensure the client socket is no longer referenced
++    free(arg);
+ }
+ 
+ int main() {
+@@ -40,6 +42,9 @@
+             continue;
+         }
+
+         for (int i = 0; i < MAX_CLIENTS; i++) {
+             if (clients[i] == 0) {
+                 clients[i] = client_socket;
+                 num_clients++;
+@@ -49,7 +54,7 @@
+             }
+         }
+
+         if (num_clients == MAX_CLIENTS) {
+             close(client_socket);
+             printf("Server is full\n");
+         } else {
+             pthread_t thread_id;
+-            pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
++            int *pclient = malloc(sizeof(int));
++            *pclient = client_socket;
++            pthread_create(&thread_id, NULL, handle_client, pclient);
+         }
+     }
+ 
+     return 0;
+ }
+ ```
+explanation-suggested-fix: The suggested code diff ensures that the closed `client_socket` is no longer referenced by dynamically allocating memory for each client socket before passing it to `pthread_create`. This prevents the Use After Free situation by ensuring `client_socket` can be safely freed within the `handle_client` function after the thread terminates. The malloc'd memory is also freed in the `handle_client` function after the client connection is closed.
+method: UNKNOWN

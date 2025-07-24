@@ -1,0 +1,13 @@
+
+
+@@ -49,7 +49,11 @@
+ pthread_mutex_lock(&mutex);
+ if (strncmp(buff, "name", 4) == 0) {
+-    strcpy(clients[num_clients].name, buff + 5);
++    strncpy(clients[num_clients].name, buff + 5, sizeof(clients[num_clients].name) - 1);
++    clients[num_clients].name[sizeof(clients[num_clients].name) - 1] = '\0'; // Ensure null-termination
+     num_clients++;
+ }
+ else if (strncmp(buff, "move", 4) == 0) {
+     sscanf(buff + 5, "%d %d %d %d %d %d", &drone_info.x, &drone_info.y, &drone_info.z, &drone_info.yaw, &drone_info.pitch, &drone_info.roll);
+

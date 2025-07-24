@@ -1,0 +1,107 @@
+
+vuln-fix: CWE-362: Race Condition in falcon180b-16264 (severity: High)
+what: The code suffers from a race condition due to the usage of a shared resource `client_sockets` and `num_clients` without proper synchronization mechanisms, such as mutex locks.
+where: The vulnerability is located in the following lines of falcon180b-16264:
+- Updating `client_sockets` and `num_clients` in the main function.
+- Iterating and accessing `client_sockets` in the `handle_client` function.
+why: If not resolved, an attacker could exploit the race condition to cause unexpected behavior in the server, such as sending data to the wrong clients or crashing the server, leading to a denial of service.
+how: An attacker could potentially manipulate the precise timing of connections and disconnections to create inconsistency in the shared resource state, causing the system to access invalid memory locations or corrupt data integrity.
+code-sources: The `accept` function in the main function is an entry point where user input (new connections) enters the application.
+code-sinks: The `send` function in the `handle_client` function is an action performed using user input. Additionally, `client_sockets` and `num_clients` are accessed without synchronization in both functions.
+suggested-fix:
+```diff
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <pthread.h>
+#include <semaphore.h>
+
+#define MAX_CLIENTS 10
+#define BUFFER_SIZE 1024
+
+int client_sockets[MAX_CLIENTS];
+int num_clients = 0;
+pthread_mutex_t client_lock;
+
+void *handle_client(void *arg) {
+    int client_socket = *(int *)arg;
+    char buffer[BUFFER_SIZE];
+
+    while (1) {
+        memset(buffer, 0, BUFFER_SIZE);
+        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+
+        if (bytes_received <= 0) {
+            close(client_socket);
+            break;
+        }
+
+        printf("Client %d sent: %s\n", client_socket, buffer);
+
+        pthread_mutex_lock(&client_lock);
+        for (int i = 0; i < num_clients; i++) {
+            if (client_sockets[i] != client_socket) {
+                send(client_sockets[i], buffer, strlen(buffer), 0);
+            }
+        }
+        pthread_mutex_unlock(&client_lock);
+    }
+
+    pthread_mutex_lock(&client_lock);
+    for (int i = 0; i < num_clients; i++) {
+        if (client_sockets[i] == client_socket) {
+            client_sockets[i] = client_sockets[num_clients-1];
+            num_clients--;
+            break;
+        }
+    }
+    pthread_mutex_unlock(&client_lock);
+
+    return NULL;
+}
+
+int main() {
+    int server_socket = socket(AF_INET, SOCK_STREAM, 0);
+
+    struct sockaddr_in server_addr;
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(8080);
+    server_addr.sin_addr.s_addr = INADDR_ANY;
+
+    bind(server_socket, (struct sockaddr *)&server_addr, sizeof(server_addr));
+    listen(server_socket, 3);
+
+    printf("Server started on port 8080\n");
+
+    pthread_mutex_init(&client_lock, NULL);
+
+    while (1) {
+        int client_socket = accept(server_socket, NULL, NULL);
+
+        pthread_mutex_lock(&client_lock);
+        if (num_clients >= MAX_CLIENTS) {
+            pthread_mutex_unlock(&client_lock);
+            close(client_socket);
+            printf("Server full\n");
+            continue;
+        }
+
+        client_sockets[num_clients] = client_socket;
+        num_clients++;
+        pthread_mutex_unlock(&client_lock);
+
+        pthread_t thread_id;
+        pthread_create(&thread_id, NULL, handle_client, (void *)&client_sockets[num_clients-1]);
+    }
+
+    pthread_mutex_destroy(&client_lock);
+
+    return 0;
+}
+```
+explanation-suggested-fix: The suggested code change introduces a mutex (`pthread_mutex_t client_lock`) to synchronize access to the shared resources `client_sockets` and `num_clients`. The mutex is locked whenever the shared resources are accessed or modified, preventing race conditions and ensuring data consistency.
+method: UNKNOWN

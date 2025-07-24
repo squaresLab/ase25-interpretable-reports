@@ -1,0 +1,60 @@
+ 
+vuln-fix: CWE-362: Race Condition in falcon180b-22817 (severity: High)
+what: The code presents a race condition when handling client connections and updating the `client_sockets` array. Specifically, `client_socket` may be modified in the main thread and the worker thread without proper synchronization, leading to unpredictable behavior.
+where: 
+- Line 17: `void *handle_client(void *arg) { ... }` function definition.
+- Line 52: `int client_socket = accept(listening_socket, (struct sockaddr *) &client_addr, sizeof(client_addr));`
+- Line 61: `pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);`
+
+why: Without resolving this race condition, an attacker could exploit the lack of synchronization to disrupt the server's normal operations, causing socket mishandlings, which might lead to denial of service (DoS) or unpredictable server behavior.
+
+how: An attacker could potentially exploit the race condition by rapidly connecting and disconnecting clients to the server. By doing so, `client_socket` can be corrupted or reused incorrectly, resulting in communication issues, crashes, or other unintended behaviors.
+
+code-sources: `accept(listening_socket, (struct sockaddr *) &client_addr, sizeof(client_addr));` on line 52 where new connection incept happens.
+code-sinks: `recv(client_socket, buffer, MAX_DATA_SIZE, 0);` on line 22 where data is received from the client.
+
+suggested-fix:
+```diff
+#include <pthread.h>
+static pthread_mutex_t client_sockets_lock = PTHREAD_MUTEX_INITIALIZER;
+
+void *handle_client(void *arg) {
+    int client_socket = *(int *) arg;
+    char buffer[MAX_DATA_SIZE];
+
+    while (TRUE) {
+        memset(buffer, 0, MAX_DATA_SIZE);
+        int bytes_received = recv(client_socket, buffer, MAX_DATA_SIZE, 0);
+
+        if (bytes_received <= 0) {
+            close(client_socket);
+            pthread_mutex_lock(&client_sockets_lock);
+            client_socket = -1;
+            pthread_mutex_unlock(&client_sockets_lock);
+            break;
+        }
+
+        printf("Client %d sent: %s\n", client_socket, buffer);
+
+        pthread_mutex_lock(&client_sockets_lock);
+        for (int i = 0; i < num_clients; i++) {
+            if (client_sockets[i]!= client_socket) {
+                send(client_sockets[i], buffer, strlen(buffer), 0);
+            }
+        }
+        pthread_mutex_unlock(&client_sockets_lock);
+    }
+
+    return NULL;
+}
+
+// After sanity checks but before using client_socket
+pthread_mutex_lock(&client_sockets_lock);
+client_sockets[num_clients] = client_socket;
+num_clients++;
+pthread_mutex_unlock(&client_sockets_lock);
+```
+
+explanation-suggested-fix: The suggested code changes resolve the vulnerability by introducing a `pthread_mutex_t` lock that ensures mutual exclusion when updating the `client_sockets` array and manipulating `client_socket`. By locking the critical sections of the code, we prevent concurrent modifications that could lead to race conditions.
+
+method: UNKNOWN

@@ -1,0 +1,65 @@
+
+vuln-fix: Race Condition (CWE-362) in gemini_pro-1448 (severity: High)
+what: The code contains a race condition due to the shared memory (`shared_mem`) being accessed and modified by multiple threads without proper synchronization of the variable `i` used as the thread argument.
+where: The vulnerability is located in `gemini_pro-1448` at lines where threads are created and joined: lines 25-35 and in the thread function at lines 14-20.
+why: If not resolved, this weakness can cause unpredictable behavior, data corruption, and application crashes due to concurrent modification of shared resources. 
+how: An attacker could exploit this vulnerability by creating and manipulating thread execution to access and potentially alter shared memory in a way that disrupts expected behavior, leading to application failures or data leaks.
+code-sources: The thread function `thread_function` is where the shared memory is accessed and modified, using the thread ID passed to it from the `main` function.
+code-sinks: The actions performed by the application include writing to the shared memory in the `thread_function` after locking the mutex.
+suggested-fix:
+```diff
+#include <pthread.h>
+#include <stdlib.h>
+#include <stdio.h>
+
+// Define the number of threads
+#define NUM_THREADS 4
+
+// Define the size of the shared memory block
+#define SHARED_MEM_SIZE 1024
+
+// Define the mutex
+pthread_mutex_t mutex;
+
+// Define the shared memory block
+char shared_mem[SHARED_MEM_SIZE];
+
+// Define the thread function
+void *thread_function(void *arg) {
+    // Get the thread ID
+    int thread_id = *((int *) arg);
+
+    // Lock the mutex
+    pthread_mutex_lock(&mutex);
+
+    // Write to the shared memory block
+    sprintf(shared_mem, "Thread %d: %s", thread_id, "Hello, world!");
+
+    // Unlock the mutex
+    pthread_mutex_unlock(&mutex);
+
+    return NULL;
+}
+
+int main() {
+    // Create the threads
+    pthread_t threads[NUM_THREADS];
++   int thread_ids[NUM_THREADS];
+    for (int i = 0; i < NUM_THREADS; i++) {
++       thread_ids[i] = i;
++       pthread_create(&threads[i], NULL, thread_function, (void *) &thread_ids[i]);
+    }
+
+    // Join the threads
+    for (int i = 0; i < NUM_THREADS; i++) {
+        pthread_join(threads[i], NULL);
+    }
+
+    // Print the shared memory block
+    printf("%s\n", shared_mem);
+
+    return 0;
+}
+```
+explanation-suggested-fix: The suggested fix resolves the race condition by ensuring that each thread receives a unique and immutable thread ID for its execution. This is achieved by storing the thread IDs in a dedicated array (`thread_ids[NUM_THREADS]`) and passing the address of each respective element to the thread creation function (`pthread_create`). This eliminates the race condition on the `i` variable.
+method: UNKNOWN

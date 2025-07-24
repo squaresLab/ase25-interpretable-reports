@@ -1,0 +1,20 @@
+ 
+
+--- a/gpt35-16205
++++ b/gpt35-16205
+@@ -41,6 +41,7 @@ void *handle_client(void *arg) {
+         int bytes_received = recv(client_socket, buffer, BUFFER_SIZE - 1, 0);
+         if (bytes_received == 0) {
+             printf("Client %d disconnected\n", client_socket);
++            buffer[bytes_received] = '\0';
+             sprintf(buffer, "Client %d has left the chat\n", client_socket);
+             send_message_to_clients(buffer, client_socket);
+             break;
+@@ -45,11 +46,14 @@ void *handle_client(void *arg) {
+ 
+-        sprintf(buffer, "Client %d: %s", client_socket, buffer);
++        
++        char client_message[BUFFER_SIZE];
++        snprintf(client_message, sizeof(client_message), "Client %d: %s", client_socket, buffer);
+         send_message_to_clients(client_message, client_socket);
+

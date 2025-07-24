@@ -1,0 +1,38 @@
+
+    vuln-fix: CWE-787: Out-of-bounds Write in falcon180b-65380 (severity: High)
+    what: The vulnerability is an out-of-bounds write which can occur when the program writes data past the end of an array or buffer, potentially overwriting adjacent memory in an unintended manner.
+    where: The vulnerability is located in the file falcon180b-65380 on the lines where the client socket is handled and added to the client_sockets array.
+    why: One possible consequence of not resolving this weakness is a buffer overflow, which can lead to arbitrary code execution or crashing the application.
+    how: An attacker can exploit this vulnerability by connecting more than `MAX_CLIENTS` clients, which can cause access to memory beyond the boundary of the `client_sockets` array, leading to undefined behavior.
+    code-sources: The entry point in code where user input (client connection) enters the application is through the `accept` function call in the `main` function on the line with `int client_socket = accept(server_socket, (struct sockaddr *) &client_addr, &addr_size);`.
+    code-sinks: One action performed by the application using user input from a source is when the client socket is added to the `client_sockets` array: `client_sockets[num_clients] = client_socket;`.
+    suggested-fix: 
+    ```
+    diff --git a/falcon180b-65380 b/falcon180b-65380
+    index e69de29..fa03273 100644
+    --- a/falcon180b-65380
+    +++ b/falcon180b-65380
+    @@ -32,9 +32,11 @@ int main() {
+                 int client_socket = accept(server_socket, (struct sockaddr *) &client_addr, &addr_size);
+ 
+                 if (num_clients >= MAX_CLIENTS) {
+    +                close(client_socket);
+                     printf("Server is full. Cannot accept more clients.\n");
+                     continue;
+                 }
+ 
+    +            if (num_clients < MAX_CLIENTS) {
+                     client_sockets[num_clients] = client_socket;
+                     num_clients++;
+ 
+    @@ -43,6 +45,7 @@ int main() {
+                     pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+                 }
+             }
+    +        }
+ 
+             return 0;
+         }
+    ```
+    explanation-suggested-fix: The suggested code diff resolves the vulnerability by ensuring that the `client_socket` is properly closed and checking that the `num_clients` value remains within bounds before adding the new client socket to the `client_sockets` array.
+    method: UNKNOWN

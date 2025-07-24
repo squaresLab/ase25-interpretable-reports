@@ -1,0 +1,45 @@
+
+vuln-fix: Use of Uninitialized Variable (CWE-457) in falcon180b-1796 (severity: High)
+what: The vulnerability arises from the use of the `server_socket` variable before it is properly initialized, leading to undefined behavior when using the socket functions.
+where: The vulnerable code is in the `main` function in falcon180b-1796:
+   ```
+   int server_socket;
+   ...
+   setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+   ...
+   bind(server_socket, (struct sockaddr *) &server_addr, sizeof(server_addr));
+   listen(server_socket, MAX_CLIENTS);
+   ```
+why: If this weakness is not resolved, the server may fail to operate correctly or may crash due to undefined behavior, resulting in unavailability of the service.
+how: An attacker may exploit this vulnerability by attempting to connect to the service, observing crashes or inconsistent behavior, which could potentially be used for further attacks on the service.
+code-sources: The entry point is the accept call in the `main` function:
+   ```
+   int client_socket = accept(server_socket, NULL, NULL);
+   ```
+code-sinks: The `setsockopt`, `bind`, and `listen` functions using the uninitialized `server_socket` in the `main` function:
+   ```
+   setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+   bind(server_socket, (struct sockaddr *) &server_addr, sizeof(server_addr));
+   listen(server_socket, MAX_CLIENTS);
+   ```
+suggested-fix: 
+   ```diff
+   --- falcon180b-1796.c
+   +++ falcon180b-1796-fixed.c
+   @@ -16,7 +16,7 @@
+    
+   int main() {
+       int opt = 1;
+   - setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+   + server_socket = socket(AF_INET, SOCK_STREAM, 0);
+   + if (server_socket < 0) {
+   +     perror("Cannot create socket");
+   +     exit(EXIT_FAILURE);
+   + }
+   + setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+
+       struct sockaddr_in server_addr;
+       memset(&server_addr, 0, sizeof(server_addr));
+   ```
+explanation-suggested-fix: The suggested fix initializes the `server_socket` using the `socket` function, and checks for any errors during initialization. This ensures that `server_socket` is used in a defined state, preventing undefined behavior.
+method: UNKNOWN

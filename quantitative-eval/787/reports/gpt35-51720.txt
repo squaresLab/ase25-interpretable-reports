@@ -1,0 +1,32 @@
+markdown
+    vuln-fix: Buffer Overflow (CWE-120, CWE-787, CWE-805) in gpt35-51720 (line 47) (severity: High)
+    what: The code contains a buffer overflow vulnerability due to an unrestricted write operation 
+          that can exceed the allocated buffer size.
+    where: Line 47 in gpt35-51720:
+    ```
+        sprintf(name, "Bidder #%d", i+1);
+    ```
+    why: An attacker could exploit this vulnerability to execute arbitrary code, cause program crashes, or corrupt memory.
+    how: An attacker could provide input that results in writing more data to the buffer than it can handle, 
+         leading to overflow and subsequently allowing execution of malicious code or disruption of program flow.
+    code-sources: User input enters through id values manipulated within the program and potentially external sources.
+    code-sinks: Vulnerable `sprintf` function that writes formatted data to a string.
+    suggested-fix: 
+    ```diff
+    --- gpt35-51720.c
+    +++ gpt35-51720-fixed.c
+    @@ -44,7 +44,7 @@
+         for (int i = 0; i < auction->number_of_bidders; i++) {
+             char* name = (char*)calloc(10, sizeof(char));
+    -        sprintf(name, "Bidder #%d", i+1);
+    +        snprintf(name, 10, "Bidder #%d", i+1);
+ 
+             auction->bidders[i].id = i;
+             auction->bidders[i].name = name;
+             auction->bidders[i].balance = 50.00;
+         }
+     }
+    ```
+    explanation-suggested-fix: The use of `snprintf` instead of `sprintf` adds a limit to the number of characters written to the buffer, 
+                               preventing overflow by ensuring that only a defined number of characters will be written, in this case ensuring it fits within the buffer size of 10 characters.
+    method: UNKNOWN

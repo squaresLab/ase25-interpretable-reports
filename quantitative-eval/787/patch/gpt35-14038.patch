@@ -1,0 +1,17 @@
+ 
+
+24c24,26
+<         terminal->baggage_list[terminal->current_load] = baggage;
+---
+>         for (int i = 0; i < MAX_BAGGAGE; i++) {
+>             if (terminal->baggage_list[i] == NULL) {
+>                 terminal->baggage_list[i] = baggage;
+29a28,32
+>                 break;
+>             }
+>         }
+>         if (terminal->current_load + baggage->weight > terminal->capacity) {
+>             printf("Terminal %d is full for Baggage %d\n", terminal->id, baggage->id);
+>         } else {
+>             terminal->current_load += baggage->weight;
+

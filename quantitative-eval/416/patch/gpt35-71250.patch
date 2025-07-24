@@ -1,0 +1,38 @@
+ 
+
+--- gpt35-71250.c
++++ gpt35-71250_fixed.c
+@@ -71,18 +71,23 @@
+     printf("Scanning network from %s...\n", ip_addr);
+ 
+     // Parse client IP address
+-    char prefix[16] = {0};
+-    strcpy(prefix, strtok(ip_addr, "."));
++    char *token;
++    char prefix[16] = "";
++    token = strtok(ip_addr, ".");
++    if (token != NULL) {
++        strncat(prefix, token, sizeof(prefix) - strlen(prefix) - 1);
++    }
+     for (int i = 0; i < 3; i++) {
+-        strcat(prefix, ".");
+-        strcat(prefix, strtok(NULL, "."));
++        token = strtok(NULL, ".");
++        if (token != NULL) {
++            strncat(prefix, ".", sizeof(prefix) - strlen(prefix) - 1);
++            strncat(prefix, token, sizeof(prefix) - strlen(prefix) - 1);
++        } else {
++            break;
++        }
+     }
+-    strcat(prefix, ".");
+ 
+     // Scan network for active IP addresses
+     for (int i = 1; i <= 255; i++) {
+         char test_ip[16] = {0};
+-        sprintf(test_ip, "%s%d", prefix, i);
++        snprintf(test_ip, sizeof(test_ip), "%s%d", prefix, i);
+         if (!is_valid_ip(test_ip)) {
+             continue;
+         }
+

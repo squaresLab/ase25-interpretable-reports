@@ -1,0 +1,17 @@
+ 
+    
+    --- falcon180b-41820.c
+    +++ falcon180b-41820-fixed.c
+    @@ -28,6 +28,10 @@
+         while ((n = read(f->fd, buf, BUF_SIZE)) > 0) {
+             if (f->data == NULL) {
+                 f->data = malloc(f->filesize);
+    +            if (f->data == NULL) {
+    +                perror("malloc");
+    +                return NULL; // handle out of memory error
+    +            }
+             }
+             memcpy(f->data + offset, buf, n);
+             offset += n;
+    
+    

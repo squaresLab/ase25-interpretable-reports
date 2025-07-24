@@ -1,0 +1,18 @@
+ 
+
+--- falcon180b-40095.c 2023-01-20 14:55:16.000000000 +0000
++++ falcon180b_fixed.c 2023-01-20 14:56:16.000000000 +0000
+@@ -24,7 +24,7 @@
+             printf("Maximum number of clients reached\n");
+             continue;
+         }
+-        client_sockets[num_clients] = client_socket;
++        int *client_sock_ptr = malloc(sizeof(int));
++        *client_sock_ptr = client_socket;
+         num_clients++;
+ 
+-        pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
++        pthread_create(&thread_id, NULL, handle_client, (void *) client_sock_ptr);
+     }
+ }
+ 

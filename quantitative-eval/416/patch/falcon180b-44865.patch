@@ -1,0 +1,28 @@
+ 
+    
+    -char *get_input(char *prompt) {
+    -    char input[MAX_INPUT_SIZE];
+    +void get_input(char *prompt, char *input) {
+    ...
+    -    return input;
+    +    // sanitize_input is already called before returning
+    ...
+    }
+    ...
+    strcpy(name, get_input(""));
+    ...
+    strcpy(address, get_input(""));
+    ...
+    strcpy(phone_number, get_input(""));
+    +
+    - strcpy(name, get_input(""));
+    + get_input("", name);
+    ...
+    - strcpy(address, get_input(""));
+    + get_input("", address);
+    ...
+    - strcpy(phone_number, get_input(""));
+    + get_input("", phone_number);
+    
+
+    

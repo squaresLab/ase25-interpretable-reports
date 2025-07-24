@@ -1,0 +1,29 @@
+
+vuln-fix: CWE-362: Concurrent Execution using Shared Resource with Improper Synchronization ('Race Condition') in gemini_pro-4425 (severity: High)
+what: The code in `main` creates multiple threads passing the address of the loop variable `i`, which can lead to a race condition because all threads may access the same memory location simultaneously.
+where: `(pthread_create(&threads[i], NULL, generate_primes, &i);` in the `main` function of gemini_pro-4425.
+why: This race condition may lead to unpredictable behavior and multiple incorrect initializations of thread arguments, which can cause logic errors, generate incorrect outputs, or lead to a crash.
+how: An attacker can leverage the race condition to cause unintended behavior within the multi-threaded application, potentially leading to stability issues or unexpected application behavior.
+code-sources: The source of the potential error stems from how the thread function argument `&i` is passed to `pthread_create` in the `main` function.
+code-sinks: The sink is the thread function `generate_primes`, which uses the thread number `thread_num` derived from the shared loop variable `i`.
+suggested-fix: 
+```diff
+  // Create the threads
+  for (int i = 0; i < NUM_THREADS; i++) {
++   int *arg = malloc(sizeof(*arg));
++   if (arg == NULL) {
++     fprintf(stderr, "Couldn't allocate memory for thread arg.\n");
++     exit(EXIT_FAILURE);
++   }
++   *arg = i;
+    pthread_create(&threads[i], NULL, generate_primes, arg);
+  }
+
+  // Wait for the threads to finish
+  for (int i = 0; i < NUM_THREADS; i++) {
+    pthread_join(threads[i], NULL);
++   free(arg);
+  }
+```
+explanation-suggested-fix: Allocating memory for each thread's argument ensures that each thread gets a unique copy of the thread number. This resolves the race condition issue by preventing all threads from referencing the same memory location.
+method: UNKNOWN

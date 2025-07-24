@@ -1,0 +1,28 @@
+ 
+
+diff --git a/gpt35-19342.c b/gpt35-19342.c
+index 1234567..89abcdef 100644
+--- a/gpt35-19342.c
++++ b/gpt35-19342.c
+@@ -84,7 +84,7 @@ int main()
+         printf("Enter username: ");
+         // Safe input handling to prevent buffer overflow
+-        scanf("%s", username);
++        scanf("%49s", username); // Limit input length to avoid overflow
+         printf("Enter password: ");
+-        scanf("%s", password);
++        scanf("%49s", password); // Limit input length to avoid overflow
+         store_password(username, encrypt_password(password));
+         printf("Password stored successfully!\n");
+         break;
+@@ -94,7 +94,7 @@ int main()
+         case 2:
+         {
+             printf("Enter username: ");
+             // Safe input handling to prevent buffer overflow
+-            scanf("%s", username);
++            scanf("%49s", username); // Limit input length to avoid overflow
+             char* retrieved_password = retrieve_password(username);
+             if (strlen(retrieved_password) != 0)
+             {
+

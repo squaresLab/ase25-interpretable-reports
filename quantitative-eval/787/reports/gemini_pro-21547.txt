@@ -1,0 +1,64 @@
+
+vuln-fix: Out-of-Bounds Write (CWE-787) in gemini_pro-21547 (severity: High)
+what: The code inadequately checks the bounds of `servo_id` and `motor_id` values when passed to functions modifying servo and motor parameters. Specifically, it checks if `servo_id` and `motor_id` are greater than or equal to 0, which is unnecessary as these variables are of `uint8_t` type and inherently non-negative; this can lead to out-of-bounds writes.
+where: The vulnerability is present in multiple functions: `set_servo_position`, `set_servo_velocity`, `set_servo_acceleration`, `enable_servo`, `disable_servo`, `set_motor_speed`, `enable_motor`, `disable_motor` within the file gemini_pro-21547.
+why: If not resolved, this weakness can result in writing data to unintended memory locations, leading to corruption of critical data, program crash, or even arbitrary code execution by an attacker.
+how: An attacker could craft calls to these vulnerable functions with crafted `servo_id` or `motor_id` values that exceed the array bounds, causing memory corruption and potential control over the system.
+code-sources: `uint8_t servo_id` and `uint8_t motor_id` parameters in the functions `set_servo_position`, `set_servo_velocity`, `set_servo_acceleration`, `enable_servo`, `disable_servo`, `set_motor_speed`, `enable_motor`, `disable_motor`.
+code-sinks: The array accesses within the functions manipulating servo and motor properties based on unchecked indices: `robot->servos[servo_id]` and `robot->motors[motor_id]`.
+suggested-fix:
+```diff
+@@ -16,9 +16,9 @@ void set_servo_position(robot_t *robot, uint8_t servo_id, int16_t position) {
+     if (servo_id >= 0 && servo_id < NUM_SERVOS) {
+         robot->servos[servo_id].position = position;
+     }
+ }
+
+ void set_servo_velocity(robot_t *robot, uint8_t servo_id, int16_t velocity) {
+-    if (servo_id >= 0 && servo_id < NUM_SERVOS) {
++    if (servo_id < NUM_SERVOS) {
+         robot->servos[servo_id].velocity = velocity;
+     }
+ }
+
+@@ -26,7 +26,7 @@ void set_servo_acceleration(robot_t *robot, uint8_t servo_id, int16_t accelerat
+     if (servo_id >= 0 && servo_id < NUM_SERVOS) {
+         robot->servos[servo_id].acceleration = acceleration;
+     }
+ }
+
+ void enable_servo(robot_t *robot, uint8_t servo_id) {
+-    if (servo_id >= 0 && servo_id < NUM_SERVOS) {
++    if (servo_id < NUM_SERVOS) {
+         robot->servos[servo_id].enabled = true;
+     }
+ }
+
+@@ -36,7 +36,7 @@ void disable_servo(robot_t *robot, uint8_t servo_id) {
+     if (servo_id >= 0 && servo_id < NUM_SERVOS) {
+         robot->servos[servo_id].enabled = false;
+     }
+ }
+
+ void set_motor_speed(robot_t *robot, uint8_t motor_id, int16_t speed) {
+-    if (motor_id >= 0 && motor_id < NUM_MOTORS) {
++    if (motor_id < NUM_MOTORS) {
+         robot->motors[motor_id].speed = speed;
+     }
+ }
+
+@@ -46,7 +46,7 @@ void enable_motor(robot_t *robot, uint8_t motor_id) {
+     if (motor_id >= 0 && motor_id < NUM_MOTORS) {
+         robot->motors[motor_id].enabled = true;
+     }
+ }
+
+ void disable_motor(robot_t *robot, uint8_t motor_id) {
+-    if (motor_id >= 0 && motor_id < NUM_MOTORS) {
++    if (motor_id < NUM_MOTORS) {
+         robot->motors[motor_id].enabled = false;
+     }
+ }
+```
+explanation-suggested-fix: By removing the unnecessary checks for non-negative values (as `uint8_t` is inherently non-negative) while ensuring the index does not exceed the array bounds (`< NUM_SERVOS` and `< NUM_MOTORS`), the risk of out-of-bounds writes is mitigated.
+method: UNKNOWN

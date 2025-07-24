@@ -1,0 +1,37 @@
+ 
+    
+    --- falcon180b-11159
+    +++ falcon180b-11159
+    @@ -16,6 +16,7 @@
+     #define BUFFER_SIZE 1024
+     
+     int client_sockets[MAX_CLIENTS];
+    -int num_clients = 0;
+    +int num_clients = 0;
+    +pthread_mutex_t clients_mutex = PTHREAD_MUTEX_INITIALIZER;
+     
+     void *handle_client(void *socket) {
+         int client_socket = *(int *)socket;
+    @@ -59,7 +60,10 @@
+             printf("Error accepting client\n");
+             continue;
+         }
+    -    
+    +    
+    +        pthread_mutex_lock(&clients_mutex);
+         if (num_clients >= MAX_CLIENTS) {
+    +            pthread_mutex_unlock(&clients_mutex);
+             close(client_socket);
+             printf("Server full, cannot accept more clients\n");
+             continue;
+         }
+    -    
+    +    
+         client_sockets[num_clients] = client_socket;
+         num_clients++;
+    +        pthread_mutex_unlock(&clients_mutex);
+     
+         pthread_t thread_id;
+         pthread_create(&thread_id, NULL, handle_client, (void *)&client_socket);
+    
+    

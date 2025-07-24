@@ -1,0 +1,62 @@
+ 
+    
+    --- gpt35-7751.c	2023-10-01 12:34:56.000000000 +0000
+    +++ gpt35-7751.c	2023-10-01 12:35:56.000000000 +0000
+    @@ -18,6 +18,8 @@
+         char buffer[BUFFER_SIZE];
+    
+         // Receive messages until client disconnects
+         while (1) {
+             // Receive message from client
+    +        memset(buffer, 0, BUFFER_SIZE); // Clear buffer before receiving data
+    +        if (data_len < 0) {
+    +            printf("Error receiving data\n");
+    +            break;
+    +        }
+    @@ -34,14 +34,19 @@
+    
+         // Forward message to all other clients
+    +        pthread_mutex_t client_lock = PTHREAD_MUTEX_INITIALIZER; // Define mutex
+         for (int i = 0; i < num_clients; i++) {
+    +            pthread_mutex_lock(&client_lock); // Lock before accessing shared resource
+             int socket_fd = client_sockets[i];
+    +            pthread_mutex_unlock(&client_lock); // Unlock after accessing shared resource
+    
+             // Skip if this is the original client
+             if (socket_fd == client_socket) {
+                 continue;
+             }
+    
+             // Send message to other clients
+             if (send(socket_fd, buffer, data_len, 0) != data_len) {
+                 printf("Error sending message to client\n");
+             }
+         }
+         pthread_mutex_destroy(&client_lock); // Destroy mutex
+     @@ -75,11 +80,17 @@
+         int client_socket = accept(server_socket, (struct sockaddr*)&client_addr, &addr_len);
+         if (client_socket == -1) {
+             printf("Error accepting client connection\n");
+             continue;
+         }
+    
+         // Add client to array of active clients
+    +    static pthread_mutex_t client_add_lock = PTHREAD_MUTEX_INITIALIZER; // Define mutex
+    +    pthread_mutex_lock(&client_add_lock); // Lock before modifying shared resource
+         if (num_clients == MAX_CLIENTS) {
+             printf("Maximum number of clients reached\n");
+             close(client_socket);
+             continue;
+         }
+         client_sockets[num_clients] = client_socket;
+         num_clients++;
+    +    pthread_mutex_unlock(&client_add_lock); // Unlock after modifying shared resource
+    
+         // Spawn thread to handle client connection
+         pthread_t thread;
+         if (pthread_create(&thread, NULL, handle_client, &client_socket) == -1) {
+             printf("Error creating thread to handle client connection\n");
+             return 1;
+         }
+     
+    

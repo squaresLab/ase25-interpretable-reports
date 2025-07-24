@@ -1,0 +1,46 @@
+ 
+    
+    diff --git a/gpt35-30163 b/gpt35-30163
+    index abcdef1..1234567 100644
+    --- a/gpt35-30163
+    +++ b/gpt35-30163
+    @@ -55,7 +55,11 @@ void *connection_handler(void *socket_desc) {
+    
+         if (send(sock, server_message, strlen(server_message), 0) != strlen(server_message)) {
+             perror("Send failed");
+    -    }
+    +    }
+    
+    +    // Set a fixed size for the buffer content to be received, ensuring it does not exceed buffer size
+         while (recv(sock, message_buffer, sizeof(message_buffer) - 1, 0) > 0) {
+    
+             printf("Client: %s\n", message_buffer);
+             memset(message_buffer, 0, 2000);
+             printf("Server: ");
+    -        fgets(message_buffer, 2000, stdin);
+    +        fgets(message_buffer, sizeof(message_buffer), stdin);
+    +        message_buffer[strlen(message_buffer)-1] = '\0';
+    
+             if (send(sock, message_buffer, strlen(message_buffer), 0) < 0) {
+                 perror("Send failed");
+    @@ -64,7 +68,7 @@ void *connection_handler(void *socket_desc) {
+             }
+    
+             memset(message_buffer, 0, 2000);
+    -    }
+    
+    -    if (recv(sock, message_buffer, 2000, 0) < 0) {
+    +    }
+    
+    +    if (recv(sock, message_buffer, sizeof(message_buffer) - 1, 0) < 0) {
+             puts("Receive failed");
+         }
+    
+    +    // Properly terminate the received string to prevent buffer overflow and proper memory management
+         message_buffer[2000 - 1] = '\0';
+
+         close(sock);
+         pthread_exit(NULL);
+    }
+    
+    

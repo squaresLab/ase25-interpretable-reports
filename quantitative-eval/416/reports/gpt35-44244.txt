@@ -1,0 +1,43 @@
+
+vuln-fix: Buffer Overflow (CWE-120, CWE-787, CWE-805) in gpt35-44244 (severity: High)
+what: Buffer write operations in the application do not control the length of data written, leading to potential buffer overflows.
+where: Located at lines 28, 30, 32, 34, 38, and 52 in the file gpt35-44244.
+why: An attacker could exploit this weakness by providing input that exceeds the buffer size, leading to memory corruption, crashes, or execution of malicious code.
+how: An attacker would provide input strings exceeding the allocated buffer sizes (50 characters for sender and recipient, 100 characters for subject, and 500 characters for message), causing the buffer to overflow and potentially overwrite adjacent memory.
+code-sources: User input is read using `scanf` for `email.sender`, `email.recipient`, `email.subject`, `email.message`, and `filename`.
+code-sinks: These inputs are stored in fixed-size buffers (`email.sender`, `email.recipient`, `email.subject`, `email.message`) and used in file operations.
+suggested-fix: 
+```diff
+--- gpt35-44244-old.c
++++ gpt35-44244-fixed.c
+@@ -26,14 +26,24 @@
+             case 1:
+                 printf("\nEnter Sender's Email: ");
+-                scanf("%s", email.sender);
++                scanf("%49s", email.sender);
+                 printf("Enter Recipient's Email: ");
+-                scanf("%s", email.recipient);
++                scanf("%49s", email.recipient);
+                 printf("Enter Email Subject: ");
+-                scanf("%s", email.subject);
++                scanf("%99s", email.subject);
+                 printf("Enter Email Message: ");
+-                scanf("%s", email.message);
++                scanf("%499s", email.message);
+
+                 char filename[50];
+                 printf("\nEnter File Name to Save Email: ");
+-                scanf("%s",filename);
++                scanf("%49s", filename);
+                 fp=fopen(filename,"w+");
+
+                 fprintf(fp, "Sender: %s\n", email.sender);
+@@ -48,7 +48,7 @@
+             case 2:
+                 printf("\nEnter File Name to Read Email: ");
+-                scanf("%s",filename);
++                scanf("%49s", filename);
+                 fp=fopen(filename,"r");
+```
+explanation-suggested-fix: By specifying the maximum field width in the `scanf` function (e.g., `%49s` for `email.sender`), we ensure that only the correct number of characters are read into the buffers, thus preventing buffer overflow.
+method: CODEQL

@@ -1,0 +1,43 @@
+ 
+    
+    --- gemini_pro-20956.c
+    +++ gemini_pro-20956_fixed.c
+    @@ -45,15 +45,18 @@
+     
+    pthread_mutex_t client_sockets_mutex;
+     
+    void *handle_client(void *arg) {
+        int client_socket = *(int *)arg;
+    +    free(arg);  // Free the dynamically allocated memory
+        char buffer[BUFFER_SIZE];
+        int bytes_received;
+     
+    @@ -97,9 +97,11 @@
+        int client_socket = accept(server_socket, NULL, NULL);
+        if (client_socket == -1) {
+            perror("accept");
+            continue;
+        }
+
+    +   int* pclient = malloc(sizeof(int));
+    +   *pclient = client_socket;
+        // Add the client socket to the array of client sockets
+        pthread_mutex_lock(&client_sockets_mutex);
+        if (num_clients >= MAX_CLIENTS) {
+            // Too many clients connected, reject the connection
+            close(client_socket);
+            pthread_mutex_unlock(&client_sockets_mutex);
+            continue;
+        }
+     
+        client_sockets[num_clients++] = client_socket;
+        pthread_mutex_unlock(&client_sockets_mutex);
+     
+        // Create a new thread to handle the client
+    -    if (pthread_create(&client_thread, NULL, handle_client, &client_socket) != 0) {
+    +    if (pthread_create(&client_thread, NULL, handle_client, pclient) != 0) {
+            perror("pthread_create");
+            close(client_socket);
+        }
+    
+    

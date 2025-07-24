@@ -1,0 +1,25 @@
+
+
+--- original_file.c
++++ fixed_file.c
+@@ -12,12 +12,14 @@
+
+ void *handle_client(void *arg) {
+     int client_socket = *(int *) arg;
+-    char buffer[BUFFER_SIZE];
++    char buffer[BUFFER_SIZE + 1];
+
+     while (1) {
+         memset(buffer, 0, BUFFER_SIZE);
+         int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+
+         if (bytes_received <= 0) {
+             close(client_socket);
+             pthread_exit(NULL);
+         }
+
++        buffer[bytes_received] = '\0'; // Ensure null-termination
+         printf("Client %d sent: %s\n", client_socket, buffer);
+     }
+ }
+

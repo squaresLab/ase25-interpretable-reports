@@ -1,0 +1,14 @@
+ 
+
+--- codellama_13b-7787
++++ codellama_13b-7787
+@@ -16,7 +16,7 @@
+ char *receive_imap_response() {
+-    char response[1024];
++    char response[1024] = {0}; // Ensure the buffer is initialized
+     printf("Waiting for response...\n");
+-    scanf("%s", response);
++    fgets(response, sizeof(response), stdin); // Replace scanf with fgets and specify the buffer size
+     return strdup(response); // Ensure the returned response is dynamically allocated
+ }
+

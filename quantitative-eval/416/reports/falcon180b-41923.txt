@@ -1,0 +1,28 @@
+
+vuln-fix: CWE-787: Out-of-bounds Write in falcon180b-41923 (severity: High)
+what: The vulnerability is an out-of-bounds write when storing client sockets in the `clients` array. The code does not properly handle the scenario when the number of clients exceeds `MAX_CLIENTS`, potentially leading to buffer overflow.
+where: The vulnerability resides in the `clients[num_clients++] = client_socket;` line within the main function.
+why: Failure to address this vulnerability may cause memory corruption and lead to application crashes or even arbitrary code execution due to writing beyond the array bounds.
+how: An attacker could repeatedly connect new clients to the server until the `num_clients` exceeds `MAX_CLIENTS`, resulting in an out-of-bounds write and potential overwriting of adjacent memory allocations.
+code-sources: The source of user input is through the network connection, particularly via the `recv` function and `accept` calls that introduce new client sockets.
+code-sinks: The application uses the user input when storing the client socket descriptors in the `clients` array using `clients[num_clients++]`.
+suggested-fix: 
+```
+--- falcon180b-41923
++++ falcon180b-41923_fixed
+@@ -22,6 +22,10 @@
+             continue;
+         }
+
++        if (num_clients >= MAX_CLIENTS) {
++            printf("Too many clients connected, cannot accept more.\n");
++            close(client_socket);
++            continue;
++        }
++
+         clients[num_clients++] = client_socket;
+
+         pthread_t thread_id;
+```
+explanation-suggested-fix: The proposed fix adds a check before incrementing the `num_clients` counter and adding a new client socket to the `clients` array. This ensures that no more than `MAX_CLIENTS` are stored, preventing out-of-bounds writes.
+method: UNKNOWN

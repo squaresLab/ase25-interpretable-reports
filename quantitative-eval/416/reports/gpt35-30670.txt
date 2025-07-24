@@ -1,0 +1,43 @@
+
+    vuln-fix: CWE-252: Unchecked Return Value in gpt35-30670 (severity: Medium)
+    what: The vulnerability lies in the unchecked return values of the `recv()` and `write()` system calls. If these functions fail, the program does not handle the errors properly.
+    where: The vulnerability is located in the `connection_handler` function, specifically with the calls to `recv()` and `write()` in lines dealing with client communication.
+    why: Not checking the return values of critical functions like `recv()` and `write()` could lead to improper handling of errors, which may cause undefined behavior or crashes.
+    how: An attacker could exploit this vulnerability by causing these functions to fail (e.g., through network interruptions or sending malformed packets), potentially leading to a denial of service.
+    code-sources: The entry point in the code where user input enters the application is through the `recv()` call inside the `connection_handler` function.
+    code-sinks: The actions performed by the application, using the user input from a source, occur in the places where `buffer` is printed or sent back to the client using `write()`.
+    suggested-fix: 
+    ```diff
+    --- gpt35-30670.c
+    +++ gpt35-30670-fixed.c
+    @@ -68,7 +68,11 @@
+         while ((read_size = recv(sock, buffer, BUFF_SIZE, 0)) > 0) {
+             //add null terminator to end of message
+             buffer[read_size] = '\0';
+    +        
+    +        if (read_size < 0) {
+    +            perror("recv failed");
+    +            break;
+    +        }
+
+             //check if client wants to exit
+             if (strncmp(buffer, "bye", 3) == 0) {
+                 message = "Goodbye!\n";
+    @@ -79,8 +83,10 @@
+             }
+
+             //print message from client to server console
+             printf("Client: %s", buffer);
+
+             //send message back to client
+    -        write(sock, buffer, strlen(buffer));
+    +        if (write(sock, buffer, strlen(buffer)) < 0) {
+    +            perror("write failed");
+    +            break;
+    +        }
+         }
+ 
+         if (read_size == 0) {
+    ```
+    explanation-suggested-fix: The provided code diff resolves the vulnerability by adding checks for the return values of the `recv()` and `write()` functions. If these functions fail, an error message is printed using `perror()`, and the loop is broken to prevent further undefined behavior.
+    method: UNKNOWN

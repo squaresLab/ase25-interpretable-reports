@@ -1,0 +1,27 @@
+
+vuln-fix: Buffer Overflow (CWE-190) in gpt35-14038 (severity: High)
+what: The `load_baggage` function does not properly check the index bounds of the `baggage_list` array while adding a new baggage. This could lead to out-of-bounds write, causing buffer overflow.
+where: line(s) 24-29 in file gpt35-14038
+why: Not resolving this weakness can result in undefined behavior, including crashes or corruption of data. If exploited, it could potentially enable an attacker to execute arbitrary code.
+how: An attacker could craft input so the sum of `terminal->current_load` and `baggage->weight` exceeds the terminal's capacity. This could lead to writing outside the bounds of `baggage_list`, causing out-of-bounds memory access.
+code-sources: In the `main` function, entries are read from `baggage_list` array and passed to `load_baggage(&baggage_list[i], &terminal_list[baggage_list[i].terminal_id - 1]);`.
+code-sinks: The `baggage` object is written into `terminal->baggage_list` array without bounds checking.
+suggested-fix: 
+```diff
+24c24,26
+<         terminal->baggage_list[terminal->current_load] = baggage;
+---
+>         for (int i = 0; i < MAX_BAGGAGE; i++) {
+>             if (terminal->baggage_list[i] == NULL) {
+>                 terminal->baggage_list[i] = baggage;
+29a28,32
+>                 break;
+>             }
+>         }
+>         if (terminal->current_load + baggage->weight > terminal->capacity) {
+>             printf("Terminal %d is full for Baggage %d\n", terminal->id, baggage->id);
+>         } else {
+>             terminal->current_load += baggage->weight;
+```
+explanation-suggested-fix: This fix ensures that before adding a baggage, it checks for the first empty slot within the bounds of `baggage_list`. This prevents out-of-bounds writes. If there are no empty slots or adding the baggage exceeds the capacity, the program prints an error message instead of updating the load.
+method: UNKNOWN

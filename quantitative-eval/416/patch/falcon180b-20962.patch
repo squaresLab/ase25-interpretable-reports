@@ -1,0 +1,19 @@
+ 
+
+diff --git a/falcon180b-20962 b/falcon180b-20962
+index eadd3e2..359e123 100644
+--- a/falcon180b-20962
++++ b/falcon180b-20962
+@@ -67,6 +67,11 @@ void *handle_client(void *socket_desc) {
+         int bytes_received = recv(sock, buffer, MAX_MESSAGE_LENGTH, 0);
+ 
+         if (bytes_received <= 0) {
++            close(sock);
++            pthread_exit(NULL);
++        }
++
++        if (bytes_received > MAX_MESSAGE_LENGTH) {
+             close(sock);
+             pthread_exit(NULL);
+         }
+

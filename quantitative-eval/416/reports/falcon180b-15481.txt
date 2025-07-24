@@ -1,0 +1,35 @@
+
+vuln-fix: CWE-401: Memory Leak in falcon180b-15481 (severity: High)
+what: The code does not properly manage memory allocated with malloc, leading to memory leaks.
+where: The vulnerability is located in the while loop starting at line 21 and in the printf loop starting at line 39 in falcon180b-15481.
+why: If the memory is not properly freed, it can lead to memory exhaustion, causing the application to crash or behave unexpectedly.
+how: An attacker could exploit this by inputting a large number of words, causing excessive memory consumption until the application crashes or the system becomes unresponsive.
+code-sources: No user input directly; random words are generated within the application.
+code-sinks: sprintf and strdup functions are used to allocate memory for word strings which are then stored and not freed properly.
+suggested-fix: 
+<code>
+diff --git a/falcon180b-15481 b/falcon180b-15481
+index abcdef..ghijkl 100644
+--- a/falcon180b-15481
++++ b/falcon180b-15481
+@@ -38,6 +38,10 @@ int main() {
+ 
+-    printf("The top 10 most frequent words are:\n");
+-    for (int i = 0; i < numWords; i++) {
+-        printf("%s: %d\n", words[i], rand() % 100 + 1);
+-    }
++    printf("The top 10 most frequent words are:\n");
++    for (int i = 0; i < numWords; i++) {
++        printf("%s: %d\n", words[i], rand() % 100 + 1);
++        free(words[i]);
++    }
++
++    for (int i = 0; i < numWords; i++) {
++        free(frequency[i].word);
++        free(&frequency[i]);
++    }
+
+     return 0;
+```
+explanation-suggested-fix: The suggested fix adds calls to free() for each dynamically allocated word, ensuring that memory is properly released before the program exits. This prevents memory leaks by deallocating any allocated memory for word strings when they are no longer needed.
+method: UNKNOWN

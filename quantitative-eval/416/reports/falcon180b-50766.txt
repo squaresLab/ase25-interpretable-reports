@@ -1,0 +1,37 @@
+
+vuln-fix: CWE-787: Out-of-bounds Write in falcon180b-50766 (severity: High)
+what: The vulnerability involves the mishandling of client socket index accessing the `client_sockets` array, which could lead to an out-of-bounds write.
+where: The vulnerability is located in lines where `client_sockets` array is accessed in both `handle_client` and `main` functions in falcon180b-50766.
+why: An attacker could exploit this vulnerability to cause a crash or possibly run arbitrary code, leading to a denial of service or potential system compromise.
+how: An attacker would proceed to exploit this vulnerability by establishing multiple client connections until `num_clients` exceeds `MAX_CLIENTS` and forces out-of-bounds writes to `client_sockets`.
+code-sources: User input enters through the network connections on line where `accept` function is called in `main`.
+code-sinks: User input is processed and potentially written out-of-bounds in the loop iterating over `client_sockets` and the `num_clients` variable.
+suggested-fix: 
+```diff
+--- falcon180b-50766.c.orig    2023-10-06 12:00:00.000000000 +0000
++++ falcon180b-50766.c.fixed   2023-10-06 12:15:00.000000000 +0000
+@@ -28,6 +28,9 @@
+         if (bytes_received <= 0) {
+             break;
+         }
++        if (num_clients >= MAX_CLIENTS) {
++            printf("Maximum clients reached, dropping connection from client %d\n", client_socket);
++            close(client_socket); return NULL; }
+
+         printf("Client %d sent message: %s\n", client_socket, buffer);
+         for (int i = 0; i < num_clients; i++) {
+             if (i != client_socket) {
+@@ -44,6 +44,9 @@
+         printf("Waiting for client connections...\n");
+         int client_socket = accept(server_socket, NULL, NULL);
+         printf("Client %d connected\n", client_socket);
+
++        if (num_clients >= MAX_CLIENTS) {
++            printf("Maximum client limit exceeded. Closing connection %d\n", client_socket);
++            close(client_socket); continue; }
+         pthread_t thread_id;
+         pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+         client_sockets[num_clients++] = client_socket;
+```
+explanation-suggested-fix: The suggested fix adds checks before updating the `client_sockets` array to ensure the `num_clients` does not exceed `MAX_CLIENTS`. If `num_clients` is already at or above the `MAX_CLIENTS`, the additional client connection is immediately closed and not processed further.
+method: UNKNOWN

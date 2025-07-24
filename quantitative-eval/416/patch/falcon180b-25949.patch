@@ -1,0 +1,13 @@
+ 
+
+40a41,42
+>     int* client_socket_copy;
+> 
+44c46,49
+<             pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+---
+>             client_socket_copy = malloc(sizeof(int));
+>             *client_socket_copy = client_socket;
+>             pthread_create(&thread_id, NULL, handle_client, (void *)client_socket_copy);
+>             pthread_detach(thread_id);
+

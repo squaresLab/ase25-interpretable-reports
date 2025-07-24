@@ -1,0 +1,27 @@
+ 
+        
+        --- falcon180b-51339.c.previous
+        +++ falcon180b-51339.c.updated
+        @@ -24,7 +24,6 @@
+         
+         void accept_connections(int server_socket) {
+             while (num_clients < MAX_CLIENTS) {
+        -        int client_socket = accept(server_socket, NULL, NULL);
+        +        int *client_socket = malloc(sizeof(int));
+        +        *client_socket = accept(server_socket, NULL, NULL);
+         
+                 if (*client_socket == -1) {
+                     printf("Error accepting connection\n");
+        @@ -32,7 +31,7 @@
+                 }
+         
+        -        clients[num_clients] = client_socket;
+        +        clients[num_clients] = *client_socket;
+                 num_clients++;
+         
+                 pthread_t thread_id;
+        -        pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+        +        pthread_create(&thread_id, NULL, handle_client, (void *) client_socket);
+             }
+         
+    

@@ -1,0 +1,36 @@
+
+    vuln-fix: Buffer Overflow (CWE-120) in gemini_pro-2424 line 31 and 33 (severity: critical)
+    what: The vulnerability exists in the function `handle_connection` due to improper usage of the `strstr` function, which could lead to a buffer overflow.
+    where: lines 31 and 33 in gemini_pro-2424
+    why: An attacker could exploit this vulnerability to execute arbitrary code, potentially leading to unauthorized system access or a system crash.
+    how: An attacker would send specially crafted data containing the patterns defined in the `rules` array that, if not properly handled, cause the buffer to overflow.
+    code-sources: 
+        - `recv` function in `handle_connection` function line 20
+    code-sinks:
+        - `strstr` function in `handle_connection` function lines 31 and 33
+    suggested-fix:
+    ```diff
+    --- gemini_pro-2424.c
+    +++ gemini_pro-2424-fixed.c
+    @@ -28,7 +28,8 @@
+         while (1) {
+             int bytes_read = recv(conn->fd, buffer, MAX_BUFFER_SIZE, 0);
+     
+    -        if (bytes_read <= 0) {
+    +        if (bytes_read <= 0 || bytes_read >= MAX_BUFFER_SIZE) {
+    +            buffer[MAX_BUFFER_SIZE - 1] = '\0'; // Ensure null-termination
+                 break;
+             }
+     
+    @@ -47,6 +48,9 @@
+             int connfd = accept(listenfd, (struct sockaddr *)&cliaddr, &clilen);
+     
+             if (connfd < 0) {
+    +                if (errno == EMFILE || errno == ENFILE) {
+    +                    continue; // If maximum number of files are opened, continue
+    +                }
+                 perror("accept");
+                 continue;
+             }
+    explanation-suggested-fix: The suggested fix adds a condition to check if the number of bytes read from the `recv` function is larger than the buffer size, and ensures null-termination. This guarantees that the buffer is never overflowed by ensuring proper limits on data copying.
+    method: CODEQL

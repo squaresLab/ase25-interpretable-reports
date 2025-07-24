@@ -1,0 +1,59 @@
+ 
+    
+    --- gpt35-61822.c 2023-10-20 10:10:10.000000000 +0530
+    +++ gpt35-fixed.c 2023-10-20 10:15:10.000000000 +0530
+    @@ -54,7 +54,7 @@
+     struct Customer* addCustomer(struct Hotel *hotel) {
+         struct Customer customer;
+         printf("Enter customer's name: ");
+    -    scanf("%s", customer.name);
+    +    scanf("%49s", customer.name); // Fix
+         printf("Enter customer's age: ");
+         scanf("%d", &customer.age);
+         printf("Enter customer's address: ");
+    -    scanf("%s", customer.address);
+    +    scanf("%99s", customer.address); // Fix
+         printf("Enter customer's phone number: ");
+    -    scanf("%s", customer.phone_number);
+    +    scanf("%19s", customer.phone_number); // Fix
+         printf("Enter customer's room number: ");
+         scanf("%d", &customer.room_number);
+         if(customer.room_number < 1 || customer.room_number > hotel->num_rooms) {
+             printf("Invalid room number!\n");
+             return NULL;
+         }
+         if(hotel->rooms[customer.room_number-1].is_available == 0) {
+             printf("Room is not available!\n");
+             return NULL;
+         }
+         hotel->rooms[customer.room_number-1].is_available = 0;
+         struct Customer *new_customer = &hotel->customers[hotel->num_customers];
+         strcpy(new_customer->name, customer.name);
+         new_customer->age = customer.age;
+         strcpy(new_customer->address, customer.address);
+         strcpy(new_customer->phone_number, customer.phone_number);
+         new_customer->room_number = customer.room_number;
+         hotel->rooms[customer.room_number-1].customer = new_customer;
+         hotel->num_customers++;
+         printf("Customer added successfully.\n");
+         return new_customer;
+     }
+
+    @@ -95,7 +95,7 @@
+     }
+
+     void searchCustomer(struct Hotel *hotel) {
+         char search_name[50];
+         printf("Enter name to search: ");
+    -    scanf("%s", search_name);
+    +    scanf("%49s", search_name); // Fix
+         int i = findCustomer(hotel, search_name);
+         if(i == -1) {
+             printf("Customer not found!\n");
+             return;
+         }
+         printCustomer(&hotel->customers[i]);
+     }
+    
+
+    

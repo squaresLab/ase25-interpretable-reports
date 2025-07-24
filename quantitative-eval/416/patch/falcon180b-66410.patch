@@ -1,0 +1,38 @@
+
+
+- void accept_connections() {
+-     while(1) {
+-         int client_socket = accept(server_socket, NULL, NULL);
+-
+-         if(client_socket == -1) {
+-             break;
+-         }
+-
+-         pthread_t thread_id;
+-         pthread_create(&thread_id, NULL, handle_client, &client_socket);
+-         client_sockets[num_clients++] = client_socket;
+-     }
+- }
+-
+  int main() {
+      int opt = 1;
+      setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+
+      while(1) {
+          int client_socket = accept(server_socket, NULL, NULL);
+
+          if(client_socket == -1) {
+              break;
+          }
+
++         int *new_sock = malloc(sizeof(int));
++         *new_sock = client_socket;
+          pthread_t thread_id;
+-         pthread_create(&thread_id, NULL, handle_client, &client_socket);
++         pthread_create(&thread_id, NULL, handle_client, new_sock);
+          client_sockets[num_clients++] = client_socket;
+      }
+
+      return 0;
+  }
+

@@ -1,0 +1,32 @@
+
+    vuln-fix: CWE-787 Out-of-bounds Write in falcon180b-22942 (severity: High)
+    what: The vulnerability in this code is a potential buffer overflow due to the use of the `recv` function without proper bounds checking. This can cause writing beyond the allocated buffer size, leading to an out-of-bounds write.
+    where: The vulnerability is located in the `handle_client` function, specifically at line `int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);` in the file `falcon180b-22942`.
+    why: An out-of-bounds write can overwrite adjacent memory, which can lead to arbitrary code execution, denial of service, or corruption of data, posing significant security risks.
+    how: An attacker would exploit this vulnerability by sending data exceeding `BUFFER_SIZE` to the application, triggering a buffer overflow and possibly executing arbitrary code or crashing the program.
+    code-sources: The entry point for user input is `recv(client_socket, buffer, BUFFER_SIZE, 0);`.
+    code-sinks: The action performed using the input is located in `send(client_socket, buffer, bytes_received, 0);`.
+    suggested-fix: 
+    ```
+    diff --git a/falcon180b-22942 b/falcon180b-22942
+    index abc123..def456 100644
+    --- a/falcon180b-22942
+    +++ b/falcon180b-22942
+    @@ -20,6 +20,12 @@ void *handle_client(void *socket_desc) {
+             int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+     
+             if (bytes_received <= 0) {
+    +            close(client_socket);
+    +            pthread_exit(0);
+    +        }
+    +
+    +        if (bytes_received > BUFFER_SIZE) {
+                 close(client_socket);
+    -            pthread_exit(0);
+    +            pthread_exit(0);
+             }
+     
+             send(client_socket, buffer, bytes_received, 0);
+    ```
+    explanation-suggested-fix: The suggested code modification introduces a check to ensure that the number of bytes received does not exceed the buffer size (`BUFFER_SIZE`). If the condition `bytes_received > BUFFER_SIZE` is met, the client socket is closed and the thread exits. This prevents any potential out-of-bounds write, thereby mitigating the buffer overflow vulnerability.
+    method: UNKNOWN

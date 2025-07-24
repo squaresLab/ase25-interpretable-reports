@@ -1,0 +1,11 @@
+ 
+
+80c80
+<     write(sock, client_message, strlen(client_message));
+---
+>     write(sock, client_message, read_size);
+129c129
+<     write(sock, client_message, strlen(client_message));
+---
+>     write(sock, client_message, read_size);
+

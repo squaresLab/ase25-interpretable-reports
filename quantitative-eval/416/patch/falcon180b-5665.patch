@@ -1,0 +1,39 @@
+
+
+--- falcon180b-5665.c
++++ falcon180b-5665-fixed.c
+@@ -13,11 +13,13 @@
+ 
+ void *handle_client(void *arg) {
+     int client_socket = *(int *) arg;
+-    char buffer[BUFFER_SIZE];
++    char buffer[BUFFER_SIZE + 1]; // Adding extra space for null terminator
+ 
+     while (1) {
+         memset(buffer, 0, BUFFER_SIZE);
+         int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
++        if (bytes_received < 0) {
++            close(client_socket);
++            printf("Receiving error from client %d\n", client_socket);
++            break;
++        }
+
+         if (bytes_received <= 0) {
+             close(client_socket);
+@@ -22,12 +24,14 @@
+             printf("Client %d disconnected\n", client_socket);
+             break;
+         }
+ 
+         buffer[bytes_received] = '\0'; // Ensure null termination
+ 
+         printf("Client %d sent: %s\n", client_socket, buffer);
+ 
+         for (int i = 0; i < num_clients; i++) {
+             if (clients[i] != client_socket) {
+                 send(clients[i], buffer, strlen(buffer), 0);
+             }
+         }
+     }
+
+

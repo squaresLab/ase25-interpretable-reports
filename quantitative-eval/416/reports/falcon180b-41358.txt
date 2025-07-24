@@ -1,0 +1,115 @@
+
+vuln-fix: CWE-825: Return of stack variable address in falcon180b-41358 line 34 (severity: high)
+what: A function returns a pointer to a stack-allocated region of memory. This memory is deallocated at the end of the function, which may lead the caller to dereference a dangling pointer.
+where: Line 34 in the file falcon180b-41358
+why: Calling code will dereference a memory location that is no longer valid, leading to undefined behavior, including crashes and potential security vulnerabilities.
+how: An attacker can exploit this vulnerability by manipulating the program flow to dereference a dangling pointer, potentially leading to arbitrary code execution or program crashes.
+code-sources: `name`, `address`, and `phone_number` entries in the main function.
+code-sinks: `get_input` function returning a pointer to a stack-allocated `input` array.
+suggested-fix: 
+```diff
+--- original/falcon180b-41358.c
++++ fixed/falcon180b-41358.c
+@@ -31,9 +31,10 @@
+     return 1;
+ }
+
+-char *get_input(char *prompt) {
++void get_input(char *prompt, char *input) {
+     char input[MAX_INPUT_LENGTH];
+     printf("%s", prompt);
+     fgets(input, MAX_INPUT_LENGTH, stdin);
+     input[strcspn(input, "\n")] = '\0';
+     sanitize_input(input);
+-    return input;
++    strcpy(dest, input);
+ }
+ 
+ int main() {
+@@ -41,11 +42,11 @@
+ 
+     // Get user input for name
+     printf("Enter your name: ");
+-    strcpy(name, get_input(""));
++    get_input("", name);
+     printf("Your name is: %s\n", name);
+ 
+     // Get user input for address
+     printf("Enter your address: ");
+-    strcpy(address, get_input(""));
++    get_input("", address);
+     printf("Your address is: %s\n", address);
+ 
+     // Get user input for phone number
+     printf("Enter your phone number: ");
+-    strcpy(phone_number, get_input(""));
++    get_input("", phone_number);
+     printf("Your phone number is: %s\n", phone_number);
+ }
+```
+explanation-suggested-fix: The suggested code diff changes the `get_input` function so that it does not return a pointer to a stack-allocated array. Instead, it directly populates the provided buffer, eliminating the risk of returning a dangling pointer.
+
+vuln-fix: CWE-120, CWE-787, and CWE-805: Buffer Overflow in falcon180b-41358 line 44 (severity: critical)
+what: Buffer write operations that do not control the length of data written may overflow.
+where: Line 44 in the file falcon180b-41358
+why: Buffer overflow can lead to arbitrary code execution, data corruption, or crashes, posing both a security and stability risk.
+how: An attacker can exploit this vulnerability by providing input that exceeds the allocated buffer size, causing an overflow and potentially overwriting critical data on the stack.
+code-sources: `name` entry from user input in the main function.
+code-sinks: `get_input` function potentially causing buffer overflow when copying the return value into the `name` array.
+suggested-fix: 
+```diff
+--- original/falcon180b-41358.c
++++ fixed/falcon180b-41358.c
+@@ -41,9 +42,9 @@
+ 
+     // Get user input for name
+     printf("Enter your name: ");
+-    strcpy(name, get_input(""));
++    get_input("", name);
+     printf("Your name is: %s\n", name);
+```
+explanation-suggested-fix: By directly using `get_input` to populate the `name` buffer, we ensure that the buffer handling is consistent and that any overflow will be avoided by the sanitizing and limiting logic within `get_input`.
+
+vuln-fix: CWE-120, CWE-787, and CWE-805: Buffer Overflow in falcon180b-41358 line 49 (severity: critical)
+what: Buffer write operations that do not control the length of data written may overflow.
+where: Line 49 in the file falcon180b-41358
+why: Buffer overflow can lead to arbitrary code execution, data corruption, or crashes, posing both a security and stability risk.
+how: An attacker can exploit this vulnerability by providing input that exceeds the allocated buffer size, causing an overflow and potentially overwriting critical data on the stack.
+code-sources: `address` entry from user input in the main function.
+code-sinks: `get_input` function potentially causing buffer overflow when copying the return value into the `address` array.
+suggested-fix:
+```diff
+--- original/falcon180b-41358.c
++++ fixed/falcon180b-41358.c
+@@ -48,9 +48,9 @@
+ 
+     // Get user input for address
+     printf("Enter your address: ");
+-    strcpy(address, get_input(""));
++    get_input("", address);
+     printf("Your address is: %s\n", address);
+```
+explanation-suggested-fix: By directly using `get_input` to populate the `address` buffer, we ensure that the buffer handling is consistent and that any overflow will be avoided by the sanitizing and limiting logic within `get_input`.
+
+vuln-fix: CWE-120, CWE-787, and CWE-805: Buffer Overflow in falcon180b-41358 line 54 (severity: critical)
+what: Buffer write operations that do not control the length of data written may overflow.
+where: Line 54 in the file falcon180b-41358
+why: Buffer overflow can lead to arbitrary code execution, data corruption, or crashes, posing both a security and stability risk.
+how: An attacker can exploit this vulnerability by providing input that exceeds the allocated buffer size, causing an overflow and potentially overwriting critical data on the stack.
+code-sources: `phone_number` entry from user input in the main function.
+code-sinks: `get_input` function potentially causing buffer overflow when copying the return value into the `phone_number` array.
+suggested-fix:
+```diff
+--- original/falcon180b-41358.c
++++ fixed/falcon180b-41358.c
+@@ -53,9 +53,9 @@
+ 
+     // Get user input for phone number
+     printf("Enter your phone number: ");
+-    strcpy(phone_number, get_input(""));
++    get_input("", phone_number);
+     printf("Your phone number is: %s\n", phone_number);
+```
+explanation-suggested-fix: By directly using `get_input` to populate the `phone_number` buffer, we ensure that the buffer handling is consistent and that any overflow will be avoided by the sanitizing and limiting logic within `get_input`.
+
+method: CODEQL with taint-tracking indicating user-input propagation through `get_input` to sprintf, potentially causing buffer overflow.

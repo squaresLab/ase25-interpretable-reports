@@ -1,0 +1,37 @@
+ vuln-fix: CWE-134: Uncontrolled Format String in `gemini_pro-37830` (severity: High)
+    what: The vulnerability is in the usage of `printf()` with a user-supplied string without proper format specifiers. Since the `buffer` is directly passed to `printf()`, a malicious user can provide a string containing format specifiers, leading to uncontrolled format string vulnerabilities.
+    where: The issue is located in the `handle_client()` function at the line:
+    ```c
+    printf("Client: %s", buffer);
+    ```
+    why: If not resolved, this format string vulnerability can lead to various severe consequences including crashes, reading unintended memory locations, and may also allow arbitrary code execution by an attacker.
+    how: An attacker could craft a special message containing format specifiers (like %s, %x, %n) and send it to the server. When `printf()` processes this format string, it could access unintended parts of memory or cause the application to crash or behave unexpectedly.
+    code-sources: The user input enters the application via socket in `handle_client()`:
+    ```c
+    int n = read(sockfd, buffer, sizeof(buffer));
+    ```
+    code-sinks: The user input is directly used in the `printf()` call:
+    ```c
+    printf("Client: %s", buffer);
+    ```
+    suggested-fix: 
+    ```diff
+    --- gemini_pro-37830.c
+    +++ gemini_pro-37830_fixed.c
+    @@ -15,7 +15,7 @@
+         int sockfd = *(int *)arg;
+
+         // Receive the client's message
+    -    char buffer[1024];
+    +    char buffer[1024] = {0};
+         int n = read(sockfd, buffer, sizeof(buffer));
+
+         // Print the client's message
+    -    printf("Client: %s", buffer);
+    +    printf("Client: %.*s", n, buffer);
+
+         // Send the greeting to the client
+         write(sockfd, greeting, strlen(greeting));
+    ```
+    explanation-suggested-fix: By using `%.*s` as the format specifier in the `printf()` function, the vulnerability is mitigated. The specifier `%.*s` ensures that the length of the string is explicitly limited to the number of characters read (`n`), which prevents uncontrolled access to memory.
+    method: UNKN

@@ -1,0 +1,21 @@
+ 
+
+--- falcon180b-5284.c
++++ falcon180b-5284.c
+@@ -71,6 +71,10 @@
+         if (client_socket == -1) {
+             printf("Error accepting connection\n");
+             exit(1);
+         }
+
++        if (num_clients >= MAX_CLIENTS) {
++            printf("Max clients reached. Connection refused.\n");
++            close(client_socket);
++            continue;
++        }
+        
+         client_sockets[num_clients] = client_socket;
+         num_clients++;
+         
+         pthread_t thread_id;
+

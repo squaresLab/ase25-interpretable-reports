@@ -1,0 +1,16 @@
+ 
+    
+    69c69
+    <                scanf("%s", nodes[num_nodes].name);
+    ---
+    >                scanf("%19s", nodes[num_nodes].name);
+    76c76
+    <                scanf("%s", nodes[num_nodes-1].name);
+    ---
+    >                scanf("%19s", nodes[num_nodes-1].name);
+    80c80
+    <                scanf("%s", nodes[num_nodes].name);
+    ---
+    >                scanf("%19s", nodes[num_nodes].name);
+    
+    

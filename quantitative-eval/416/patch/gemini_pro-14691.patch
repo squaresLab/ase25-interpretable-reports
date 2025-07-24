@@ -1,0 +1,31 @@
+ 
+
+--- gemini_pro-14691.c
++++ gemini_pro-14691_fixed.c
+@@ -70,16 +70,20 @@
+            perror("Error accepting incoming connection");
+            continue;
+        }
+ 
++       // Allocate memory for client socket descriptor
++       int *client_sock = malloc(sizeof(int));
++       if (client_sock == NULL) {
++           perror("Could not allocate memory");
++           close(clientfd);
++           continue;
++       }
++       *client_sock = clientfd;
++
+        // Create a new thread to handle the client
+        pthread_t thread;
+-       if (pthread_create(&thread, NULL, handle_client, &clientfd) != 0)
++       if (pthread_create(&thread, NULL, handle_client, client_sock) != 0)
+        {
+            perror("Error creating thread");
++           free(client_sock);
+            close(clientfd);
+            continue;
+        }
+ 
+        // Detach the thread so that it can run independently
+

@@ -1,0 +1,35 @@
+
+    vuln-fix: Integer Overflow or Wraparound (CWE-190) in falcon180b-35175 (severity: High)
+    what: The code potentially allows an integer overflow in the `num_clients` management, potentially leading to buffer overflow and improper resource management.
+    where: Lines managing `num_clients` variable increment and usage in the main `while` loop and `client_socket` initialization.
+    why: Without resolving this vulnerability, an attacker could potentially overflow the `clients` array, causing crashes or possibly code execution vulnerabilities by exceeding the maximum array length.
+    how: An attacker could send a large number of connection requests to the server, causing `num_clients` to exceed `MAX_CLIENTS` and lead to undefined behavior.
+    code-sources: Entry point: `int client_socket = accept(server_socket, NULL, NULL);` in `main`.
+    code-sinks: Action: `clients[num_clients] = client_socket; num_clients++;` in `main`.
+    suggested-fix: 
+    ```
+    diff --git a/falcon180b-35175.c b/falcon180b-35175.c
+    index 1234abcd..5678efgh 100644
+    --- a/falcon180b-35175.c
+    +++ b/falcon180b-35175.c
+    @@ -38,6 +38,8 @@ int main() {
+    
+         if (num_clients >= MAX_CLIENTS) {
+             close(client_socket);
+    +        printf("Server is full\n");
+    +        continue;
+         }
+    
+         clients[num_clients] = client_socket;
+    @@ -51,6 +53,10 @@ int main() {
+     }
+    
+     + if (num_clients >= MAX_CLIENTS) { 
+     +     num_clients = MAX_CLIENTS; // Prevent overflow
+     + }
+     +
+     return 0;
+     }
+    ```
+    explanation-suggested-fix: This change prevents `num_clients` from exceeding `MAX_CLIENTS` by resetting the `num_clients` value to `MAX_CLIENTS` to avoid overflow scenarios. This ensures the buffer and resources will not be improperly used beyond their allocated size.
+    method: UNKNOWN

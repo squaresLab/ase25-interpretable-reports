@@ -1,0 +1,15 @@
+ 
+
+--- a/gemini_pro-6990.c
++++ b/gemini_pro-6990.c
+@@ -29,8 +29,11 @@
+     printf("Received message from client: %s\n", buffer);
+     char response[BUFFER_SIZE];
+ 
+-    sprintf(response, "Hello, client! You sent the message: %s", buffer);
++    // Use snprintf instead of sprintf to prevent buffer overflow
++    snprintf(response, BUFFER_SIZE, "Hello, client! You sent the message: %s", buffer);
+ 
+     // Send a response to the client
+     int bytes_sent = send(client_socket, response, strlen(response), 0);
+

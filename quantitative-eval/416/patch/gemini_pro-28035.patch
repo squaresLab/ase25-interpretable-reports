@@ -1,0 +1,26 @@
+ 
+    
+    --- gemini_pro-28035.c   2023-10-03 
+    +++ gemini_pro-28035.c   2023-10-03 
+    @@ -52,7 +52,10 @@
+ 
+     int main() {
+         // Initialize the traffic light states
+         for (int i = 0; i < NUM_LIGHTS; i++) {
+             light_states[i] = RED;
+         }
+
+         // Create the traffic light threads
+         +    int thread_args[NUM_LIGHTS];
+         +    for (int i = 0; i < NUM_LIGHTS; i++) {
+         +        thread_args[i] = i;
+             pthread_create(&threads[i], NULL, traffic_light, (void *)&thread_args[i]);
+         }
+
+         // Join the traffic light threads
+         for (int i = 0; i < NUM_LIGHTS; i++) {
+             pthread_join(threads[i], NULL);
+         }
+     }
+    
+    

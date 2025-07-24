@@ -1,0 +1,97 @@
+
+vuln-fix: CWE-190: Integer Overflow or Wraparound in falcon180b-5324 (severity: High)
+what: The code lacks a check for sufficient capacity for storing incoming data into the buffer. This can lead to buffer overflow if more data is received than can be stored, resulting in potential corruption of adjacent memory.
+where: The vulnerability is located in the function `handle_client` at line 18 of falcon180b-5324.
+why: If this weakness is not addressed, attackers can exploit it to crash the server, cause unexpected behavior, or execute arbitrary code.
+how: An attacker can send a specially crafted payload that exceeds the buffer size (`BUFFER_SIZE` is 1024 bytes). Since the code does not check whether the received bytes fit within the buffer, this overflows the buffer and can overwrite adjacent memory locations.
+code-sources: The entry point for user input is the function `recv` located at line 18 in the function `handle_client`.
+code-sinks: The data from the buffer is printed to the console at line 25 in the function `handle_client`.
+suggested-fix: 
+```diff
+--- a/falcon180b-5324
++++ b/falcon180b-5324
+@@ -4,6 +4,7 @@
+ #include <arpa/inet.h>
+ #include <netinet/in.h>
+ #include <sys/socket.h>
++#include <errno.h> // add error numbers
+ #include <unistd.h>
+ #include <pthread.h>
+
+@@ -14,7 +15,10 @@
+ void *handle_client(void *client_socket) {
+     int client = *(int *) client_socket;
+     char buffer[BUFFER_SIZE];
++    int bytes_received;
+
+     while (1) {
+         memset(buffer, 0, BUFFER_SIZE);
+-        int bytes_received = recv(client, buffer, BUFFER_SIZE, 0);
++        bytes_received = recv(client, buffer, BUFFER_SIZE - 1, 0); // ensure null-termination
++        if (bytes_received < 0) {
++            printf("recv failed: %s\n", strerror(errno));
++            close(client);
++            pthread_exit(NULL);
++        }
++        buffer[bytes_received] = '\0'; // explicitly null-terminate the received data
+
+         if (bytes_received <= 0) {
+             close(client);
+@@ -29,21 +33,14 @@
+     while (1) {
+         struct sockaddr_in client_addr;
+         socklen_t addr_size = sizeof(client_addr);
+-        int client = accept(server_socket, (struct sockaddr *) &client_addr, &addr_size);
++        int client = accept(server_socket, (struct sockaddr *) &client_addr, &addr_size); // accept new client connection
+
+         if (client == -1) {
+             printf("Error accepting client\n");
+             continue;
+         }
+
+         printf("Client %d connected\n", client);
+
+-        pthread_t thread_id;
+-        pthread_create(&thread_id, NULL, handle_client, (void *) &client);
++        pthread_t thread_id;
++        pthread_create(&thread_id, NULL, handle_client, (void *) &client); // create a thread to handle client
+         num_clients++;
+     }
+ }
+@@ -37,7 +34,9 @@
+ int main() {
+     int opt = 1;
+-    setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
++    if (setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
++        perror("setsockopt");
++        exit(EXIT_FAILURE);
++    }
+
+     struct sockaddr_in server_addr;
+     server_addr.sin_family = AF_INET;
+     server_addr.sin_port = htons(8080);
+     if (inet_pton(AF_INET, "0.0.0.0", &server_addr.sin_addr) <= 0) {
++        perror("inet_pton");
++        exit(EXIT_FAILURE);
++    }
+
+-    bind(server_socket, (struct sockaddr *) &server_addr, sizeof(server_addr));
+-    listen(server_socket, MAX_CLIENTS);
++    if (bind(server_socket, (struct sockaddr *) &server_addr, sizeof(server_addr)) < 0) {
++        perror("bind");
++        exit(EXIT_FAILURE);
++    }
++    if (listen(server_socket, MAX_CLIENTS) < 0) {
++        perror("listen");
++        exit(EXIT_FAILURE);
++    }
+
+     printf("Server listening on port 8080\n");
+-    accept_clients();
++    accept_clients(); // start accepting client connections
+
+     return 0;
+ }
+```
+explanation-suggested-fix: The proposed changes ensure that the buffer is not overrun by reducing the buffer size parameter for `recv` by one byte, leaving space for a null terminator. Additionally, the code now explicitly null-terminates the string to prevent accessing out-of-bound memory and handling potential `recv` errors. This reduces the risk of buffer overflow and associated vulnerabilities.
+method: UNKNOWN

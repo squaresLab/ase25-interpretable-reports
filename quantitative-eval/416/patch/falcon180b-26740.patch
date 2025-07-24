@@ -1,0 +1,20 @@
+ 
+
+--- falcon180b-26740.c
++++ falcon180b-26740-fixed.c
+@@ -40,7 +40,7 @@
+         continue;
+     }
+
+-    client_sockets[num_clients] = client_socket;
++    int *client_sock_ptr = malloc(sizeof(int));
++    *client_sock_ptr = client_socket;
+
+-    num_clients++;
+-
+     pthread_t thread_id;
+-    pthread_create(&thread_id, NULL, handle_client, &client_socket);
++    pthread_create(&thread_id, NULL, handle_client, client_sock_ptr);
++    pthread_detach(thread_id);
+ }
+

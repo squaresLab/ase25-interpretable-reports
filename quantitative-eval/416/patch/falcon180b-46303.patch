@@ -1,0 +1,38 @@
+ 
+    
+    --- falcon180b-46303    (original)
+    +++ falcon180b-46303    (fixed)
+    @@ -41,7 +41,10 @@
+        while (1) {
+            socklen_t client_len = sizeof(client_addr);
+            int client_socket = accept(server_socket, (struct sockaddr *) &client_addr, &client_len);
+    -       if (client_socket == -1) {
+    +       if (client_socket < 0) {
+                printf("Error accepting connection\n");
+                continue;
+            }
+    +
+    +       if (client_socket > FD_SETSIZE) {
+    +           printf("Client socket out of range\n");
+    +           close(client_socket);
+    +           continue;
+    +       }
+    
+            int i;
+            for (i = 0; i < MAX_CLIENTS; i++) {
+    @@ -51,7 +54,9 @@
+                    client_sockets[i] = client_socket;
+                    pthread_create(&thread_ids[i], NULL, handle_client, (void *) &client_sockets[i]);
+                    break;
+                }
+            }
+    
+            if (i == MAX_CLIENTS) {
+                close(client_socket);
+                printf("Maximum number of clients reached\n");
+            }
+        }
+    
+        return 0;
+    
+    

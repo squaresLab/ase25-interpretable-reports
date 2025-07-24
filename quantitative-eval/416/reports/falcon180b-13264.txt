@@ -1,0 +1,35 @@
+
+vuln-fix: CWE-362: Race Condition in falcon180b-13264 (severity: High)
+what: The code has a race condition vulnerability where the integer client_socket is accessed by both the main thread and the newly created thread in an unsafe manner.
+where: 
+- lines 33-36 in file falcon180b-13264:
+    ```c
+    int client_socket = accept(server_socket, NULL, NULL);
+    clients[num_clients++] = client_socket;
+    pthread_t thread_id;
+    pthread_create(&thread_id, NULL, handle_client, (void *)&client_socket);
+    ```
+
+why: If unresolved, this race condition could lead to undefined behavior where multiple threads might access and modify the `client_socket` variable simultaneously. This can cause incorrect socket values being passed to threads leading to communication failures and remote exploitation possibilities.
+how: An attacker could exploit this vulnerability by connecting multiple clients simultaneously to the server, thereby triggering the race condition. This could crash the server or execute malicious threads with improper socket values.
+code-sources: 
+- Entry point: `accept` on line 33
+code-sinks: 
+- Sink: `pthread_create` on line 36
+suggested-fix: 
+```diff
+--- falcon180b-13264
++++ falcon180b-13264
+@@ -36,9 +36,11 @@
+         } else {
+             clients[num_clients++] = client_socket;
+             pthread_t thread_id;
+-            pthread_create(&thread_id, NULL, handle_client, (void *)&client_socket);
++            int *new_client_socket = malloc(sizeof(int));
++            *new_client_socket = client_socket;
++            pthread_create(&thread_id, NULL, handle_client, (void *)new_client_socket);
+         }
+     }
+```
+explanation-suggested-fix: The suggested code diff resolves the race condition by allocating an independent memory for each `client_socket` and passing pointers to this memory to `pthread_create`. This ensures that each thread gets its own separate copy of the socket descriptor, preventing unintended sharing and race conditions.
+method: UNKNOWN

@@ -1,0 +1,52 @@
+
+
+/* =======================================================================
+   Sanitize a single character
+   -----------------------------------------------------------------------
+   This function will take a single character as input and return a
+   sanitized version of it, or NULL if the character is not valid. */
+
+-char* sanitize_char(char c) {
++char sanitize_char(char c) {
+    if (isalnum(c)) {
+-        return &c;
++        return c;
+    } else if (c == '.' || c == '-' || c == '_') {
+-        return &c;
++        return c;
+    } else {
+        return '\0';
+    }
+}
+
+/* =======================================================================
+   Sanitize a URL
+   -----------------------------------------------------------------------
+   This function will take a URL as input and return a sanitized version
+   of it, or NULL if the URL is not valid. */
+
+char* sanitize_url(char* url) {
+    int i, j;
+    char* sanitized_url = malloc(strlen(url) + 1);
+
+    if (sanitized_url == NULL) {
+        return NULL;
+    }
+
+    for (i = 0, j = 0; url[i] != '\0'; i++) {
+-        char* sanitized_char = sanitize_char(url[i]);
+
+-        if (sanitized_char != NULL) {
+-            sanitized_url[j++] = *sanitized_char;
++        char sanitized_char = sanitize_char(url[i]);
+
++        if (sanitized_char != '\0') {
++            sanitized_url[j++] = sanitized_char;
+        }
+    }
+
+    sanitized_url[j] = '\0';
+
+    return sanitized_url;
+}
+

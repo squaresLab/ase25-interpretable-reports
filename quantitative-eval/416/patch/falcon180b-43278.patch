@@ -1,0 +1,16 @@
+ 
+
+diff --git a/falcon180b-43278 b/falcon180b-43278
+index a57f1ef..4c3bd73 100644
+--- a/falcon180b-43278
++++ b/falcon180b-43278
+@@ -29,7 +29,7 @@ void *monitor_thread(void *arg) {
+             char response[MAX_RESPONSE_SIZE];
+             memset(response, 0, MAX_RESPONSE_SIZE);
+
+-            sprintf(response, "HTTP/1.1 200 OK\r\nContent-Length: %d\r\n\r\n", bytes_received);
++            snprintf(response, MAX_RESPONSE_SIZE, "HTTP/1.1 200 OK\r\nContent-Length: %d\r\n\r\n", bytes_received);
+
+             send(connections[i].socket, response, strlen(response), 0);
+         }
+

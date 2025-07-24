@@ -1,0 +1,43 @@
+
+    
+    --- gpt35-6971.c
+    +++ gpt35-6971.c
+    @@ -75,6 +75,10 @@
+         scanf("%d %d %d %d", from_x, from_y, to_x, to_y);
+         printf("\n");
+     }
+    
+    +int is_valid_coordinate(int x, int y) {
+    +    return x >= 0 && x < BOARD_SIZE && y >= 0 && y < BOARD_SIZE;
+    +}
+    +
+    // Function to make a move on the chess board
+    void make_move(ChessBoard* board, int from_x, int from_y, int to_x, int to_y) {
+    +    if (is_valid_coordinate(from_x, from_y) && is_valid_coordinate(to_x, to_y)) {
+           board->squares[to_x][to_y].piece = board->squares[from_x][from_y].piece;
+           board->squares[from_x][from_y].piece.type = EMPTY;
+           board->squares[from_x][from_y].piece.symbol = ' ';
+    +    } else {
+    +        printf("Invalid move coordinates!\n");
+    +    }
+    }
+    
+    int main() {
+         ChessBoard board;
+         init_board(&board);
+         display_board(&board);
+    @@ -120,12 +129,12 @@
+    
+         while (1) {
+             get_move_input(&from_x, &from_y, &to_x, &to_y);
+             if ((from_x < 1 || from_x > 8) || (to_x < 1 || to_x > 8) || (from_y < 1 || from_y > 8) || (to_y < 1 || to_y > 8)) {
+                 printf("Invalid move!!!\n");
+                 continue;
+             }
+    -        make_move(&board, from_x - 1, from_y - 1, to_x - 1, to_y - 1);
+    +        make_move(&board, from_x - 1, from_y - 1, to_x - 1, to_y - 1);  // Coordinate validation done inside make_move
+             display_board(&board);
+         }
+         return 0;
+    
+    

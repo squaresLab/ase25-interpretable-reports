@@ -1,0 +1,47 @@
+
+vuln-fix: Unchecked Return Value (CWE-252) in falcon180b-571 (severity: Medium)
+what: The code does not check the return value of the `send` function and the `recv` function properly, making it possible to miss errors in communication with the client.
+where: falcon180b-571, lines involving `recv` (line 17) and `send` (line 28)
+why: Not properly handling the return values of these functions could result in the server not detecting when a socket has been closed or other potential network issues, leading to resource leakage or inconsistent communication states.
+how: An attacker could repeatedly establish a connection with the server and then forcefully close the connection or send malformed data, causing the server to fail in detecting these issues and leading to Denial of Service (DoS).
+code-sources: `recv` function at line 17 in `handle_client` function.
+code-sinks: `send` function at line 28 in `handle_client` function.
+suggested-fix: 
+```diff
+--- a/falcon180b-571
++++ b/falcon180b-571
+@@ -15,11 +15,16 @@ void *handle_client(void *client_socket) {
+         memset(buffer, 0, MAX_MESSAGE_SIZE);
+         int bytes_received = recv(client_socket_copy, buffer, MAX_MESSAGE_SIZE, 0);
+ 
+         if (bytes_received <= 0) {
+             close(client_socket_copy);
++            // Remove client from list
++            for (int i = 0; i < client_count; i++) {
++                if (clients[i] == client_socket_copy) {
++                    clients[i] = clients[--client_count];
++                    break;
++                }
++            }
+             pthread_exit(NULL);
+         }
+ 
+         printf("Client %d sent message: %s\n", client_socket_copy, buffer);
+ 
+@@ -27,7 +32,12 @@ void *handle_client(void *client_socket) {
+         for (int i = 0; i < client_count; i++) {
+             if (clients[i] != client_socket_copy) {
+-                send(clients[i], buffer, strlen(buffer), 0);
++                int bytes_sent = send(clients[i], buffer, strlen(buffer), 0);
++                if (bytes_sent < 0) {
++                    perror("send");
++                    close(clients[i]);
++                    clients[i] = clients[--client_count];
++                }
+             }
+         }
+     }
+ }
+```
+explanation-suggested-fix: The suggested code changes add checks for the return values of `recv` and `send`. If `recv` returns a value less than or equal to zero, it means an error or disconnection has occurred, so the client socket is closed, and the client is removed from the list. The return value of `send` is also checked, and if it's less than zero, an error message is printed, the client socket is closed, and the client is removed from the list. These changes ensure that the server properly handles disconnections and communication errors.
+method: UNKNOWN

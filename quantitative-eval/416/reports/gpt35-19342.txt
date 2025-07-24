@@ -1,0 +1,44 @@
+
+vuln-fix: Unbounded Write (CWE-120, CWE-787, CWE-805) in gpt35-19342.c at lines 87, 89, 97 (severity: High)
+what: The application performs buffer write operations without controlling the length of data written, risking buffer overflows.
+where: Lines 87, 89, and 97 in gpt35-19342.c:
+87: `scanf("%s", username);`
+89: `scanf("%s", password);`
+97: `scanf("%s", username);`
+why: Buffer overflow vulnerabilities can result in arbitrary code execution, data corruption, and application crashes. This makes the application susceptible to exploitation which can compromise system integrity and confidentiality.
+how: An attacker can input a username or password longer than the designated buffer size (50 characters), causing the program to write beyond the allocated space and potentially overwrite critical memory areas.
+code-sources: Lines 87, 89, and 97 where user inputs for username and password are scanned without length checks.
+code-sinks: The following operations use the user-provided inputs:
+- Encrypting the password (line 21)
+- Storing the password in a file (line 45)
+- Retrieving and decrypting passwords from a file (lines 68, 73)
+suggested-fix: 
+```
+diff --git a/gpt35-19342.c b/gpt35-19342.c
+index 1234567..89abcdef 100644
+--- a/gpt35-19342.c
++++ b/gpt35-19342.c
+@@ -84,7 +84,7 @@ int main()
+         printf("Enter username: ");
+         // Safe input handling to prevent buffer overflow
+-        scanf("%s", username);
++        scanf("%49s", username); // Limit input length to avoid overflow
+         printf("Enter password: ");
+-        scanf("%s", password);
++        scanf("%49s", password); // Limit input length to avoid overflow
+         store_password(username, encrypt_password(password));
+         printf("Password stored successfully!\n");
+         break;
+@@ -94,7 +94,7 @@ int main()
+         case 2:
+         {
+             printf("Enter username: ");
+             // Safe input handling to prevent buffer overflow
+-            scanf("%s", username);
++            scanf("%49s", username); // Limit input length to avoid overflow
+             char* retrieved_password = retrieve_password(username);
+             if (strlen(retrieved_password) != 0)
+             {
+```
+explanation-suggested-fix: The code changes ensure that the `scanf` function reads at most 49 characters for the username and password inputs, leaving room for the null terminator and thus preventing buffer overflows.
+method: CODEQL

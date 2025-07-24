@@ -1,0 +1,19 @@
+ 
+
+--- falcon180b-36928.c
++++ falcon180b-36928-fixed.c
+@@ -31,7 +31,7 @@
+         
+         if (client_socket == -1) {
+             printf("Error accepting connection.\n");
+             continue;
+         }
+
++        int *client_socket_ptr = malloc(sizeof(int));
++        *client_socket_ptr = client_socket;
+
+-        pthread_create(&thread_id, NULL, handle_request, (void*) &client_socket);
++        pthread_create(&thread_id, NULL, handle_request, (void*) client_socket_ptr);
+     }
+ }
+

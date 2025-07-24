@@ -1,0 +1,51 @@
+
+vuln-fix: Buffer Overflow (CWE-120) in falcon180b-59240 (severity: High)
+
+what: The code contains a buffer overflow vulnerability in the `handle_client` function. Specifically, it may occur when the client sends data that exceeds the `BUFFER_SIZE`, and this data is then read into a fixed-size buffer (`char buffer[BUFFER_SIZE]`).
+
+where: The vulnerability is located in the `handle_client` function, specifically in line:
+```c
+int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+```
+which is located in the file falcon180b-59240.
+
+why: If this vulnerability is not resolved, it may lead to potential security issues such as denial of service (DoS), data corruption, or code execution.
+
+how: An attacker can exploit this vulnerability by sending a payload larger than `BUFFER_SIZE`, which will result in overflow of the buffer. This overflow can overwrite adjacent memory and potentially allow for arbitrary code execution.
+
+code-sources: `recv(client_socket, buffer, BUFFER_SIZE, 0)` in the `handle_client` function.
+
+code-sinks: `printf("Client %d sent: %s\n", client_socket, buffer)` that uses user input directly without verification.
+
+suggested-fix:
+```diff
+--- falcon180b-59240.c	2023-10-06 08:13:51.977909978 +0000
++++ falcon180b-59240-fixed.c	2023-10-06 08:20:34.123456789 +0000
+@@ -15,9 +15,13 @@
+     while (1)
+     {
+         memset(buffer, 0, BUFFER_SIZE);
+-        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
++        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE - 1, 0);
++
++        if (bytes_received < 0)
++        {
++            close(client_socket);
++            pthread_exit(0);
++        }
+
+-        if (bytes_received <= 0)
++        buffer[bytes_received] = '\0';  // Null-terminate the buffer
+
+-        {
+-            close(client_socket);
+-            pthread_exit(0);
+-        }
+
+         printf("Client %d sent: %s\n", client_socket, buffer);
+     }
+```
+
+explanation-suggested-fix: The proposed code changes ensure that the received data is always null-terminated, by reducing the size of the buffer that the `recv` function can fill (`BUFFER_SIZE - 1`), and then explicitly adding a null-terminator after receiving the bytes. This prevents potential buffer overflow and ensures memory safety. We also added a check for the condition when bytes_received is negative, handling it appropriately.
+
+method: UNKNOWN

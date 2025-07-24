@@ -1,0 +1,116 @@
+
+vuln-fix: Improper Synchronization (CWE-362) in falcon180b-1621 (severity: High)
+what: The code contains improper synchronization when accessing the `client_sockets` array and `num_clients` variable in a multi-threaded environment. This can lead to race conditions, where multiple threads access or modify shared data concurrently, causing unpredictable behavior and potential security vulnerabilities.
+where: The vulnerability is found in falcon180b-1621, specifically in the `main` function and `handle_client` function where the `client_sockets` array and `num_clients` variable are accessed and modified without proper synchronization.
+why: If not resolved, this weakness can lead to data corruption, crashes, or unauthorized access due to inconsistent state. In a worst-case scenario, it can be exploited to execute arbitrary code, leading to a severe security breach.
+how: An attacker can exploit this vulnerability by overwhelming the server with multiple client connections at once, causing race conditions that corrupt the `client_sockets` array or `num_clients` variable. This can disrupt the server's operation, potentially leading to denial-of-service (DoS) conditions or allowing one client to interfere with another's communication.
+code-sources: 
+- User input enters the application via the `accept` function call that accepts client connections.
+code-sinks:
+- The application uses user input in the `recv` function to read messages and in the `send` function to broadcast messages to other clients.
+suggested-fix: 
+```diff
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <pthread.h>
+
+- #define MAX_CLIENTS 10
++#define MAX_CLIENTS 10
++#define MAX_THREADS 10
++#define MAX_MESSAGE_LENGTH 1024
+
+int server_socket;
+int client_sockets[MAX_CLIENTS];
+int num_clients = 0;
++
++pthread_mutex_t clients_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+void *handle_client(void *socket_desc) {
++    pthread_detach(pthread_self());
+    int sock = *(int *) socket_desc;
+    char buffer[MAX_MESSAGE_LENGTH];
+
+    while (1) {
+        memset(buffer, 0, MAX_MESSAGE_LENGTH);
+        int bytes_received = recv(sock, buffer, MAX_MESSAGE_LENGTH, 0);
+
+        if (bytes_received <= 0) {
+-            close(sock);
++            pthread_mutex_lock(&clients_mutex);
+            for(int i = 0; i < num_clients; i++) {
+                if(client_sockets[i] == sock) {
++                    client_sockets[i] = client_sockets[num_clients - 1];
++                    num_clients--;
++                    break;
+                }
+            }
++            pthread_mutex_unlock(&clients_mutex);
++            close(sock);
+            printf("Client %d disconnected\n", sock);
+            pthread_exit(NULL);
+        }
+
+        printf("Client %d sent message: %s\n", sock, buffer);
+        for(int i = 0; i < num_clients; i++) {
+            if(client_sockets[i] != sock) {
+                send(client_sockets[i], buffer, bytes_received, 0);
+            }
+        }
+    }
+    return NULL;
+}
+
+int main() {
++    pthread_mutex_init(&clients_mutex, NULL);
+    int opt = 1;
+    setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+
+    struct sockaddr_in server_addr;
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.s_addr = INADDR_ANY;
+    server_addr.sin_port = htons(8080);
+
+    bind(server_socket, (struct sockaddr *)&server_addr, sizeof(server_addr));
+    listen(server_socket, 5);
+
+    printf("Server is listening on port 8080\n");
+
+    while (1) {
+        struct sockaddr_in client_addr;
+        socklen_t addr_size = sizeof(client_addr);
+        int client_socket = accept(server_socket, (struct sockaddr *)&client_addr, &addr_size);
+
+        if (client_socket < 0) {
+            printf("Error accepting connection\n");
+            continue;
+        }
+
+        pthread_mutex_lock(&clients_mutex);
+        if (num_clients >= MAX_CLIENTS) {
+            printf("Maximum number of clients reached\n");
+            close(client_socket);
+            pthread_mutex_unlock(&clients_mutex);
+            continue;
+        }
+
+        client_sockets[num_clients] = client_socket;
+        num_clients++;
+        pthread_mutex_unlock(&clients_mutex);
+
+        pthread_t thread_id;
+-        pthread_create(&thread_id, NULL, handle_client, (void *)&client_socket);
++        pthread_create(&thread_id, NULL, handle_client, (void *)&client_socket);
++        pthread_detach(thread_id);
+    }
++
++    pthread_mutex_destroy(&clients_mutex);
+    return 0;
+}
+```
+explanation-suggested-fix: The suggested code diff resolves the vulnerability by adding a mutex (`clients_mutex`) to synchronize access to the `client_sockets` array and `num_clients` variable. This ensures that only one thread can modify these shared resources at a time, preventing race conditions. Additionally, the fix includes a clean-up procedure for removing a disconnected client's socket from the `client_sockets` array within the protected critical section. Also, `pthread_detach()` is used to ensure that thread resources are automatically released upon termination, avoiding memory leaks.
+method: UNKNOWN

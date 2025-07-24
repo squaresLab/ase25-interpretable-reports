@@ -1,0 +1,32 @@
+ 
+vuln-fix: Path Traversal (CWE-22) in gpt35-73780 at lines 65-81 (severity: High)
+what: The application does not properly sanitize the file path input from the HTTP request, allowing an attacker to access arbitrary files on the server.
+where: Lines 65-81 in `gpt35-73780` file.
+why: If an attacker can exploit this vulnerability, they could read sensitive files from the server's filesystem, potentially leading to unauthorized access to confidential information, leakage of server configuration, or execution of arbitrary code.
+how: An attacker could craft a malicious HTTP request that includes directory traversal sequences like `../`, enabling them to navigate outside the intended directory and access files anywhere on the server's filesystem.
+code-sources: `filename = strtok(NULL, " ");` at line 67 where user input is parsed to get the filename.
+code-sinks: `open(filename, O_RDONLY)` at line 71 where the parsed filename is used to open a file without proper validation.
+suggested-fix: 
+```diff
+--- gpt35-73780.c
++++ gpt35-73780-fixed.c
+@@ -65,6 +65,15 @@
+     filetype = strchr(filename, '.') + 1;
+
+     // Validate and sanitize filename
++    if (strstr(filename, "..") != NULL || filename[0] == '/') {
++        sprintf(buffer, "HTTP/1.1 400 Bad Request\r\nContent-Type: text/html\r\n\r\n<html><body><h1>Bad Request</h1></body></html>");
++        if (send(client_socket, buffer, strlen(buffer), 0) < 0)
++        {
++            perror("Send failed");
++            exit(EXIT_FAILURE);
++        }
++        close(client_socket);
++        pthread_exit(NULL);
++    }
+ 
+     // Open file for reading, send error message if file not found
+     if ((fd = open(filename, O_RDONLY)) == -1)
+ ```
+explanation-suggested-fix: The suggested fix checks if the filename contains any `..` sequences or if it starts with a `/`, which are indicators of potential directory traversal. If such a pattern is detected, an HTTP 400 Bad Request response is sent to the client, and the connection to the client is closed, thus preventing unauthorized access to the file system.
+method: UNKNOWN

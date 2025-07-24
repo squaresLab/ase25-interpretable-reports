@@ -1,0 +1,59 @@
+ 
+    vuln-fix: Buffer Overflow (CWE-120) in falcon180b-13301 at handle_client function (severity: high)
+    what: The vulnerability occurs due to a potential buffer overflow in the `buffer` array used to store client messages. The buffer size is fixed at 1024 bytes. If a client sends a message exceeding this size, it can overflow the buffer, leading to potentially exploitable conditions such as overwriting adjacent memory.
+    where: In the file falcon180b-13301, within the `handle_client` function:
+    ```c
+    char buffer[BUFFER_SIZE];
+    while (1) {
+        memset(buffer, 0, BUFFER_SIZE);
+        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+        if (bytes_received <= 0) {
+            break;
+        }
+        // ...
+    }
+    ```
+    why: If not resolved, a buffer overflow can result in several critical issues including remote code execution, program crashes, and compromising the system's security integrity.
+    how: An attacker would send a payload exceeding 1024 bytes to exploit the buffer overflow vulnerability. If successfully executed, this could allow the attacker to execute arbitrary code or crash the application.
+    code-sources: The source of user input is the `recv` function:
+    ```c
+    int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+    ```
+    code-sinks: The vulnerable sink is the direct use of the received data in the `buffer` array without adequate boundary checks.
+    suggested-fix: 
+    ```diff
+    --- falcon180b-13301.c 2023-10-04 10:21:00.000000000 +0000
+    +++ falcon180b-13301_fixed.c 2023-10-04 10:24:00.000000000 +0000
+    @@ -15,6 +15,7 @@
+    
+    void *handle_client(void *arg) {
+        int client_socket = *(int *)arg;
+    +   char buffer[BUFFER_SIZE + 1]; // Add space for null terminator
+    
+        while (1) {
+            memset(buffer, 0, BUFFER_SIZE);
+            int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+    +       if (bytes_received < 0) {
+    +           perror("recv");
+    +           break;
+    +       }
+            if (bytes_received <= 0) {
+                break;
+            }
+    +       buffer[BUFFER_SIZE] = '\0'; // Ensure null termination
+    
+            char *delimiter = strchr(buffer, DELIMITER);
+            if (delimiter != NULL) {
+                *delimiter = '\0';
+    @@ -44,7 +45,7 @@
+        }
+    
+        close(client_socket);
+    -   return NULL;
+    +    return NULL;
+    }
+    
+    int main() {
+    ```
+    explanation-suggested-fix: The suggested code fixes the vulnerability by ensuring the buffer has an additional slot for a null terminator and checking the return value of `recv` for errors. This prevents overflow by guaranteeing the string is valid and safely null-terminated, thus preserving memory integrity and mitigating the buffer overflow risk.
+    method: UNKNOWN

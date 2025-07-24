@@ -1,0 +1,27 @@
+
+vuln-fix: Buffer Overflow (CWE-120) in falcon180b-41617 (severity: High)
+what: The code has a potential buffer overflow vulnerability in the `buffer` array used within the `handle_client` function. Specifically, if a client sends data close to the `BUF_SIZE` limit, the `strlen` function in conjunction with the `send` function might exceed `buffer` capacity without proper bounds checking, leading to a buffer overflow.
+where: In the `handle_client` function in falcon180b-41617 at lines 21-32.
+why: Failure to resolve this buffer overflow could result in arbitrary code execution, crashing the server, or leaking sensitive information, leading to severe security breaches.
+how: An attacker could exploit this vulnerability by sending a carefully crafted payload that exceeds the size of the `buffer`, causing the application to overwrite memory. This could allow the attacker to execute arbitrary code or disrupt service.
+code-sources: `recv(client_socket, buffer, BUF_SIZE, 0);` at line 23.
+code-sinks: `printf("Client %d says: %s\n", client_socket, buffer);` at line 26 and `send(client_sock[i], buffer, strlen(buffer), 0);` at line 28.
+suggested-fix: 
+```diff
+--- falcon180b-41617    2023-10-10 12:34:56.000000000 +0000
++++ falcon180b-41617_fixed    2023-10-10 12:34:56.000000000 +0000
+@@ -25,6 +25,10 @@
+         if(ret <= 0) {
+             break;
+         }
++        if(ret >= BUF_SIZE) {
++            buffer[BUF_SIZE - 1] = '\0';
++        } else {
++            buffer[ret] = '\0';
++        }
+         printf("Client %d says: %s\n", client_socket, buffer);
+         for(int i=0; i<client_num; i++) {
+             if(client_sock[i]!= client_socket) {
+```
+explanation-suggested-fix: The suggested fix involves adding a check to ensure that the buffer is null-terminated within bounds. This prevents any buffer overflow by ensuring the buffer does not exceed its allocated size.
+method: UNKNOWN

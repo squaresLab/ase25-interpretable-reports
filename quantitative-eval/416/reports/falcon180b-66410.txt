@@ -1,0 +1,48 @@
+
+vuln-fix: CWE-362: Race Condition in falcon180b-66410 (severity: High)
+what: The code suffers from a race condition when handling client connections. Specifically, the `client_socket` variable, which is shared between the main thread and thread function `handle_client`, could be modified by the main thread before the child thread has a chance to use it safely.
+where: The issue is in `main` function lines 42-53 and `accept_connections` function.
+why: The race condition can lead to undefined behavior, crashes, or security vulnerabilities if a client connection is mishandled.
+how: An attacker could exploit this race condition by rapidly connecting and disconnecting clients, potentially causing the server to process connections improperly, resulting in unexpected behavior or crashes.
+code-sources: The entry point for user input is the network connections accepted by the server using `accept(server_socket, NULL, NULL);` in both `main` and `accept_connections` functions.
+code-sinks: The actions performed using this user input are located within the `handle_client` function, specifically handling received data through `recv(client_socket, buffer, BUFFER_SIZE, 0);`
+suggested-fix:
+```diff
+- void accept_connections() {
+-     while(1) {
+-         int client_socket = accept(server_socket, NULL, NULL);
+-
+-         if(client_socket == -1) {
+-             break;
+-         }
+-
+-         pthread_t thread_id;
+-         pthread_create(&thread_id, NULL, handle_client, &client_socket);
+-         client_sockets[num_clients++] = client_socket;
+-     }
+- }
+-
+  int main() {
+      int opt = 1;
+      setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+
+      while(1) {
+          int client_socket = accept(server_socket, NULL, NULL);
+
+          if(client_socket == -1) {
+              break;
+          }
+
++         int *new_sock = malloc(sizeof(int));
++         *new_sock = client_socket;
+          pthread_t thread_id;
+-         pthread_create(&thread_id, NULL, handle_client, &client_socket);
++         pthread_create(&thread_id, NULL, handle_client, new_sock);
+          client_sockets[num_clients++] = client_socket;
+      }
+
+      return 0;
+  }
+```
+explanation-suggested-fix: Allocating memory for each `client_socket` and passing a pointer to this memory to `pthread_create` ensures that each thread has its own unique `client_socket` identifier, therefore avoiding the race condition by eliminating the shared usage of the `client_socket` variable.
+method: UNKNOWN

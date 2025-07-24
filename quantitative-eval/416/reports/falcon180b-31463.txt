@@ -1,0 +1,68 @@
+
+    vuln-fix: Race Condition (CWE-362) in falcon180b-31463 (severity: High)
+    what: The code creates multiple threads that access and modify shared data without proper synchronization. The `int id` variable passed to each thread is taken from the same memory location, leading to race conditions where multiple threads may receive the same `id` or access uninitialized data, causing undefined behavior.
+    where: Lines 21-26 in the function thread_func and lines 37-41 in the main function.
+    why: Failing to resolve this race condition can result in incorrect program behavior, data corruption, crashes, or security vulnerabilities due to inconsistent or unintended modifications of shared data.
+    how: An attacker could exploit this race condition by manipulating the timing of thread execution, leading to the possibility of multiple threads operating on the shared data simultaneously, causing unpredictable increments and potential data corruption.
+    code-sources: The entry point is the `main` function where threads are created using `pthread_create(&threads[i], NULL, thread_func, (void*) &i);`.
+    code-sinks: The shared variable `shared_data` is updated within the `thread_func` function after waiting for the condition variable.
+    suggested-fix: 
+    ```diff
+    --- falcon180b-31463.c
+    +++ falcon180b-31463-fixed.c
+    @@ -20,7 +20,7 @@
+     void *thread_func(void *arg) {
+         int id = *(int*) arg;
+         printf("Thread %d started\n", id);
+    
+    -    pthread_mutex_lock(&mutex);
+    +    static pthread_mutex_t id_mutex = PTHREAD_MUTEX_INITIALIZER;
+    
+         // Lock the mutex before accessing shared data
+    +    pthread_mutex_lock(&id_mutex);
+    
+    	 int local_id = id;
+    
+    +    pthread_mutex_unlock(&id_mutex);	
+    
+         pthread_mutex_lock(&mutex);
+    
+         // Wait for turn using condition variable
+         printf("Thread %d is waiting...\n", local_id);
+         pthread_cond_wait(&cond, &mutex);
+    
+         // Update shared data
+         shared_data++;
+         printf("Thread %d updated shared data to %d\n", local_id, shared_data);
+    
+         // Signal next thread
+         pthread_cond_signal(&cond);
+    
+         // Unlock the mutex
+         pthread_mutex_unlock(&mutex);
+    
+         return NULL;
+     }
+     
+     int main() {
+         int num_threads = 5;
+         pthread_t threads[num_threads];
+    
+         // Create threads
+         for (int i = 0; i < num_threads; i++) {
+    -        pthread_create(&threads[i], NULL, thread_func, (void*) &i);
+    +        int* arg = malloc(sizeof(*arg));
+    +        *arg = i;
+    +        pthread_create(&threads[i], NULL, thread_func, arg);
+         }
+    
+         // Join threads
+         for (int i = 0; i < num_threads; i++) {
+             pthread_join(threads[i], NULL);
+         }
+    
+         return 0;
+     }
+    ```
+    explanation-suggested-fix: The suggested code fixes the race condition by ensuring each thread receives a unique identifier. A static mutex (`id_mutex`) is introduced to protect modification and assignment of `id` values. Additionally, dynamic memory allocation is used to pass a unique integer to each thread, ensuring that each thread has a correct and isolated copy of its identifier, eliminating the race condition.
+    method: UNKNOWN

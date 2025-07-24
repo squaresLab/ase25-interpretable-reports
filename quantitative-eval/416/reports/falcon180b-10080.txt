@@ -1,0 +1,80 @@
+
+vuln-fix: Missing Synchronization (CWE-662) in falcon180b-10080 lines 26-53 (severity: High)
+what: The code does not correctly manage concurrent access to shared data (`client_sockets` and `num_clients`). This can result in race conditions and data corruption when multiple clients are connected to the server concurrently.
+where: Lines 26-53 in falcon180b-10080
+why: Failing to properly synchronize access to shared data could allow an attacker to cause undefined behavior, crashes, or incorrect program logic, leading to potential security vulnerabilities.
+how: An attacker could exploit this vulnerability by causing the race condition to occur, resulting in denial of service or taking over client connections.
+code-sources: User input enters the application through the `recv` function in the `handle_client` function.
+code-sinks: The entries in the `client_sockets` array are used by the `send` function to communicate with clients.
+suggested-fix: 
+```diff
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <pthread.h>
+
+#define PORT 8080
+#define MAX_CLIENTS 10
+#define BUFFER_SIZE 1024
+
+int server_socket;
+int client_sockets[MAX_CLIENTS];
+int num_clients = 0;
+pthread_mutex_t client_lock = PTHREAD_MUTEX_INITIALIZER;
+
+void *handle_client(void *arg) {
+    int client_socket = *(int *) arg;
+    char buffer[BUFFER_SIZE];
+
+    while (1) {
+        memset(buffer, 0, BUFFER_SIZE);
+        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+
+        if (bytes_received <= 0) {
+            break;
+        }
+
+        printf("Client %d: %s\n", client_socket, buffer);
+
+        pthread_mutex_lock(&client_lock);
+        for (int i = 0; i < num_clients; i++) {
+            if (client_sockets[i] != client_socket) {
+                send(client_sockets[i], buffer, strlen(buffer), 0);
+            }
+        }
+        pthread_mutex_unlock(&client_lock);
+    }
+
+    close(client_socket);
+    
+    pthread_mutex_lock(&client_lock);
+    num_clients--;
+    pthread_mutex_unlock(&client_lock);
+}
+
+int main() {
+    int opt = 1;
+    setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+
+    while (num_clients >= MAX_CLIENTS) {
+        printf("Server is full. Please try again later.\n");
+        sleep(1);
+    }
+
+    pthread_mutex_lock(&client_lock);
+    int client_socket = accept(server_socket, NULL, NULL);
+    client_sockets[num_clients] = client_socket;
+    num_clients++;
+    pthread_mutex_unlock(&client_lock);
+
+    pthread_t thread_id;
+    pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+
+    return 0;
+}
+```
+explanation-suggested-fix: The proposed fix introduces a `pthread_mutex_t` named `client_lock` to manage concurrent access to the `client_sockets` array and the `num_clients` variable. The `pthread_mutex_lock(&client_lock)` and `pthread_mutex_unlock(&client_lock)` functions are used to ensure that these critical sections (modifications to shared variables and array) are accessed by only one thread at a time, thereby preventing race conditions.
+method: UNKNOWN

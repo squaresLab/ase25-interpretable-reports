@@ -1,0 +1,29 @@
+ 
+    
+    diff --git a/falcon180b-65380 b/falcon180b-65380
+    index e69de29..fa03273 100644
+    --- a/falcon180b-65380
+    +++ b/falcon180b-65380
+    @@ -32,9 +32,11 @@ int main() {
+                 int client_socket = accept(server_socket, (struct sockaddr *) &client_addr, &addr_size);
+ 
+                 if (num_clients >= MAX_CLIENTS) {
+    +                close(client_socket);
+                     printf("Server is full. Cannot accept more clients.\n");
+                     continue;
+                 }
+ 
+    +            if (num_clients < MAX_CLIENTS) {
+                     client_sockets[num_clients] = client_socket;
+                     num_clients++;
+ 
+    @@ -43,6 +45,7 @@ int main() {
+                     pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+                 }
+             }
+    +        }
+ 
+             return 0;
+         }
+    
+    

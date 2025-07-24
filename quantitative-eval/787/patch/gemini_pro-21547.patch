@@ -1,0 +1,54 @@
+
+
+@@ -16,9 +16,9 @@ void set_servo_position(robot_t *robot, uint8_t servo_id, int16_t position) {
+     if (servo_id >= 0 && servo_id < NUM_SERVOS) {
+         robot->servos[servo_id].position = position;
+     }
+ }
+
+ void set_servo_velocity(robot_t *robot, uint8_t servo_id, int16_t velocity) {
+-    if (servo_id >= 0 && servo_id < NUM_SERVOS) {
++    if (servo_id < NUM_SERVOS) {
+         robot->servos[servo_id].velocity = velocity;
+     }
+ }
+
+@@ -26,7 +26,7 @@ void set_servo_acceleration(robot_t *robot, uint8_t servo_id, int16_t accelerat
+     if (servo_id >= 0 && servo_id < NUM_SERVOS) {
+         robot->servos[servo_id].acceleration = acceleration;
+     }
+ }
+
+ void enable_servo(robot_t *robot, uint8_t servo_id) {
+-    if (servo_id >= 0 && servo_id < NUM_SERVOS) {
++    if (servo_id < NUM_SERVOS) {
+         robot->servos[servo_id].enabled = true;
+     }
+ }
+
+@@ -36,7 +36,7 @@ void disable_servo(robot_t *robot, uint8_t servo_id) {
+     if (servo_id >= 0 && servo_id < NUM_SERVOS) {
+         robot->servos[servo_id].enabled = false;
+     }
+ }
+
+ void set_motor_speed(robot_t *robot, uint8_t motor_id, int16_t speed) {
+-    if (motor_id >= 0 && motor_id < NUM_MOTORS) {
++    if (motor_id < NUM_MOTORS) {
+         robot->motors[motor_id].speed = speed;
+     }
+ }
+
+@@ -46,7 +46,7 @@ void enable_motor(robot_t *robot, uint8_t motor_id) {
+     if (motor_id >= 0 && motor_id < NUM_MOTORS) {
+         robot->motors[motor_id].enabled = true;
+     }
+ }
+
+ void disable_motor(robot_t *robot, uint8_t motor_id) {
+-    if (motor_id >= 0 && motor_id < NUM_MOTORS) {
++    if (motor_id < NUM_MOTORS) {
+         robot->motors[motor_id].enabled = false;
+     }
+ }
+

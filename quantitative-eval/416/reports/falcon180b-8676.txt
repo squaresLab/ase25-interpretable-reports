@@ -1,0 +1,26 @@
+    
+vuln-fix: CWE-787: Out-of-bounds Write in falcon180b-8676 (severity: High)
+what: The vulnerability in the provided code is an out-of-bounds write condition. This occurs due to the absence of proper checks on the bounds of the buffer when receiving data from client sockets.
+where: This vulnerability is located in the function handle_client in the file falcon180b-8676 at the lines where the `recv` function is called.
+why: If this weakness is not resolved, it can lead to memory corruption, which an attacker can exploit to execute arbitrary code, crash the application, or cause other unintended behaviors.
+how: An attacker would proceed by sending input larger than the BUFFER_SIZE (1024 bytes), causing an overflow of `buffer` and potentially overwriting adjacent memory locations, leading to undefined behavior.
+code-sources: Entry points in code where user input enters the application include the `recv` function call in the handle_client function.
+code-sinks: Actions performed using user input from a source include the `printf` and `send` function calls in the handle_client function.
+suggested-fix: 
+```
+--- falcon180b-8676-ori.c
++++ falcon180b-8676-fixed.c
+@@ -15,6 +15,8 @@
+        while (1) {
+            memset(buffer, 0, BUFFER_SIZE);
+-           int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
++           int bytes_received = recv(client_socket, buffer, BUFFER_SIZE - 1, 0); 
+            if (bytes_received <= 0) {
+                 break;
+             }
++            buffer[bytes_received] = '\0'; // Ensure null termination
+            printf("Client %d sent: %s\n", client_socket, buffer);
+--- 
+```
+explanation-suggested-fix: The suggested code diff fixes the vulnerability by changing the `recv` function call to ensure that a maximum of `BUFFER_SIZE - 1` bytes are read, leaving room for a null terminator. Additionally, it explicitly null-terminates the buffer after receiving data to prevent out-of-bounds writes and ensure safe string operations.
+method: UNKNOWN

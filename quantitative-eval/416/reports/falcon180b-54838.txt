@@ -1,0 +1,37 @@
+
+vuln-fix: CWE-457: Use of Uninitialized Variable in falcon180b-54838 at handle_client function (severity: High)
+what: The variable `client_socket` is dereferenced after the thread is created, causing potential concurrent access which can lead to undefined behavior. In this case, the pointer to `client_socket` passed to `pthread_create` can be modified before the thread function reads it.
+where: Lines 16-33 in the file `falcon180b-54838` where the `handle_client` function is defined and the lines in `main` where threads are created wrapping the `handle_client` function.
+why: If the weakness is not resolved, it can lead to undefined behavior, making the server unstable or vulnerable to exploits like race conditions.
+how: An attacker could manipulate the timing, causing the main thread to overwrite `client_socket` before the new thread reads it. This may result in the wrong client socket being handled and leading to potential data leakage or corruption.
+code-sources: The `recv` function call on line 20, handling external data from a connected client.
+code-sinks: The `printf` call on line 22 and the `send` function on line 23, as they both use the `buffer` that can contain user input.
+suggested-fix:
+```diff
+--- falcon180b-54838.c
++++ falcon180b-54838_fixed.c
+@@ -43,6 +43,7 @@
+         if (client_socket == -1) {
+             printf("Error accepting connection\n");
+             continue;
+         }
+         if (num_clients >= MAX_CLIENTS) {
+@@ -49,7 +50,9 @@
+             close(client_socket);
+             continue;
+         }
+-        clients[num_clients] = client_socket;
++        int *new_client_socket = malloc(sizeof(int));
++        *new_client_socket = client_socket;
++        clients[num_clients] = *new_client_socket;
+         num_clients++;
+         pthread_t thread_id;
+-        pthread_create(&thread_id, NULL, handle_client, (void *)&client_socket);
++        pthread_create(&thread_id, NULL, handle_client, new_client_socket);
+     }
+
+     return 0;
+ }
+ ```
+explanation-suggested-fix: The suggested fix ensures each client_thread receives its own `client_socket` by allocating memory for each new connection and passing a pointer to this allocated memory to `pthread_create`. This prevents concurrent modification of the `client_socket` value between threads.
+method: UNKNOWN

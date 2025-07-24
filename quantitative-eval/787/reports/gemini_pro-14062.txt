@@ -1,0 +1,25 @@
+
+    vuln-fix: Unbounded Write (CWE-120, CWE-787, CWE-805) in gemini_pro-14062:175 (severity: HIGH)
+    what: The vulnerability is caused by unbounded `strcpy` usage, leading to a potential buffer overflow on line 175.
+    where: The vulnerable code is located at line 175 in the file gemini_pro-14062.
+    why: If not resolved, this weakness could allow attackers to execute arbitrary code, cause a segmentation fault, or crash the server by overflowing the buffer.
+    how: An attacker could send a carefully crafted message that exceeds the allocated buffer size in the `name` field, leading to a buffer overflow and potentially taking control of the server.
+    code-sources: User input is sourced from the client's message received through the `recv` function on line 150.
+    code-sinks: The unchecked data is copied into the `client->name` buffer using `strcpy` on line 175 without validating the input length.
+    suggested-fix: 
+```diff
+--- gemini_pro-14062.c
++++ gemini_pro-14062.c
+@@ -172,7 +172,7 @@
+     // Process the client's message
+     if (strncmp(buffer, "/name ", 6) == 0) {
+         // Client is setting their name
+-        strcpy(client->name, buffer + 6);
++        strncpy(client->name, buffer + 6, sizeof(client->name) - 1);
++        client->name[sizeof(client->name) - 1] = '\0';
+         send(client->socket, "Name set\n", 9, 0);
+     } else if (strncmp(buffer, "/quit", 5) == 0) {
+         // Client is quitting
+```
+    explanation-suggested-fix: The code diff replaces `strcpy` with `strncpy` to ensure that no more than the size of `client->name` minus one bytes is copied, preventing buffer overflow. It also adds a null-terminator to the destination buffer to maintain string integrity.
+    method: CODEQL

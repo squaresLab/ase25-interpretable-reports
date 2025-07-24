@@ -1,0 +1,58 @@
+
+vuln-fix: Stack-based Buffer Overflow (CWE-121) in falcon180b-3753 (severity: High)
+what: The `scanner` function uses a fixed-size buffer `char buffer[PACKET_SIZE]` to store received data. It assumes that the received data fits within this buffer, leading to a potential buffer overflow if the incoming packet size exceeds `PACKET_SIZE`.
+where: The vulnerability is located in the `scanner` function starting at line 19 in file falcon180b-3753.
+why: If an attacker sends a specially crafted packet larger than `PACKET_SIZE`, it can overwrite adjacent memory, potentially leading to arbitrary code execution or a crash.
+how: An attacker would send a packet larger than 1024 bytes to the server, which writes past the end of the `buffer`, causing undefined behavior that can be leveraged to execute arbitrary code with the permissions of the vulnerable process.
+code-sources: 
+- User input enters the application through the `recvfrom` function in the `scanner` function.
+- User input also enters through the `recvfrom` function in the `listener` function.
+
+code-sinks: 
+- Input from `recvfrom` is directly assigned to the `buffer`, which is subsequently printed or processed. This occurs in both the `scanner` and `listener` functions.
+
+suggested-fix:
+```diff
+--- falcon180b-3753.c	2023-10-11 12:34:56.000000000 -0700
++++ falcon180b-3753_fixed.c	2023-10-11 12:45:00.000000000 -0700
+@@ -19,7 +19,7 @@
+ void *scanner(void *arg) {
+     int interface_index = *(int *)arg;
+     char buffer[PACKET_SIZE];
+-    while (1) {
++    ssize_t bytes_received;
++    while ((bytes_received = recvfrom(sock, buffer, sizeof(buffer)-1, 0, NULL, NULL)) > 0) {
+         if (bytes_received < 0) {
+             printf("Error receiving packet on interface %s\n", interfaces[interface_index]);
+             break;
+@@ -25,8 +25,10 @@
+             printf("Error receiving packet on interface %s\n", interfaces[interface_index]);
+             break;
+         }
+-        printf("Received packet on interface %s: %s\n", interfaces[interface_index], buffer);
++        buffer[bytes_received] = '\0'; // Ensure null-termination
++        printf("Received packet on interface %s: %s\n", interfaces[interface_index], buffer);
+     }
++    return NULL;
+ }
+
+ void start_scanner(int interface_index) {
+@@ -38,7 +40,7 @@
+     char buffer[PACKET_SIZE];
++    ssize_t bytes_received;
+-    while (1) {
++    while ((bytes_received = recvfrom(sock, buffer, sizeof(buffer)-1, 0, NULL, NULL)) > 0) {
+         if (bytes_received < 0) {
+             printf("Error receiving packet\n");
+             break;
+@@ -44,6 +46,7 @@
+             printf("Error receiving packet\n");
+             break;
+         }
++        buffer[bytes_received] = '\0'; // Ensure null-termination
+         printf("Received packet: %s\n", buffer);
+         for (int i = 0; i < num_interfaces; i++) {
+             start_scanner(i);
+```
+explanation-suggested-fix: The suggested fix modifies the `recvfrom` function calls to limit the amount of data read to `sizeof(buffer) - 1` and null-terminates the buffer after receiving data to prevent buffer overflow. This ensures that received data does not exceed buffer size, preventing potential overflows.
+method: UNKNOWN

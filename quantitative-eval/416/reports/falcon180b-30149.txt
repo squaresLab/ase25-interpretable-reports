@@ -1,0 +1,29 @@
+
+vuln-fix: CWE-476: NULL Pointer Dereference in falcon180b-30149 (severity: High)
+what: The vulnerability occurs due to the use of a possibly invalid `client_socket` variable in the `handle_client` function when creating a new thread with `pthread_create`.
+where: Lines 38-57 in the file falcon180b-30149.
+why: An attacker may exploit this issue to crash the server, leading to a denial of service.
+how: An attacker could continually connect and disconnect, causing the `client_socket` value to be reused or lead to race conditions where `client_socket` might be invalid or uninitialized when accessed by the `handle_client` function.
+code-sources: Entry point at the `accept` function call on line 48.
+code-sinks: `pthread_create` using the address of `client_socket` on line 58 and `recv` using `client_socket` on line 41.
+suggested-fix: 
+```diff
+    client_sockets[num_clients] = client_socket;
+    num_clients++;
+
+    // Allocate memory for new client's socket
+    int *new_client_socket = malloc(sizeof(int));
+    if (!new_client_socket) {
+        printf("Memory allocation failure.\n");
+        close(client_socket);
+        continue;
+    }
+
+    *new_client_socket = client_socket;
+
+    pthread_t thread_id;
+-   pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
++   pthread_create(&thread_id, NULL, handle_client, (void *) new_client_socket);
+```
+explanation-suggested-fix: Allocating memory for a new `client_socket` instance (`new_client_socket`) ensures that each thread gets a unique and valid copy of the client's socket file descriptor. This prevents race conditions and potential invalid socket usage when creating new threads.
+method: UNKNOWN

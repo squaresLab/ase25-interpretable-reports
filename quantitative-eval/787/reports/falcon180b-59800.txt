@@ -1,0 +1,39 @@
+
+vuln-fix: CWE-788: Access of Memory Location After End of Buffer in falcon180b-59800 at lines 56-60 (severity: high)
+what: The code attempts to access memory beyond the allocated buffer, specifically in the qsort and the subsequent printf operations which use the `wordsCount` array that wasn't correctly filled as `numWords` remains zero.
+where: In file falcon180b-59800 at lines 56-60 during the `qsort` and `for` loop.
+why: If this vulnerability is not addressed, an attacker could exploit it to cause a program crash, leading to a denial of service (DoS) or potentially execute arbitrary code.
+how: An attacker would need to craft a specific log file to influence the behavior when the program processes the log, manipulating it to access or overwrite memory locations after the array's boundary.
+code-sources: `logfile.txt` opened and read in the `main` function.
+code-sinks: `wordsCount` array accessed and manipulated in the `main` function and used in the `qsort` and `printf`.
+suggested-fix: 
+```diff
+--- falcon180b-59800.c
++++ falcon180b-59800-fixed.c
+@@ -45,7 +45,7 @@
+ 
+     if (logFile == NULL) {
+         printf("Error: Could not open log file.\n");
+-        return 1;
++        return EXIT_FAILURE;
+     }
+ 
+     while (fgets(logLine, MAX_LINE_LENGTH, logFile)!= NULL) {
+@@ -54,7 +54,14 @@
+         totalWords += getLineWords(logLine, wordsCount);
+     }
+ 
++    // Correctly set numWords to totalWords to reflect the actual count of words
++    numWords = totalWords;
+     fclose(logFile);
++    
++    for (int i = 0; i < numWords; i++) {
++        wordsCount[i].count = 1; // Initialize the count for each word
++    }
++    
+     qsort(wordsCount, numWords, sizeof(WordCount), compareWords);
+ 
+     printf("Total lines: %d\n", lineCount);
+```
+explanation-suggested-fix: The suggested code diff initializes `numWords` with `totalWords` correctly reflecting the actual number of words read, and each word's count is initialized. These changes ensure that the buffer is not accessed beyond its allocated boundaries by `qsort` or `printf`, preventing memory access violations.
+method: UNKNOWN

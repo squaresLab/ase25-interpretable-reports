@@ -1,0 +1,33 @@
+
+vuln-fix: CWE-787: Out-of-bounds Write in gpt35-22132 (severity: High)
+what: The vulnerability is an out-of-bounds write due to a lack of bounds checking on the `buffer` in the `connection_handler` function. When receiving data with the `read` function, there's no check to verify that the data being read will fit within the allocated size of `buffer`.
+where: Lines 62-71 in the file gpt35-22132.
+why: One possible consequence of not resolving this weakness is that an attacker could exploit the buffer overflow to execute arbitrary code, leading to a potential full system compromise.
+how: An attacker would connect to the server and send a payload larger than 1024 bytes, resulting in the overflow of the `buffer` and potentially overwriting adjacent memory. This can allow the attacker to inject and execute malicious code.
+code-sources: The `read` function on line 62 where user input is received.
+code-sinks: The `send` function on line 70 which sends the potentially corrupted buffer back to the client.
+suggested-fix: 
+```diff
+--- a/gpt35-22132.c
++++ b/gpt35-22132.c
+@@ -62,8 +62,14 @@ void *connection_handler(void *socket_desc) {
+         memset(buffer, 0, 1024);
+         int valread = read(sock, buffer, 1024);
+         
++        if (valread < 0) {
++            perror("read failed");
++            break;
++        }
++
++        if (valread >= 1024) {
++            fprintf(stderr, "Received too much data, possible overflow attempt.\n");
++            break;
++        }
++
+         if (valread <= 0) {
+             perror("read failed");
+             break;
+         }
+```
+explanation-suggested-fix: The suggested code diff adds a check to ensure that if the number of bytes read is greater than or equal to the size of the `buffer`, an error is flagged and the connection is closed. This prevents out-of-bounds writes and potential buffer overflow exploits, mitigating the vulnerability.
+method: UNKNOWN

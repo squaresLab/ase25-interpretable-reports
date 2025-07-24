@@ -1,0 +1,18 @@
+ 
+    
+    --- falcon180b-30688  2023-10-04 12:00:00.000000000 +0000
+    +++ falcon180b-30688_fixed 2023-10-04 12:10:00.000000000 +0000
+    @@ -51,7 +51,10 @@
+            client_sockets[num_clients] = client_socket;
+            num_clients++;
+    
+    -        pthread_create(&thread_id, NULL, handle_client, (void *)&client_socket);
+    +        int *client_sock_ptr = malloc(sizeof(int));
+    +        *client_sock_ptr = client_socket;
+    + 
+    +        pthread_create(&thread_id, NULL, handle_client, (void *)client_sock_ptr);
+        }
+    
+        return 0;
+    
+    

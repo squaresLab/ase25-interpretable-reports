@@ -1,0 +1,42 @@
+
+    vuln-fix: Improper Validation of Array Index (CWE-129) in falcon180b-11100:10-11, 97 (severity: High)
+    what: The vulnerability is due to improper validation of the `num_connections` variable which can lead to buffer overflow.
+    where: The vulnerability is located in the array manipulation at line 11 and the acceptance logic in the while loop starting from line 97 in the file falcon180b-11100.
+    why: An attacker could exploit this to overflow the connections array, which could lead to data corruption, crashes, or arbitrary code execution.
+    how: An attacker would repeatedly open connections to the server, pushing the number of connections past the `MAX_CONNECTIONS` limit, thereby causing the array to overflow.
+    code-sources: The client socket connections initiated from the `accept` call in the `accept_connections` function.
+    code-sinks: The `connections` array manipulation and `pthread_create` call which uses input from the `accept` function.
+    suggested-fix: 
+    ```diff
+    --- falcon180b-11100  2023-09-10 10:00:00.000000000 +0000
+    +++ falcon180b-11100-fixed  2023-09-10 10:00:00.000000000 +0000
+    @@ -11,6 +11,7 @@
+     int num_connections = 0;
+
+     void* handle_connection(void* arg) {
+    +   int index = *((int*) arg);
+         int client_socket = connections[index];
+         char buffer[BUFFER_SIZE];
+
+    @@ -100,7 +101,7 @@
+             }
+
+             if (num_connections >= MAX_CONNECTIONS) {
+                     printf("Maximum number of connections reached\n");
+    -                 continue;
+    +                 close(client_socket); continue;
+             }
+
+    -        connections[num_connections] = client_socket;
+    +        connections[num_connections] = client_socket;  // num_connections is still valid here
+             int thread_arg = num_connections;
+    +        num_connections++;  // Increment separately to ensure thread_arg is correct
+             pthread_t thread_id;
+    -        pthread_create(&thread_id, NULL, handle_connection, &client_socket);
+    +        pthread_create(&thread_id, NULL, handle_connection, &thread_arg);
+         }
+     }
+    ```
+
+    explanation-suggested-fix: By incrementing `num_connections` only after storing the index for threading in a separate variable, we prevent improper indexing. Additionally, `close(client_socket)` on reaching maximum connections prevents misuse.
+    method: CODEQL

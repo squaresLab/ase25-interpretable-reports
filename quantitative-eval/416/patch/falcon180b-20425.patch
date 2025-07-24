@@ -1,0 +1,29 @@
+ 
+    
+    int main() {
+        image = (unsigned char*)malloc(WIDTH * HEIGHT * sizeof(unsigned char));
+        watermark = (unsigned char*)malloc(watermark_size * sizeof(unsigned char));
+
+        // Initialize image and watermark data here
+
+        pthread_t threads[NUM_THREADS];
+        int start_rows[NUM_THREADS]; // Create an array to store start_row for each thread
+
+        for (int i = 0; i < NUM_THREADS; i++) {
+            start_rows[i] = i * HEIGHT / NUM_THREADS;  // Assign start_row individually
+            pthread_create(&threads[i], NULL, thread_watermark, (void*)&start_rows[i]);
+        }
+
+        for (int i = 0; i < NUM_THREADS; i++) {
+            pthread_join(threads[i], NULL);
+        }
+
+        // Save watermarked image here
+
+        free(image);
+        free(watermark);
+
+        return 0;
+    }
+    
+    

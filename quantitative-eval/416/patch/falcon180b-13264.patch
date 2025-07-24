@@ -1,0 +1,15 @@
+ 
+
+--- falcon180b-13264
++++ falcon180b-13264
+@@ -36,9 +36,11 @@
+         } else {
+             clients[num_clients++] = client_socket;
+             pthread_t thread_id;
+-            pthread_create(&thread_id, NULL, handle_client, (void *)&client_socket);
++            int *new_client_socket = malloc(sizeof(int));
++            *new_client_socket = client_socket;
++            pthread_create(&thread_id, NULL, handle_client, (void *)new_client_socket);
+         }
+     }
+

@@ -1,0 +1,139 @@
+
+vuln-fix: Data race (CWE-367) in gemini_pro-38378 lines 42-45, 70-90 (severity: High)
+what: The code potentially suffers from a data race condition due to shared variables `num_people` and `destination_floor` being accessed and modified by multiple threads without proper synchronization.
+where: The vulnerable code sections are in functions `elevator_thread` and `people_thread` within gemini_pro-38378.
+why: Not resolving this weakness may lead to unpredictable behavior, crashes, or incorrect program operation due to simultaneous conflicting accesses to shared variables.
+how: An attacker could exploit this by creating multiple threads that simultaneously access and modify shared variables, causing inconsistent program state and potential crashes.
+code-sources: `int floor = *(int *)arg;` in `people_thread` function line 73
+code-sinks: `num_people++;`, `num_people--;` in `people_thread` function lines 78, 89 and `destination_floor = *(int *)arg;` in `elevator_thread` function line 42
+suggested-fix: 
+```diff
+#include <stdlib.h>
+#include <stdio.h>
+#include <pthread.h>
+
+--- <snip> ---
+
+// Global variables
+--- <snip> ---
+
+// Thread function for the elevator
+void *elevator_thread(void *arg)
+{
+    while (1)
+    {
+        // Acquire the lock
+        pthread_mutex_lock(&mutex);
+
+        // Wait for a request
+        while (state == IDLE)
+        {
+            pthread_cond_wait(&cond, &mutex);
+        }
+
+        // Set the destination floor
+-        destination_floor = *(int *)arg;
+
+        // Set the direction
+        if (destination_floor > current_floor)
+        {
+            direction = UPWARD;
+        }
+        else
+        {
+            direction = DOWNWARD;
+        }
+
+        // Set the state to moving
+        state = direction == UPWARD ? UP : DOWN;
+
+        // Release the lock
+        pthread_mutex_unlock(&mutex);
+
+        // Move the elevator
+        while (current_floor != destination_floor)
+        {
+            // Simulate the elevator moving
+            sleep(1);
+
+            // Update the current floor
+            current_floor += direction;
+        }
+
+        // Set the state to idle
+        pthread_mutex_lock(&mutex);
+        state = IDLE;
+        pthread_mutex_unlock(&mutex);
+    }
+
+    return NULL;
+}
+
+// Thread function for the people
+void *people_thread(void *arg)
+{
+    int floor = *(int *)arg;
+
+    // Simulate the person waiting for the elevator
+    sleep(rand() % 5);
+
+    // Acquire the lock
+    pthread_mutex_lock(&mutex);
+
+    // Add the person to the elevator
+    num_people++;
+
+    // If the elevator is idle, wake it up
+    if (state == IDLE)
+    {
+-        destination_floor = floor;
+        pthread_cond_signal(&cond);
+    }
+
+    // Release the lock
+    pthread_mutex_unlock(&mutex);
+
+    // Simulate the person riding the elevator
+    sleep(rand() % 5);
+
+    // Acquire the lock
+    pthread_mutex_lock(&mutex);
+
+    // Remove the person from the elevator
+    num_people--;
+
+    // Release the lock
+    pthread_mutex_unlock(&mutex);
+
+    return NULL;
+}
+
+int main()
+{
+    // Create the elevator thread
+    pthread_t elevator;
+    pthread_create(&elevator, NULL, elevator_thread, NULL);
+
+    // Create a random number of people threads
+    int num_people = rand() % 10;
+    pthread_t people[num_people];
+    for (int i = 0; i < num_people; i++)
+    {
+        int *floor = (int *)malloc(sizeof(int));     // Allocate memory for the floor variable
+        *floor = rand() % MAX_FLOORS + 1;
+        pthread_create(&people[i], NULL, people_thread, floor);
+    }
+
+    // Join the threads
+    pthread_join(elevator, NULL);
+    for (int i = 0; i < num_people; i++)
+    {
+        pthread_join(people[i], NULL);
+        free(floor);  // Free the allocated memory
+    }
+
+    return 0;
+}
+```
+explanation-suggested-fix: The suggested changes ensure that `destination_floor` is only modified within a mutex-locked region and that each `people_thread` has its own individual `floor` variable by dynamically allocating memory for it. This prevents data races and ensures consistency of shared variables across threads.
+method: CODEQL

@@ -1,0 +1,25 @@
+
+vuln-fix: CWE-119: Buffer Overflow in falcon180b-55382 (severity: High)
+what: The code contains a buffer overflow vulnerability due to improper handling of string lengths in the `send` function.
+where: Lines related to the `handle_client` function in the file falcon180b-55382.
+why: If the buffer contains data of maximum length, the `strlen(buffer)` in the `send` function may result in out-of-bounds access, leading to a potential buffer overflow and causing crashes or arbitrary code execution.
+how: An attacker can send a carefully crafted message to the server that fills the buffer completely, exploiting the improper length handling to execute arbitrary code or crash the server.
+code-sources: `recv(client_socket, buffer, BUFFER_SIZE, 0);` in `handle_client`.
+code-sinks: `send(client_socket, buffer, strlen(buffer), 0);` in `handle_client`.
+suggested-fix: 
+```diff
+--- falcon180b-55382    2023-10-10 02:00:00.000000000 +0000
++++ falcon180b-55382_fixed    2023-10-10 02:15:00.000000000 +0000
+@@ -15,7 +15,7 @@
+         if (bytes_received <= 0) {
+             break;
+         }
+
+-        send(client_socket, buffer, strlen(buffer), 0);
++        send(client_socket, buffer, bytes_received, 0);
+     }
+
+     close(client_socket);
+```
+explanation-suggested-fix: The proposed change modifies the `send` function to use `bytes_received`, the actual number of bytes read by `recv`, ensuring no buffer overflow occurs and eliminating the risk caused by incorrect length handling.
+method: UNKNOWN

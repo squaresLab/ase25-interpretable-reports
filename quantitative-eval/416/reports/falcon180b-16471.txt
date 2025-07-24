@@ -1,0 +1,31 @@
+
+vuln-fix: Buffer Overflow (CWE-120) in falcon180b-16471 (severity: High)
+what: The vulnerability is a potential buffer overflow in the `handle_client` function. The bug occurs because the length of incoming data is not properly checked before using `recv` to receive the data into the `buffer` array.
+where: Lines 13-32 in falcon180b-16471
+why: If this vulnerability is not resolved, an attacker could send a specially crafted payload that exceeds the buffer size, potentially leading to arbitrary code execution or a crash (denial of service).
+how: An attacker could exploit this vulnerability by sending data larger than the `BUFFER_SIZE`, causing a buffer overflow that could overwrite adjacent memory, potentially leading to execution of malicious code or a crash.
+code-sources: 
+- `recv()` function in `handle_client()` on line 17 where data is read from the socket.
+- `accept()` in `main()` on line 43 where the client socket is accepted.
+
+code-sinks: 
+- `send()` function in `handle_client()` on lines 28-30 where data is sent to other clients.
+
+suggested-fix: 
+```diff
+--- falcon180b-16471 2023-10-03 12:00:00.000000000 +0000
++++ falcon180b-16471-fixed 2023-10-03 12:30:00.000000000 +0000
+@@ -14,6 +14,9 @@
+    char buffer[BUFFER_SIZE];
+  
+    while (1) {
++		int buffer_size = sizeof(buffer) - 1;  // ensure space for null terminator
+        memset(buffer, 0, BUFFER_SIZE);
+-       int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
++       int bytes_received = recv(client_socket, buffer, buffer_size, 0);
+  
+        if (bytes_received <= 0) {
+            close(client_socket);
+```
+explanation-suggested-fix: The proposed changes ensure that the amount of data received by `recv()` is always within the bounds of the `buffer` to prevent buffer overflow. By specifying `sizeof(buffer) - 1`, we guarantee that the buffer always has space for a null terminator, ensuring that any received string can be properly null-terminated and preventing overflow.
+method: UNKNOWN

@@ -1,0 +1,94 @@
+
+vuln-fix: Missing Synchronization (CWE-362) in falcon180b-28503 (severity: High)
+what: The code has a race condition when accessing and modifying the `clients` array and the `num_clients` variable without proper synchronization.
+where: The vulnerability is located in the `main` function and the `handle_client` function in the file falcon180b-28503:
+  - `clients[num_clients] = client_socket;` (line number where this appears)
+  - `num_clients++;` (line number where this appears)
+why: One possible consequence of not resolving this weakness is that concurrent modifications to `clients` and `num_clients` can lead to inconsistent state, resulting in crashes or security vulnerabilities such as unauthorized access or denial of service.
+how: An attacker can exploit this vulnerability by establishing multiple simultaneous connections to the server. This can cause race conditions leading to data corruption or crashes, especially under high load or targeted attack conditions.
+code-sources: The entry point for user input is through the socket connections handled by the `handle_client` function.
+code-sinks: The actions performed by the application with user input include storing the client socket in the `clients` array, incrementing the `num_clients` counter, and broadcasting the received message to other clients.
+suggested-fix:
+```diff
+#include <pthread.h>
+
+// Initialize a mutex for synchronizing access to client data
+pthread_mutex_t clients_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+void *handle_client(void *arg) {
+    int client_socket = *(int *) arg;
+    char buffer[BUFFER_SIZE];
+
+    while (1) {
+        memset(buffer, 0, BUFFER_SIZE);
+        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+
+        if (bytes_received <= 0) {
+            break;
+        }
+
+        printf("Client %d sent: %s\n", client_socket, buffer);
+
+        pthread_mutex_lock(&clients_mutex);
+        for (int i = 0; i < num_clients; i++) {
+            if (clients[i] != client_socket) {
+                send(clients[i], buffer, strlen(buffer), 0);
+            }
+        }
+        pthread_mutex_unlock(&clients_mutex);
+    }
+
+    pthread_mutex_lock(&clients_mutex);
+    close(client_socket);
+    for (int i = 0; i < num_clients; i++) {
+        if (clients[i] == client_socket) {
+            clients[i] = clients[num_clients - 1];
+            num_clients--;
+            break;
+        }
+    }
+    pthread_mutex_unlock(&clients_mutex);
+
+    return NULL;
+}
+
+int main() {
+    int server_socket = socket(AF_INET, SOCK_STREAM, 0);
+
+    struct sockaddr_in server_addr;
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(PORT);
+    server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+
+    bind(server_socket, (struct sockaddr *) &server_addr, sizeof(server_addr));
+    listen(server_socket, BACKLOG);
+
+    printf("Server listening on port %d\n", PORT);
+
+    while (1) {
+        int client_socket = accept(server_socket, NULL, NULL);
+
+        pthread_mutex_lock(&clients_mutex);
+        if (num_clients == MAX_CLIENTS) {
+            printf("Maximum number of clients reached\n");
+            close(client_socket);
+            pthread_mutex_unlock(&clients_mutex);
+            continue;
+        }
+
+        clients[num_clients] = client_socket;
+        num_clients++;
+
+        pthread_mutex_unlock(&clients_mutex);
+
+        pthread_t thread_id;
+        pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+        pthread_detach(thread_id);
+    }
+
+    return 0;
+}
+```
+explanation-suggested-fix: The suggested code diff resolves the vulnerability by introducing a mutex, `clients_mutex`, to synchronize access to the `clients` array and the `num_clients` variable. This ensures that concurrent modifications are done safely and consistently, preventing race conditions.
+method: UNKNOWN

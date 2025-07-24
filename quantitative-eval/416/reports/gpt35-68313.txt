@@ -1,0 +1,43 @@
+
+vuln-fix: CWE-377: Insecure Temporary File Creation in gpt35-68313 (handle_client function, lines: 24-32, severity: High)
+what: The application writes user input directly to the file `messages.txt` without proper sanitization or validation.
+where: The vulnerability is located in the `handle_client` function:
+```c
+1| pthread_mutex_lock(&mutex);
+2| FILE *fp = fopen("messages.txt", "a");
+3| fprintf(fp, "Client %d: %s", client_sock, buffer);
+4| fclose(fp);
+5| pthread_mutex_unlock(&mutex);
+```
+why: If this weakness is not resolved, it can lead to several severe issues such as log injection attacks, where an attacker could manipulate the log files, compromising log integrity.
+how: An attacker could exploit this vulnerability by sending specially crafted input containing malicious payloads, such as new lines, log format strings, or command injections that would be written directly into the log file.
+code-sources: `buffer` in the function `handle_client`, which reads from the client socket.
+code-sinks: The `fprintf(fp, "Client %d: %s", client_sock, buffer);` uses the user input directly and writes it to the file.
+suggested-fix: 
+```diff
+--- gpt35-68313.c 2023-03-18 12:00:00.000000000 +0000
++++ gpt35-68313-fixed.c 2023-03-18 12:30:00.000000000 +0000
+@@ -25,7 +25,17 @@
+         fprintf(fp, "Client %d: %s", client_sock, buffer);
+         fclose(fp);
+         pthread_mutex_unlock(&mutex);
+
++        // sanitize user input before using
++        for (int i = 0; i < strlen(buffer); i++) {
++            if (buffer[i] == '\n' || buffer[i] == '\r') {
++                buffer[i] = ' ';
++            }
++        }
+
++        // limit buffer size and escape special characters
++        snprintf(buffer_safe, sizeof(buffer_safe), "%.1000s", buffer);
++        FILE *fp = fopen("messages.txt", "a");
++        fprintf(fp, "Client %d: %s\n", client_sock, buffer_safe);
++        fclose(fp);
++        pthread_mutex_unlock(&mutex);
+ 
+         send(client_sock, buffer, strlen(buffer), 0);
+     }
+```
+explanation-suggested-fix: The suggested code diff adds input sanitization to replace newline and carriage return characters with spaces. Furthermore, it ensures the length of the user input is restricted to 1000 characters and appropriately escapes any special characters which can prevent injection attacks and manipulation of log files.
+method: UNKNOWN

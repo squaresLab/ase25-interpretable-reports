@@ -1,0 +1,16 @@
+ 
+
+--- falcon180b-16471 2023-10-03 12:00:00.000000000 +0000
++++ falcon180b-16471-fixed 2023-10-03 12:30:00.000000000 +0000
+@@ -14,6 +14,9 @@
+    char buffer[BUFFER_SIZE];
+  
+    while (1) {
++		int buffer_size = sizeof(buffer) - 1;  // ensure space for null terminator
+        memset(buffer, 0, BUFFER_SIZE);
+-       int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
++       int bytes_received = recv(client_socket, buffer, buffer_size, 0);
+  
+        if (bytes_received <= 0) {
+            close(client_socket);
+

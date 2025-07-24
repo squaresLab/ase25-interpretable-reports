@@ -1,0 +1,201 @@
+
+vuln-fix: Unchecked Buffer Write (CWE-120, CWE-787, CWE-805) in gpt35-71004:33 (severity: High)
+what: The vulnerability involves an unchecked buffer write where user input for the `name` field is written into a buffer without verifying the length of the input string. This can lead to a buffer overflow.
+where: The vulnerability is located in the `add_record` function on line 33 of the file gpt35-71004.
+why: If this vulnerability is not addressed, an attacker could exploit it to perform a buffer overflow attack, which could result in arbitrary code execution, data corruption, or program crashes. It poses a high risk for security breaches and system compromise.
+how: An attacker would exploit this vulnerability by providing input data for the `name` field that exceeds the allocated buffer size (`MAX_NAME_LENGTH`), causing the buffer to overflow and potentially overwriting adjacent memory, leading to undefined behavior or controlled malicious payload execution.
+code-sources: The primary source of user input is within the `add_record` function:
+```
+scanf("%s", record.name);
+```
+code-sinks: The risky action corresponding to this vulnerability is where the unchecked user input is directly written to the buffer:
+```
+strcpy(record.name, input); /* Hypothetical function usage for clearer understanding */
+or directly through
+fwrite(record.name, sizeof(char), MAX_NAME_LENGTH, file);
+```
+suggested-fix: 
+```diff
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define MAX_NAME_LENGTH 50
+#define MAX_INFO_LENGTH 100
+
+typedef struct {
+    int id;
+    char name[MAX_NAME_LENGTH];
+    char info[MAX_INFO_LENGTH];
+} Record;
+
++ void safe_fgets(char *buffer, int length) {
++     if (fgets(buffer, length, stdin)) {
++         buffer[strcspn(buffer, "\n")] = 0; // Remove trailing newline if any
++     } else {
++         buffer[0] = '\0'; // In case of an input error, make the buffer empty
++     }
++ }
+
+int get_record_size() {
+    // Returns the size of the database record.
+    return sizeof(int) + MAX_NAME_LENGTH + MAX_INFO_LENGTH;
+}
+
+void add_record(char* filename) {
+    FILE* file = fopen(filename, "ab");
+    if (file == NULL) {
+        printf("Error opening file.\n");
+        return;
+    }
+
+    Record record;
+    // Prompt user to enter record information
+    printf("Enter the following record information:\n");
+    printf("ID: ");
+    scanf("%d", &record.id);
+    printf("Name: ");
+    getchar();
++    safe_fgets(record.name, MAX_NAME_LENGTH);
+    printf("Info: ");
+    // Clear the input buffer before fgets
+    getchar();
+    safe_fgets(record.info, MAX_INFO_LENGTH);
+
+    // Write record to file
+    fwrite(&record.id, sizeof(int), 1, file);
+    fwrite(record.name, sizeof(char), MAX_NAME_LENGTH, file);
+    fwrite(record.info, sizeof(char), MAX_INFO_LENGTH, file);
+
+    fclose(file);
+    printf("Record added successfully.\n");
+}
+
+void display_record(Record record) {
+    printf("ID: %d\n", record.id);
+    printf("Name: %s\n", record.name);
+    printf("Info: %s", record.info);
+}
+
+void display_all_records(char* filename) {
+    FILE* file = fopen(filename, "rb");
+    if (file == NULL) {
+        printf("Error opening file.\n");
+        return;
+    }
+
+    Record record;
+    while (fread(&record.id, sizeof(int), 1, file) != 0) {
+        fread(record.name, sizeof(char), MAX_NAME_LENGTH, file);
+        fread(record.info, sizeof(char), MAX_INFO_LENGTH, file);
+        display_record(record);
+        printf("\n");
+    }
+
+    fclose(file);
+}
+
+void find_record(char* filename, int id) {
+    FILE* file = fopen(filename, "rb");
+    if (file == NULL) {
+        printf("Error opening file.\n");
+        return;
+    }
+
+    Record record;
+    while (fread(&record.id, sizeof(int), 1, file) != 0) {
+        fread(record.name, sizeof(char), MAX_NAME_LENGTH, file);
+        fread(record.info, sizeof(char), MAX_INFO_LENGTH, file);
+        if (record.id == id) {
+            display_record(record);
+            printf("\n");
+            fclose(file);
+            return;
+        }
+    }
+
+    fclose(file);
+    printf("Record with ID %d not found.\n", id);
+}
+
+void delete_record(char* filename, int id) {
+    // Create a temporary file to store all the valid records
+    char temp_filename[] = "temp.db";
+    FILE* file = fopen(filename, "rb");
+    if (file == NULL) {
+        printf("Error opening file.\n");
+        return;
+    }
+    FILE* temp_file = fopen(temp_filename, "wb");
+    if (temp_file == NULL) {
+        printf("Error creating temporary file.\n");
+        fclose(file);
+        return;
+    }
+
+    Record record;
+    while (fread(&record.id, sizeof(int), 1, file) != 0) {
+        fread(record.name, sizeof(char), MAX_NAME_LENGTH, file);
+        fread(record.info, sizeof(char), MAX_INFO_LENGTH, file);
+        if (record.id != id) {
+            fwrite(&record.id, sizeof(int), 1, temp_file);
+            fwrite(record.name, sizeof(char), MAX_NAME_LENGTH, temp_file);
+            fwrite(record.info, sizeof(char), MAX_INFO_LENGTH, temp_file);
+        }
+    }
+
+    fclose(file);
+    fclose(temp_file);
+    remove(filename);
+    rename(temp_filename, filename);
+    printf("Record with ID %d deleted successfully.\n", id);
+}
+
+int main() {
+    char filename[] = "database.db";
+    int record_size = get_record_size();
+
+    while (1) {
+        // Display options to the user
+        printf("\nSelect an option:\n");
+        printf("1. Add a record\n");
+        printf("2. Display all records\n");
+        printf("3. Find a record\n");
+        printf("4. Delete a record\n");
+        printf("5. Quit\n");
+        int option;
+        scanf("%d", &option);
+
+        switch (option) {
+            case 1:
+                add_record(filename);
+                break;
+            case 2:
+                printf("\nAll Records:\n");
+                display_all_records(filename);
+                break;
+            case 3:
+                printf("\nEnter the ID of the record to find: ");
+                int id;
+                scanf("%d", &id);
+                find_record(filename, id);
+                break;
+            case 4:
+                printf("\nEnter the ID of the record to delete: ");
+                scanf("%d", &id);
+                delete_record(filename, id);
+                break;
+            case 5:
+                printf("Exiting program.\n");
+                exit(0);
+                break;
+            default:
+                printf("Invalid option.\n");
+        }
+    }
+
+    return 0;
+}
+```
+explanation-suggested-fix: The modification involves replacing the unsafe `scanf` function call with a safer `safe_fgets` function that reads the user input into a buffer and ensures it does not exceed the allocated size. This prevents buffer overflow by limiting the input to `MAX_NAME_LENGTH - 1` characters, thus preserving one character for the null terminator. This ensures any excess input is discarded, thereby preventing an overflow condition.
+method: CODEQL

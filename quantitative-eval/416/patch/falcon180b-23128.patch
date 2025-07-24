@@ -1,0 +1,20 @@
+
+    
+    --- falcon180b-23128-original.c
+    +++ falcon180b-23128-fixed.c
+    @@ -35,7 +35,10 @@
+        // Create the threads
+        for (int i = 0; i < NUM_THREADS; i++)
+        {
+    +        // Allocate memory for thread argument
+    +        int *thread_id = malloc(sizeof(int));
+    +        *thread_id = i;
+            // Create the thread
+    -        pthread_create(&threads[i], NULL, thread_function, (void *) &i);
+    +        pthread_create(&threads[i], NULL, thread_function, (void *) thread_id);
+        }
+
+        // Wait for the threads to finish
+        for (int i = 0; i < NUM_THREADS; i++)
+    
+    

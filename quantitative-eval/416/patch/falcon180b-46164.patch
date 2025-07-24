@@ -1,0 +1,23 @@
+ 
+
+    --- a/falcon180b-46164
+    +++ b/falcon180b-46164
+    @@ -52,13 +52,14 @@
+                continue;
+            }
+            if (num_clients >= MAX_CLIENTS) {
+                close(client_socket);
+                continue;
+            }
+            clients[num_clients++] = client_socket;
+            pthread_t thread_id;
+    -       if (pthread_create(&thread_id, NULL, handle_client, (void *)&client_socket) != 0) {
+    +       int *client_sock_ptr = malloc(sizeof(int));
+    +       *client_sock_ptr = client_socket;
+    +       if (pthread_create(&thread_id, NULL, handle_client, (void *)client_sock_ptr) != 0) {
+                printf("Error creating thread\n");
+                close(client_socket);
+            }
+        }
+    
+    

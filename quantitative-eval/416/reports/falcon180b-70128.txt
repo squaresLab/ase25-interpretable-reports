@@ -1,0 +1,44 @@
+
+vuln-fix: CWE-367: Time-of-check Time-of-use (TOCTOU) Race Condition in falcon180b-70128 (severity: High)
+what: The vulnerability is a time-of-check-to-time-of-use (TOCTOU) race condition. This occurs when the difference in time between checking a condition (accepting a client connection and incrementing the activeThreads) and acting on it (creating a new thread to handle the connection) can be exploited.
+where: The vulnerability appears at lines:
+  - Line 68: `pthread_create(&threadId, NULL, threadFunction, (void *)&clientSocket);`
+  - Line 70-73: Mutex lock to increment `activeThreads` without proper synchronization of `clientSocket`.
+why: If not resolved, this race condition can lead to inconsistencies such as incorrect thread counts, resource depletion, or even crashes, which may be exploited to cause denial of service (DoS).
+how: An attacker could exploit this vulnerability by rapidly connecting and disconnecting from the server, potentially leading to the creation of multiple threads that could corrupt the program state or cause it to use incorrect data.
+code-sources: 
+    - Line 52: `int clientSocket = accept(serverSocket, NULL, NULL);`
+    - Line 29: `recv(clientSocket, buffer, sizeof(buffer), 0);`
+code-sinks: 
+    - Line 32: `printf("Client %d sent: %s\n", clientSocket, buffer);`
+    - Lines 68-69: `pthread_create(&threadId, NULL, threadFunction, (void *)&clientSocket);` and `pthread_mutex_lock(&mutex); activeThreads++; pthread_mutex_unlock(&mutex);`
+suggested-fix:
+```
+diff --git a/falcon180b-70128 b/falcon180b-70128
+index 1234567..89abcde 100644
+--- a/falcon180b-70128
++++ b/falcon180b-70128
+@@ -66,12 +66,14 @@ int main() {
+         if(clientSocket == -1) {
+             printf("Error accepting connection\n");
+             continue;
+         }
+
++        int *newSocket = malloc(sizeof(int));
++        *newSocket = clientSocket;
++
+         pthread_mutex_lock(&mutex);
+         activeThreads++;
+         pthread_mutex_unlock(&mutex);
+
+         pthread_t threadId;
+-        pthread_create(&threadId, NULL, threadFunction, (void *)&clientSocket);
++        pthread_create(&threadId, NULL, threadFunction, (void *)newSocket);
+     }
+
+     close(serverSocket);
+     return 0;
+```
+explanation-suggested-fix: 
+The suggested fix allocates memory for a new socket descriptor to be passed to each thread. This ensures that each thread receives a unique clientSocket descriptor and removes the possibility of a race condition in accessing the shared clientSocket variable.
+method: UNKNOWN

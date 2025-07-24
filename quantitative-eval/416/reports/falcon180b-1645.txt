@@ -1,0 +1,37 @@
+ 
+    vuln-fix: Double-Free Vulnerability (CWE-415) in falcon180b-1645.c (severity: High)
+    what: The vulnerability is a potential double-free issue. The `client_socket` is used by reference in the `accept_connections` function, but it is passed by reference to the `handle_client` function. When `pthread_exit` is called, the thread's stack (which includes local variables such as `client_socket`) is destructed, and hence, attempting to close the same socket or access it again may lead to a double-free or undefined behavior.
+    where: Located in `falcon180b-1645.c` in the `handle_client` function and `accept_connections` function.
+    why: A double-free vulnerability can lead to arbitrary code execution, crashes, and memory corruption. An attacker can exploit this to take control of the system or make the application behave unexpectedly.
+    how: An attacker could exploit this vulnerability by causing a client to connect and disconnect multiple times, potentially causing repeated invocations of the same socket close, leading to double-free vulnerabilities.
+    code-sources: The `accept` function in the `accept_connections` function, which processes incoming client connections and uses the socket descriptor.
+    code-sinks: The `recv` and `send` functions in the `handle_client` function, which use the socket descriptor passed by reference.
+    suggested-fix: 
+    ```diff 
+    --- falcon180b-1645.c   2023-10-04 12:00:00.000000000 +0000
+    +++ falcon180b-1645-fixed.c   2023-10-04 12:00:00.000000000 +0000
+    @@ -16,7 +16,7 @@
+            pthread_exit(0);
+    }
+    
+    void accept_connections() {
+    +   while (num_clients < MAX_CLIENTS) {
+    +       int *client_socket = malloc(sizeof(int));
+            *client_socket = accept(server_socket, NULL, NULL);
+    
+            if (*client_socket == -1) {
+    @@ -26,8 +26,8 @@
+    
+            client_sockets[num_clients] = *client_socket;
+            num_clients++;
+    
+            printf("Client %d connected\n", num_clients - 1);
+    
+            pthread_t thread_id;
+    -       pthread_create(&thread_id, NULL, handle_client, (void *)client_socket);
+    +       pthread_create(&thread_id, NULL, handle_client, client_socket);
+        }
+    }
+    ```
+    explanation-suggested-fix: The suggested fix involves dynamically allocating memory for the `client_socket` variable inside the `accept_connections` function. This ensures that each client connection is handled with a unique memory reference, preventing double-free vulnerabilities when the `handle_client` function uses the socket descriptor.
+    method: UNKNOWN

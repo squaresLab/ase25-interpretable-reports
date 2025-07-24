@@ -1,0 +1,22 @@
+ 
+    
+    @@ -55,14 +55,14 @@
+    int main() {
+        int i;
+        pthread_t threads[MAX_THREADS];
+    +    thread_data_t thread_data[MAX_THREADS];
+    
+        for (i = 0; i < MAX_THREADS; i++) {
+    -        thread_data_t data;
+    -        data.thread_id = i;
+    -        data.log_file = fopen("logfile.txt", "a");
+    +        thread_data[i].thread_id = i;
+    +        thread_data[i].log_file = fopen("logfile.txt", "a");
+    
+    -        pthread_create(&threads[i], NULL, log_to_file, &data);
+    +        pthread_create(&threads[i], NULL, log_to_file, &thread_data[i]);
+        }
+    
+        while (1) {
+    
+    

@@ -1,0 +1,31 @@
+ 
+
+--- gpt35-72462.c
++++ gpt35-72462_fixed.c
+@@ -122,7 +122,10 @@
+            int chatroom_id = atoi(message + 6);
+            if (chatroom_id < 0 || chatroom_id >= chatroom_count) {
+                send_to_user(user, "Invalid chatroom ID.");
+            }
+-            else {
++            else if (strlen(message + 6) < sizeof(user.name)) {
+                char join_message[BUFFER_SIZE];
+                sprintf(join_message, "%s has joined the chat.\n", user.name);
+                send_to_chatroom(user.active_chatroom, join_message, user.id);
+                remove_user(user);
+                user.active_chatroom = chatroom_id;
+                add_user(user);
+@@ -152,7 +155,10 @@
+        else if (strncmp(message, "/name ", 6) == 0) {
+            // Ensure the name fits within the buffer including null terminator
+            if (strlen(message + 6) < sizeof(user.name)) {
+-                strcpy(user.name, message + 6);
++                strncpy(user.name, message + 6, sizeof(user.name) - 1);
++                user.name[sizeof(user.name) - 1] = '\0';  // Ensure null termination
+                char name_set_message[BUFFER_SIZE];
+                snprintf(name_set_message, sizeof(name_set_message), "Your name is now %s.\n", user.name);
+                send_to_user(user, name_set_message);
+            } else {
+                send_to_user(user, "Name too long.");
+            }
+ 

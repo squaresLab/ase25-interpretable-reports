@@ -1,0 +1,12 @@
+ 
+
+@@ -47,6 +47,8 @@ int parse_command(char *input, Command *command) {
+     char *argv[MAX_ARGUMENTS];
+
+     token = strtok(input, " ");
++    // Remove trailing newline character from input
++    input[strcspn(input, "\n")] = 0;
+     while (token != NULL) {
+         if (argc >= MAX_ARGUMENTS) {
+             fprintf(stderr, "Too many arguments\n");
+

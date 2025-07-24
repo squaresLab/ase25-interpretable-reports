@@ -1,0 +1,14 @@
+ 
+
+--- a/gpt35-27263
++++ b/gpt35-27263
+@@ -49,7 +49,7 @@ void add_node(Topology *topology, int id, char *name) {
+ 
+     // Initialize the new node with the given id and name
+     Node new_node;
+-    new_node.name = (char *) malloc(strlen(name) + 1);
++    new_node.name = (char *) malloc(MAX_NAME_LEN);
+     strcpy(new_node.name, name);
+     new_node.num_neighbors = 0;
+     new_node.neighbors = (int *) malloc(sizeof(int) * MAX_NODES);
+

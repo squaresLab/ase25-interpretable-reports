@@ -1,0 +1,15 @@
+ 
+
+--- falcon180b-45817.c    2023-10-05
++++ falcon180b-45817.c    2023-10-05
+@@ -27,6 +27,7 @@
+ 
+         if (bytes_received <= 0) {
+             break;
+         }
+ 
++        buffer[bytes_received] = '\0'; // Ensure null-termination
+         printf("Client %d sent: %s\n", client_socket, buffer);
+ 
+         // Send message to all connected clients
+

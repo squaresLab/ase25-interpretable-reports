@@ -1,0 +1,36 @@
+ 
+    
+    --- falcon180b-12936
+    +++ falcon180b-12936_fixed
+    @@ -26,8 +26,8 @@
+ 
+         char *message = strdup(buffer);
+         printf("Client %d: %s\n", client_socket, message);
+    +
+    +    // Sanitize the message for dangerous characters
+         for (int i = 0; i < num_clients; i++) {
+    -        if (clients[i] != client_socket) {
+    -            send(clients[i], message, strlen(message), 0);
+    +        if (clients[i]!= client_socket) {
+    +            send(clients[i], sanitize_input(message), strlen(sanitize_input(message)), 0);
+             }
+         }
+ 
+    +    free(message);
+    +}
+    
+    +char* sanitize_input(const char* input)
+    +{
+    +    char* sanitized = malloc(strlen(input) + 1);
+    +    int j = 0;
+    +    for (int i = 0; i < strlen(input); i++) {
+    +        if (input[i] != '\r' && input[i] != '\n') {
+    +            sanitized[j++] = input[i];
+    +        }
+    +    }
+    +    sanitized[j] = '\0';
+    +    return sanitized;
+    +}
+    
+
+    

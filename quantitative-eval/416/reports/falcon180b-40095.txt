@@ -1,0 +1,28 @@
+    
+vuln-fix: CWE-362: Race Condition in falcon180b-40095 (severity: High)
+what: The vulnerability is a race condition in the `accept_connections` method. The client socket passed to `pthread_create` can be modified or closed by the time the `handle_client` function starts executing. This issue arises because the address of the local variable `client_socket` is used in the creation of the thread.
+where: The vulnerability is located in the file falcon180b-40095. Specifically, in the `accept_connections` function, at the line `pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);`.
+why: If this issue is not resolved, it may result in undefined behavior, crashes, or handling client connections incorrectly. This could potentially be exploited to cause denial of service or other unintended behavior in the server.
+how: An attacker could exploit this vulnerability by sending multiple client connections rapidly, causing the `client_socket` variable to change before the thread has properly initialized, leading to inconsistent state or crashes.
+code-sources: The entry point is the socket server which accepts connections from any client. Specifically, the `accept` function in `accept_connections` where it accepts client connections.
+code-sinks: The use of `client_socket` inside the `handle_client` function, particularly when calling `recv` and `printf`, relying on a potentially invalid socket descriptor.
+suggested-fix: 
+```diff
+--- falcon180b-40095.c 2023-01-20 14:55:16.000000000 +0000
++++ falcon180b_fixed.c 2023-01-20 14:56:16.000000000 +0000
+@@ -24,7 +24,7 @@
+             printf("Maximum number of clients reached\n");
+             continue;
+         }
+-        client_sockets[num_clients] = client_socket;
++        int *client_sock_ptr = malloc(sizeof(int));
++        *client_sock_ptr = client_socket;
+         num_clients++;
+ 
+-        pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
++        pthread_create(&thread_id, NULL, handle_client, (void *) client_sock_ptr);
+     }
+ }
+ ```
+explanation-suggested-fix: The suggested fix involves dynamically allocating memory for each `client_socket` and passing a pointer to this allocated memory to the thread. This ensures that each thread receives a unique `client_socket` value that will not be inadvertently altered by subsequent connections.
+method: UNKNOWN

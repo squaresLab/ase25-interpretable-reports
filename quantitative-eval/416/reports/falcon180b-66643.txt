@@ -1,0 +1,41 @@
+
+vuln-fix: CWE-839: Numeric Range Comparison Without Minimum Check in falcon180b-66643 (severity: Medium)
+what: The vulnerable code fails to properly validate that the number of clients metric (`num_clients`) remains within the bounds of predefined limits.
+where: The vulnerability is located in the `main` function, specifically in the following piece of the code:
+   ```
+   if(num_clients >= MAX_CLIENTS) {
+       close(client_socket);
+       printf("Maximum number of clients reached\n");
+       continue;
+   }
+   ...
+   clients[num_clients] = client_socket;
+   num_clients++;
+   ```
+why: If this weakness is not resolved, it may lead to an array index out-of-bounds vulnerability, which can potentially cause the program to crash or lead to undefined behavior.
+how: An attacker could artificially inflate the value of `num_clients` and cause the server to attempt writing outside the bounds of the `clients` array, potentially leading to a denial of service attack or other unpredictable behavior.
+code-sources: The code entry point is the `accept` function when a new client connects.
+code-sinks: The code sink is when `client_socket` is assigned to `clients[num_clients]` without adequate validation.
+suggested-fix: 
+```
+diff --git a/falcon180b-66643 b/falcon180b-66643
+index e69de29..fa03883 100644
+--- a/falcon180b-66643
++++ b/falcon180b-66643
+@@ -57,7 +57,10 @@ int main() {
+         }
+
+         if(num_clients >= MAX_CLIENTS) {
+-            close(client_socket);
++            close(client_socket);
++            printf("Maximum number of clients reached\n");
++            continue;
+         }
+
++        if (num_clients < 0) num_clients = 0; // Added additional check to ensure num_clients remains valid
+         clients[num_clients] = client_socket;
+         num_clients++;
+ 
+```
+explanation-suggested-fix: The suggested code diff includes an additional check to ensure that `num_clients` cannot be artificially inflated. If `num_clients` is found to be less than 0, it is reset to 0. This guards against out-of-bounds array access and ensures array access remains valid.
+method: UNKNOWN

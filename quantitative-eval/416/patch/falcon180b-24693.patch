@@ -1,0 +1,17 @@
+ 
+
+diff --git a/falcon180b-24693 b/falcon180b-24693
+index d379f1b..e5e8f58 100644
+--- a/falcon180b-24693
++++ b/falcon180b-24693
+@@ -21,7 +21,7 @@ void *handle_client(void *arg) {
+         if (bytes_received <= 0) {
+             break;
+         }
+ 
+-        printf("%s\n", buffer);
++        printf("%s\n", buffer); // Use an alternative function that escapes or formats user input safely
+     }
+ 
+     close(client_socket);
+

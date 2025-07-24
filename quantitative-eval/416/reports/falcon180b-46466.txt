@@ -1,0 +1,24 @@
+
+vuln-fix: Buffer Overflow (CWE-120) in falcon180b-46466 (severity: High)
+what: The code is vulnerable to a buffer overflow in the `handle_client` function due to the improper use of `sprintf` which could write more data into the `response` buffer than it can hold, leading to a buffer overflow.
+where: 
+- File: falcon180b-46466
+- Vulnerable line: 
+```c
+sprintf(response, "Response to client %d", client_sock);
+```
+why: Not resolving this weakness can allow an attacker to overflow the buffer `response` causing data corruption, crashes, or arbitrary code execution.
+how: An attacker could send a specially crafted request to create a response string longer than `MAX_REQUEST_SIZE`, leading to the overflow and potential exploitation.
+code-sources: 
+- `recv(client_sock, request, MAX_REQUEST_SIZE, 0)` in `handle_client` function 
+code-sinks: 
+- `sprintf(response, "Response to client %d", client_sock)` in `handle_client` function
+suggested-fix: 
+```diff
+24c24
+< sprintf(response, "Response to client %d", client_sock);
+---
+> snprintf(response, MAX_REQUEST_SIZE, "Response to client %d", client_sock);
+```
+explanation-suggested-fix: The suggested code diff replaces `sprintf` with `snprintf` which includes a buffer size parameter, ensuring that the data written to the `response` buffer does not exceed its allocated size, thus preventing buffer overflow.
+method: CODEQL

@@ -1,0 +1,16 @@
+ 
+
+--- gemini_pro-9899.c
++++ gemini_pro-fixed.c
+@@ -64,8 +64,12 @@
+         pthread_t thread;
+         if (pthread_create(&thread, NULL, handle_client, &client_sock) != 0) {
+             perror("Error creating thread to handle client connection");
++            close(client_sock);
++            continue;
+         }
++        // Detach thread to reclaim resources on thread exit
+         pthread_detach(thread);
+     }
+ 
+ 

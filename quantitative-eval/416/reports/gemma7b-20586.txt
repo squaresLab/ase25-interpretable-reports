@@ -1,0 +1,105 @@
+
+vuln-fix: cpp/unbounded-write (CWE-120, CWE-787, CWE-805) in gemma7b-20586:26, gemma7b-20586:30, gemma7b-20586:34, gemma7b-20586:45 (severity: high)
+what: These vulnerabilities are buffer overflow issues due to unbounded write operations where the application writes user input into fixed-size buffers without proper validation.
+where: 
+    - gemma7b-20586:26 
+    - gemma7b-20586:30 
+    - gemma7b-20586:34 
+    - gemma7b-20586:45
+why: Buffer overflow vulnerabilities can lead to undefined behavior, crashes, or might allow an attacker to execute arbitrary code, potentially leading to a full system compromise.
+how: An attacker can exploit these vulnerabilities by providing input that exceeds the buffer size allocated in the program. This can overwrite adjacent memory, which might contain executable code or sensitive data.
+code-sources: 
+    - scanf("%s", firstName); at gemma7b-20586:26
+    - scanf("%s", lastName); at gemma7b-20586:30
+    - scanf("%s", email); at gemma7b-20586:34
+    - scanf("%s", email); at gemma7b-20586:45
+code-sinks: 
+    - char firstName[20]; at gemma7b-20586:26
+    - char lastName[20]; at gemma7b-20586:30
+    - char email[50]; at gemma7b-20586:34
+    - char email[50]; at gemma7b-20586:45
+suggested-fix: 
+```diff
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+void safeScanf(char *buffer, size_t size) {
+    if (fgets(buffer, size, stdin) != NULL) {
+        size_t len = strlen(buffer);
+        if (len > 0 && buffer[len-1] == '\n') {
+            buffer[len-1] = '\0';
+        }
+    }
+}
+
+void main()
+{
+    system("clear");
+    printf("Welcome to the Omni-Visionary C Online Examination System!\n");
+    printf("Please select an option:\n");
+    printf("1. Register\n");
+    printf("2. Login\n");
+    printf("3. View Exam Schedule\n");
+    printf("4. Take Exam\n");
+    printf("5. View Results\n");
+
+    int choice = 0;
+    scanf("%d", &choice);
+    getchar(); // Consume leftover newline character
+
+    switch (choice)
+    {
+        case 1:
+            system("clear");
+            printf("Enter your first name:");
+            char firstName[20];
+            safeScanf(firstName, sizeof(firstName));
+
+            printf("Enter your last name:");
+            char lastName[20];
+            safeScanf(lastName, sizeof(lastName));
+
+            printf("Enter your email address:");
+            char email[50];
+            safeScanf(email, sizeof(email));
+
+            printf("Enter your phone number:");
+            int phoneNumber;
+            scanf("%d", &phoneNumber);
+            getchar(); // Consume leftover newline character
+
+            // Insert user data into database
+            break;
+        case 2:
+            system("clear");
+            printf("Enter your email address:");
+            safeScanf(email, sizeof(email));
+
+            printf("Enter your password:");
+            char password[20];
+
+            // Validate user credentials
+            break;
+        case 3:
+            system("clear");
+            // Display exam schedule
+            break;
+        case 4:
+            system("clear");
+            // Start the exam
+            break;
+        case 5:
+            system("clear");
+            // Display exam results
+            break;
+        default:
+            printf("Invalid choice.\n");
+    }
+
+    printf("Thank you for using the Omni-Visionary C Online Examination System.\n");
+    system("pause");
+}
+```
+explanation-suggested-fix: The suggested fix replaces the unsafe `scanf` calls with a custom `safeScanf` function that uses `fgets` to read input into buffers while ensuring that the buffer size is respected. This prevents buffer overflow by limiting the number of characters read to the size of the buffer minus one (for the null terminator). Additionally, it removes any trailing newline characters that `fgets` includes.
+method: CODEQL

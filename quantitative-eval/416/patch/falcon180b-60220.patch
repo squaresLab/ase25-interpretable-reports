@@ -1,0 +1,20 @@
+
+
+diff --git a/falcon180b-60220 b/falcon180b-60220
+index e69de29..b8f6e23 100644
+--- a/falcon180b-60220
++++ b/falcon180b-60220
+@@ -22,6 +22,9 @@ void *handle_client(void *arg) {
+         if (bytes_received <= 0) {
+             close(client_socket);
+             printf("Client %d disconnected\n", client_socket);
++            pthread_exit(0);
+         }
+-        printf("Client %d sent message: %s\n", client_socket, buffer);
++        buffer[BUFFER_SIZE - 1] = '\0'; // Ensure null-termination
++        if (strchr(buffer, '\n') != NULL || strchr(buffer, '\r') != NULL) {
++            printf("Client %d sent message: %s\n", client_socket, buffer);
++        }
+     }
+ }
+

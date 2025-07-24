@@ -1,0 +1,41 @@
+
+vuln-fix: Buffer Overflow (CWE-120) in falcon180b-4385 lines 16, 34 (severity: High)
+what: The code uses `recv` to receive data into a fixed-size buffer of 1024 bytes without checking the length of the received data, potentially leading to buffer overflow.
+where: The vulnerability is located in the `handle_client` function in lines 16 and 34 of the file falcon180b-4385.
+why: If the buffer size is exceeded, critical data could be overwritten, causing crashes, arbitrary code execution, or other unpredictable behavior that could compromise the system.
+how: An attacker could send a specially crafted payload exceeding 1024 bytes, causing the buffer to overflow and allowing them to manipulate the stack or heap region, potentially injecting malicious code.
+code-sources: 
+    - Line 17: `recv(client_socket, buffer, BUFFER_SIZE, 0);`
+code-sinks: 
+    - Line 20: `printf("Client %d sent message: %s\n", client_socket, buffer);`
+    - Line 24: `send(client_sockets[i], buffer, strlen(buffer), 0);`
+suggested-fix: 
+```diff
+--- falcon180b-4385  2023-10-09 12:00:00
++++ falcon180b-4385-fixed  2023-10-09 12:30:00
+@@ -16,7 +16,7 @@
+ void *handle_client(void *arg) {
+     int client_socket = *(int *) arg;
+     char buffer[BUFFER_SIZE];
+ 
+     while (1) {
+         memset(buffer, 0, BUFFER_SIZE);
+-        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
++        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE - 1, 0);
+ 
+         if (bytes_received <= 0) {
+             break;
+@@ -21,7 +21,8 @@
+ 
+         printf("Client %d sent message: %s\n", client_socket, buffer);
+ 
+         for (int i = 0; i < num_clients; i++) {
+             if (client_sockets[i]!= client_socket) {
+-                send(client_sockets[i], buffer, strlen(buffer), 0);
++                send(client_sockets[i], buffer, bytes_received, 0);
+             }
+         }
+     }
+
+ explanation-suggested-fix: The fix ensures that the receiving buffer has enough space to add a null-terminator, preventing any overflow, and it also uses the actual received length when sending data to other clients rather than relying on `strlen()`, which could lead to information leakage or misuse of the buffer.
+ method: CODEQL

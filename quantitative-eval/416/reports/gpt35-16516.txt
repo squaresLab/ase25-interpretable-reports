@@ -1,0 +1,44 @@
+    
+vuln-fix: CWE-362: Race Condition in gpt35-16516 at lines 39, 90, 100 (severity: High)
+what: The code contains a race condition vulnerability due to unsafe access to the shared variable `client_count` and `client_socket` array. The variable `index` is passed by reference to the thread function, leading to a potential race condition when accessed by multiple threads.
+where: 
+    1. The vulnerable code is located at `gpt35-16516` in the following lines:
+        - Line 39: `client_socket[client_count++] = socket;`
+        - Line 90: `int index = client_count - 1;`
+        - Line 100: `if (pthread_create(&thread_id[index], NULL, handle_client, (void *)&index) == -1)`
+why: If not resolved, the race condition could allow multiple threads to read and write these shared resources simultaneously, leading to corrupted data, crashing of the application, or unexpected behavior in handling client connections.
+how: An attacker could exploit this vulnerability by rapidly initiating multiple connections to the server, causing the server to mishandle client states and messages, potentially leading to data leakage or denial of service.
+code-sources: Entry point is the `accept` function in the main function where `client_socket` is accepted from a new client.
+code-sinks: Actions performed by the application include updating the global `client_count` and accessing `client_socket` array in the `add_client` and `handle_client` functions.
+suggested-fix: 
+```diff
+--- gpt35-16516.c
++++ gpt35-16516-fixed.c
+@@ -90,7 +90,7 @@
+        printf("Accepted new connection...\n");
+        if (client_count == MAX_CLIENTS) {
+            printf("Too many clients\n");
+            close(client_socket);
+            continue;
+        }
+        // Add client to client list
+-        add_client(client_socket);
++        int *new_sock = malloc(sizeof(int));
++        *new_sock = client_socket;
++        pthread_mutex_lock(&client_mutex);
++        add_client(*new_sock);
++        int index = client_count - 1;
++        pthread_mutex_unlock(&client_mutex);
+        // Create thread for handling client
+-        if (pthread_create(&thread_id[index], NULL, handle_client, (void *)&index) == -1) {
++        if (pthread_create(&thread_id[index], NULL, handle_client, (void *)new_sock) == -1) {
+            perror("pthread_create");
+            pthread_mutex_lock(&client_mutex);
+            remove_client(index);
+            pthread_mutex_unlock(&client_mutex);
+            close(client_socket);
+            continue;
+        }
+```
+explanation-suggested-fix: The fix passes a dynamically allocated memory pointer to the thread function `pthread_create`, preventing the `index` from being referred to by its address, hence eliminating the race condition. It also ensures the protection of the shared resource `client_count` by appropriately locking and unlocking the mutex around its update. This prevents simultaneous access by multiple threads.
+method: UNKNOWN

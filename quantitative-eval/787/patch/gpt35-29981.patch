@@ -1,0 +1,58 @@
+ Here is a code diff file showing the necessary code changes to fix the vulnerability:
+
+--- gpt35-29981.c    (original)
++++ gpt35-29981.c    (fixed)
+@@ -11,6 +11,7 @@
+ #include <errno.h>
+ #include <sys/time.h>
+ #include <sys/socket.h>
++#include <limits.h>
+ #include <arpa/inet.h>
+ #include <netdb.h>
+ #include <unistd.h>
+@@ -69,6 +70,14 @@
+   return 0;
+ }
+
++#define HOSTNAME_MAX_LEN 256 /* A reasonable length for a hostname */
++#define IPADDR_MAX_LEN 16    /* Max length for an IPv4 address string (xxx.xxx.xxx.xxx) */
++
+ /* Converts an IP address from a struct ip_address to dotted decimal notation */
+ void print_ip_address(struct ip_address ip) 
+ {
+@@ -78,8 +87,12 @@
+ char *dns_lookup(char *host_ip, struct sockaddr_in *hostaddr) 
+ {
+     struct hostent *host_entities;
+-    char *hostname = malloc(MAX_HOP), *ipaddr = malloc(MAX_HOP);
++    char *hostname = malloc(HOSTNAME_MAX_LEN), *ipaddr = malloc(IPADDR_MAX_LEN);
+ 
+     if (get_ip_address(host_ip, (struct ip_address *)hostaddr) == 0) 
+     {
+-        strcpy(ipaddr, host_ip);
++        if (strlen(host_ip) >= IPADDR_MAX_LEN) {
++            free(hostname);
++            free(ipaddr);
++            return NULL;
++        }
++        strncpy(ipaddr, host_ip, IPADDR_MAX_LEN - 1);
+         return ipaddr;
+     }
+
+@@ -78,8 +87,12 @@
+         return NULL;
+     }
+ 
+-    strcpy(hostname, host_entities->h_name);
+-    strcpy(ipaddr, inet_ntoa(*(struct in_addr *)host_entities->h_addr));
++    if (strlen(host_entities->h_name) >= HOSTNAME_MAX_LEN) {
++        free(hostname);
++        free(ipaddr);
++        return NULL;
++    }
++    strncpy(hostname, host_entities->h_name, HOSTNAME_MAX_LEN - 1);
++    strncpy(ipaddr, inet_ntoa(*(struct in_addr *)host_entities->h_addr), IPADDR_MAX_LEN - 1);
+ 
+     return ipaddr;
+ }
+

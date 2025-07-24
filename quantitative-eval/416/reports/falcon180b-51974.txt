@@ -1,0 +1,100 @@
+
+vuln-fix: CWE-362: Race Condition in falcon180b-51974 (severity: High)
+what: The code contains a race condition vulnerability that arises due to simultaneous access to shared resources (`client_sockets` array and `num_clients` variable) by multiple threads without proper synchronization.
+where: This vulnerability is present in `handle_client` function which is executed by multiple threads and in the `while` loop in the `main` function where threads are created (lines 23-42 and lines 53-71).
+why: Not resolving this weakness allows multiple threads to read and modify the shared resources (`client_sockets` array and `num_clients` variable) concurrently, potentially causing data corruption, crashes, or unexpected behavior.
+how: An attacker could exploit this vulnerability by causing multiple clients to connect and disconnect in quick succession, potentially leading to undefined behavior, data corruption, or crashing the server.
+code-sources: The entry point is through the `accept` function call in the `main` function (line 58) where new client connections are accepted and the client socket is added to the `client_sockets` array.
+code-sinks: The action is performed in the `handle_client` function (lines 23-42) where data received from the client is read into the buffer and then sent to other clients.
+suggested-fix: 
+```diff
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <pthread.h>
+
+#define MAX_CLIENTS 10
+#define BUFFER_SIZE 1024
+
+int server_socket;
+struct sockaddr_in server_addr;
+int client_sockets[MAX_CLIENTS];
+int num_clients = 0;
+pthread_t threads[MAX_CLIENTS];
+pthread_mutex_t client_sockets_lock = PTHREAD_MUTEX_INITIALIZER;
+
+void *handle_client(void *arg) {
+    int client_socket = *(int *) arg;
+    char buffer[BUFFER_SIZE];
+
+    while (1) {
+        memset(buffer, 0, BUFFER_SIZE);
+        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+
+        if (bytes_received <= 0) {
+            pthread_mutex_lock(&client_sockets_lock);
+            close(client_socket);
+            // Remove client socket from array
+            for (int i = 0; i < num_clients; i++) {
+                if (client_sockets[i] == client_socket) {
+                    client_sockets[i] = client_sockets[num_clients - 1];
+                    num_clients--;
+                    break;
+                }
+            }
+            pthread_mutex_unlock(&client_sockets_lock);
+            pthread_exit(0);
+        }
+
+        printf("Client %d sent: %s\n", client_socket, buffer);
+        pthread_mutex_lock(&client_sockets_lock);
+        for (int i = 0; i < num_clients; i++) {
+            if (client_sockets[i] != client_socket) {
+                send(client_sockets[i], buffer, strlen(buffer), 0);
+            }
+        }
+        pthread_mutex_unlock(&client_sockets_lock);
+    }
+}
+
+int main() {
+    int opt = 1;
+    setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(8080);
+    server_addr.sin_addr.s_addr = INADDR_ANY;
+
+    bind(server_socket, (struct sockaddr *) &server_addr, sizeof(server_addr));
+    listen(server_socket, MAX_CLIENTS);
+
+    printf("Server is listening on port 8080\n");
+
+    while (1) {
+        socklen_t addr_size = sizeof(struct sockaddr_in);
+        int client_socket = accept(server_socket, (struct sockaddr *) &server_addr, &addr_size);
+
+        if (num_clients >= MAX_CLIENTS) {
+            close(client_socket);
+            printf("Maximum number of clients reached\n");
+            continue;
+        }
+
+        pthread_mutex_lock(&client_sockets_lock);
+        client_sockets[num_clients] = client_socket;
+        num_clients++;
+        pthread_mutex_unlock(&client_sockets_lock);
+
+        pthread_create(&threads[num_clients - 1], NULL, handle_client, (void *) &client_socket);
+    }
+
+    return 0;
+}
+```
+explanation-suggested-fix: The suggested code diff introduces a mutex lock (`pthread_mutex_t client_sockets_lock`) to protect access to the shared `client_sockets` array and `num_clients` variable. This ensures that only one thread can modify these shared resources at a time, preventing race conditions.
+method: UNKNOWN

@@ -1,0 +1,23 @@
+ 
+
+diff --git a/falcon180b-7874 b/falcon180b-7874
+index e69de29..b062503 100644
+--- a/falcon180b-7874
++++ b/falcon180b-7874
+@@ -62,7 +62,7 @@ int main() {
+         if (num_clients >= MAX_CLIENTS) {
+             close(client_socket);
+             printf("Maximum number of clients reached\n");
+             continue;
+         }
+
+         int *new_client_socket = malloc(sizeof(int));
+         *new_client_socket = client_socket;
+
+@@ -71,7 +71,7 @@ int main() {
+         pthread_create(&thread_id, NULL, handle_client, (void *) new_client_socket);
+     }
+
+     return 0;
+ }
+ 

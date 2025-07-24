@@ -1,0 +1,16 @@
+ 
+
+--- falcon180b-8676-ori.c
++++ falcon180b-8676-fixed.c
+@@ -15,6 +15,8 @@
+        while (1) {
+            memset(buffer, 0, BUFFER_SIZE);
+-           int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
++           int bytes_received = recv(client_socket, buffer, BUFFER_SIZE - 1, 0); 
+            if (bytes_received <= 0) {
+                 break;
+             }
++            buffer[bytes_received] = '\0'; // Ensure null termination
+            printf("Client %d sent: %s\n", client_socket, buffer);
+--- 
+

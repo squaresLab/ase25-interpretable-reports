@@ -1,0 +1,19 @@
+ 
+    
+    --- gpt35-33378.c
+    +++ gpt35-33378.c
+    @@ -53,8 +53,11 @@
+    
+    -    while ((read_size = recv(sock, client_message, 2000, 0)) > 0) {
+    +    while ((read_size = recv(sock, client_message, sizeof(client_message) - 1, 0)) > 0) {
+            // End of string marker
+    -        client_message[read_size] = '\0';
+    +        if (read_size >= sizeof(client_message)) {
+    +            read_size = sizeof(client_message) - 1;
+    +        }
+    +        client_message[read_size] = '\0';
+    
+            // Send the message back to client
+            write(sock, client_message, strlen(client_message));
+    
+    

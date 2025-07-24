@@ -1,0 +1,14 @@
+ 
+
+--- gemini_pro-6828.c
++++ gemini_pro-6828.c
+@@ -107,7 +107,7 @@ void *handle_client(void *arg) {
+ 
+   // Send a response to the client
+   char resp[MAX_MSG_LEN];
+-  sprintf(resp, "Received message: %s", msg);
++  snprintf(resp, MAX_MSG_LEN, "Received message: %s", msg);
+   n = write(clientfd, resp, strlen(resp));
+   if (n == -1) {
+     perror("write");
+

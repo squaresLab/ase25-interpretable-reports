@@ -1,0 +1,12 @@
+ 
+
+@@ -23,7 +23,8 @@
+        }
+-       printf("Client %d: %s\n", client_socket, buffer);
++       // Ensure null-terminated string and prevent buffer overflow
++       buffer[BUFFER_SIZE - 1] = '\0';
++       printf("Client %d: %.*s\n", client_socket, bytes_received, buffer);
+ }
+ close(client_socket);
+ return NULL;
+

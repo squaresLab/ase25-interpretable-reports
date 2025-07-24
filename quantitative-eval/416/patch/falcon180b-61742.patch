@@ -1,0 +1,19 @@
+ 
+
+diff --git a/falcon180b-61742-original.c b/falcon180b-61742-fixed.c
+index dcf06..eb01f 100644
+--- a/falcon180b-61742-original.c
++++ b/falcon180b-61742-fixed.c
+@@ -70,7 +70,10 @@ int main() {
+         num_clients++;
+ 
+         pthread_t thread_id;
+-        pthread_create(&thread_id, NULL, handle_client, (void *)&client_socket);
++        
++        int *client_sock_ptr = malloc(sizeof(int));
++        *client_sock_ptr = client_socket;
++        pthread_create(&thread_id, NULL, handle_client, (void *)client_sock_ptr);
+     }
+ 
+     return 0;
+

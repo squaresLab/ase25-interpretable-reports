@@ -1,0 +1,19 @@
+ 
+    
+    --- gpt35-74116.c    2023-10-07 12:03:00.000000000 +0000
+    +++ gpt35-74116_fixed_output.c    2023-10-07 12:04:00.000000000 +0000
+    @@ -11,7 +11,12 @@
+        char buffer[1024];
+        bzero(buffer, 1024);
+    -   recv(client_fd, buffer, 1024, 0);
+    +   int bytes_received = recv(client_fd, buffer, 1023, 0);
+    +   if (bytes_received < 0) {
+    +       perror("recv failed");
+    +       close(client_fd);
+    +       pthread_exit(NULL);
+    +   }
+        buffer[bytes_received] = '\0';  // Null-terminate the received buffer
+        printf("Received message: %s\n", buffer);
+
+        // Analyze Wi-Fi signal strength here
+    

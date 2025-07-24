@@ -1,0 +1,23 @@
+ 
+
+--- original/falcon180b-55066.c
++++ fixed/falcon180b-55066.c
+@@ -18,7 +18,15 @@
+         memset(buffer, 0, BUFFER_SIZE);
+         int bytes_received = recv(sock, buffer, BUFFER_SIZE, 0);
+ 
+-        if (bytes_received <= 0) {
++        if (bytes_received < 0) {
+             break;
++        } else if (bytes_received == 0) {
++            printf("Client %d disconnected\n", sock);
++            break;
++        } else if (bytes_received >= BUFFER_SIZE) {
++            printf("Received message exceeds buffer size\n");
++            send(sock, "Message too large\n", strlen("Message too large\n"), 0);
++            continue;
+         }
+ 
+         printf("Client %d sent: %s\n", sock, buffer);
+
+    

@@ -1,0 +1,21 @@
+
+vuln-fix: Buffer Overflow (CWE-120) in falcon180b-63966 (severity: High)
+what: The code can cause a buffer overflow due to improper handling of the data length received from the client. The `recv` function can accept more data than allocated for `recv_msg`, thus writing outside the bounds of the buffer and corrupting memory.
+where: The vulnerability is located in the function `handle_client` on lines dealing with the `recv` function and `recv_msg` buffer. Specifically: `int bytes_received = recv(client_socket, recv_msg, MAX_MSG_SIZE, 0);` and `recv_msg[bytes_received] = '\0';`.
+why: If this vulnerability is not resolved, an attacker could cause a buffer overflow, potentially leading to arbitrary code execution, crashing the server, or other unpredictable behavior that compromises the system's integrity and availability.
+how: An attacker could exploit this vulnerability by sending a particularly crafted message to the server that exceeds `MAX_MSG_SIZE` bytes, causing the server to write past the end of the `recv_msg` buffer, leading to memory corruption.
+code-sources: The entry point is `recv(client_socket, recv_msg, MAX_MSG_SIZE, 0);` where user input is received over the network.
+code-sinks: The sink is indicated by `recv_msg[bytes_received] = '\0';` where the application incorrectly assumes the message length is within bounds, and `send(client_socket, recv_msg, strlen(recv_msg), 0);` where the possibly corrupted message is echoed back.
+suggested-fix: 
+```diff
+108c108
+<         recv_msg[bytes_received] = '\0';
+---
+>         if (bytes_received < MAX_MSG_SIZE) {
+>             recv_msg[bytes_received] = '\0';
+>         } else {
+>             recv_msg[MAX_MSG_SIZE - 1] = '\0';
+>         }
+```
+explanation-suggested-fix: The suggested code diff ensures that the buffer `recv_msg` is properly null-terminated without causing a buffer overflow. If the received message length is greater than or equal to `MAX_MSG_SIZE`, the buffer is null-terminated at the last allowed position `MAX_MSG_SIZE - 1`. This prevents writing past the buffer's end and avoids undefined behavior and potential security vulnerabilities.
+method: UNKNOWN

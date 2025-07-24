@@ -1,0 +1,94 @@
+
+vuln-fix: CWE-787: Out-of-bounds Write in falcon180b-51399 (severity: High)
+what: The code fails to check boundaries when accessing and writing to the `clients` array, which can result in out-of-bounds writes. The variable `num_clients` can exceed `MAX_CLIENTS`, leading to writes outside the bounds of the fixed-size `clients` array.
+where: Lines 46-50 in falcon180b-51399
+why: An attacker could potentially exploit this vulnerability to corrupt memory, leading to unexpected behavior, crashes, or potential code execution on the server.
+how: An attacker could create multiple connections to the server, increasing the `num_clients` count without proper bounds checking. This would eventually cause out-of-bounds writes in the `clients` array, allowing the attacker to overwrite adjacent memory.
+code-sources: User connections made to the socket server (accepting client connections).
+code-sinks: Writing to the `clients` array without bounds checking (lines 46-50), `recv` function call devoid of bounds validation.
+suggested-fix: 
+```diff
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#include <pthread.h>
+
+#define PORT 8080
+#define BACKLOG 10
+#define MAX_CLIENTS 10
+#define BUFFER_SIZE 1024
+
+int clients[MAX_CLIENTS][2];
+int num_clients = 0;
+
+void *handle_client(void *arg) {
+    int client_socket = *(int *) arg;
+    char buffer[BUFFER_SIZE];
+    while (1) {
+        memset(buffer, 0, BUFFER_SIZE);
+        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+        if (bytes_received <= 0) {
+            break;
+        }
+        printf("Client %d sent: %s\n", client_socket, buffer);
+        for (int i = 0; i < num_clients; i++) {
+            if (clients[i][0] != client_socket) { // Fix comparison bug clients[i][0] != client_socket
+                send(clients[i][0], buffer, strlen(buffer), 0);
+            }
+        }
+    }
+    close(client_socket);
+    return NULL;
+}
+
+int main() {
+    int listen_socket = socket(AF_INET, SOCK_STREAM, 0);
+    if (listen_socket == -1) {
+        printf("Error creating socket\n");
+        exit(1);
+    }
+
+    struct sockaddr_in server_addr;
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(PORT);
+    server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+
+    if (bind(listen_socket, (struct sockaddr *) &server_addr, sizeof(server_addr)) == -1) {
+        printf("Error binding socket\n");
+        exit(1);
+    }
+
+    if (listen(listen_socket, BACKLOG) == -1) {
+        printf("Error listening on socket\n");
+        exit(1);
+    }
+
+    printf("Server started on port %d\n", PORT);
+
+    while (1) {
+        int client_socket = accept(listen_socket, NULL, NULL);
+        if (client_socket == -1) {
+            printf("Error accepting connection\n");
+            continue;
+        }
+        if (num_clients < MAX_CLIENTS) {
+            clients[num_clients][0] = client_socket;
+            clients[num_clients][1] = num_clients;
+            num_clients++;
+            pthread_t thread_id;
+            pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+        } else {
+            printf("Server full, rejecting connection.\n");
+            close(client_socket);
+        }
+    }
+
+    return 0;
+}
+```
+explanation-suggested-fix: The suggested fix adds a check before adding a new client to the `clients` array, ensuring that `num_clients` does not exceed `MAX_CLIENTS`. If `num_clients` is equal to or greater than `MAX_CLIENTS`, the server rejects the new connection, preventing out-of-bounds writes and ensuring memory safety.
+method: UNKNOWN

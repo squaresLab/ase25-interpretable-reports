@@ -1,0 +1,24 @@
+
+
+--- a/falcon180b-29517
++++ b/falcon180b-29517
+@@ -14,7 +14,7 @@ void *handle_client(void *arg) {
+     char buffer[BUFFER_SIZE];
+
+     // Replace fgets with recv
+-    while (fgets(buffer, BUFFER_SIZE, stdin)) {
++    while (recv(client_socket, buffer, BUFFER_SIZE-1, 0) > 0) {
+         send(client_socket, buffer, strlen(buffer), 0);
+     }
+
+@@ -46,7 +46,8 @@ int main() {
+         continue;
+     }
+
+-    client_sockets[num_clients++] = client_socket;
++    client_sockets[num_clients] = client_socket;
++    pthread_create(&threads[num_clients++], NULL, handle_client, &client_sockets[num_clients - 1]);
+     }
+
+     return 0;
+ 

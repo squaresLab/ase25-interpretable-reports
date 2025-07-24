@@ -1,0 +1,24 @@
+plaintext
+vuln-fix: Unbounded write (CWE-120, CWE-787, CWE-805) in gemini_pro-6828: line 110 (severity: high)
+what: The function `sprintf` is used to write data into the `resp` buffer without controlling the length of data that is being written. This could lead to a buffer overflow if the input message length exceeds the buffer capacity.
+where: Line 110 in gemini_pro-6828
+why: If not resolved, this vulnerability may allow an attacker to execute arbitrary code, cause crashes, or overwrite critical data, leading to potential system compromise or data corruption.
+how: An attacker would send a crafted message to the server with a length that exceeds `MAX_MSG_LEN`. Since there is no boundary check in place for the `sprintf` function, the excessive length could overflow the buffer `resp` and overwrite adjacent memory.
+code-sources: The entry point for user input is the client message received by `read(clientfd, msg, MAX_MSG_LEN);` on line 89.
+code-sinks: The user input is used in a potentially dangerous way by `sprintf(resp, "Received message: %s", msg);` on line 110.
+suggested-fix: 
+```diff
+--- gemini_pro-6828.c
++++ gemini_pro-6828.c
+@@ -107,7 +107,7 @@ void *handle_client(void *arg) {
+ 
+   // Send a response to the client
+   char resp[MAX_MSG_LEN];
+-  sprintf(resp, "Received message: %s", msg);
++  snprintf(resp, MAX_MSG_LEN, "Received message: %s", msg);
+   n = write(clientfd, resp, strlen(resp));
+   if (n == -1) {
+     perror("write");
+```
+explanation-suggested-fix: The suggested fix replaces `sprintf` with `snprintf`. The `snprintf` function takes an additional parameter, `MAX_MSG_LEN`, which specifies the maximum number of bytes to be written to the buffer `resp`. This prevents buffer overflow by ensuring that no more than `MAX_MSG_LEN` bytes are written, thus protecting against potential overflows.
+method: CODEQL

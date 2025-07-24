@@ -1,0 +1,52 @@
+
+vuln-fix: CWE-362: Race Condition in falcon180b-29839 (severity: High)
+what: The vulnerability is a race condition due to improper handling of the `client_socket` variable when starting a new thread.
+where: Lines 51-52 in falcon180b-29839
+why: If this weakness is not resolved, it could result in multiple threads operating on the same `client_socket` variable, potentially leading to undefined behavior, crashes, or security issues like information leakage.
+how: An attacker could exploit this vulnerability by rapidly connecting multiple clients to the server, causing the `client_socket` variable to be used by multiple threads concurrently.
+code-sources: The code source is the line where the client socket is accepted: `client_socket = accept(server_socket, NULL, NULL);`
+code-sinks: The code sink is the line where the `client_socket` pointer is passed to the `pthread_create` function: `pthread_create(&g_client_threads[g_num_clients - 1], NULL, handle_client, (void*)&client_socket);`
+suggested-fix:
+```diff
+int main() {
+    int server_socket = socket(AF_INET, SOCK_STREAM, 0);
+
+    struct sockaddr_in server_addr;
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(8080);
+    server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+
+    bind(server_socket, (struct sockaddr*)&server_addr, sizeof(server_addr));
+    listen(server_socket, 10);
+
+    printf("Server started on port 8080\n");
+
+    while (1) {
+        int client_socket = accept(server_socket, NULL, NULL);
+
+        if (g_num_clients >= MAX_CLIENTS) {
+            send(client_socket, "Server is full\n", 14, 0);
+            close(client_socket);
+            continue;
+        }
+
+        // Allocate memory to store the client socket for each thread
+        int* client_sock_ptr = malloc(sizeof(int));
+        *client_sock_ptr = client_socket;
+
+        g_client_sockets[g_num_clients] = client_socket;
+        g_num_clients++;
+
+        pthread_create(&g_client_threads[g_num_clients - 1], NULL, handle_client, (void*)client_sock_ptr);
+    }
+
+    return 0;
+}
+
+void* handle_client(void* arg) {
+    int client_socket = *(int*)arg;
+    free(arg);
+```
+explanation-suggested-fix: The fix allocates memory to store the client_socket value for each thread individually. This prevents race conditions by ensuring that each thread has its own distinct copy of the `client_socket` value.
+method: UNKNOWN

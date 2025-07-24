@@ -1,0 +1,33 @@
+ 
+vuln-fix: CWE-665: Improper Initialization in falcon180b-47393 (severity: High)
+what: There is an improper initialization vulnerability in the client handling code. Specifically, the function `pthread_create()` is called with a pointer to `client_socket` which is a local variable that may change before the thread starts executing.
+where: The vulnerability is found in the file `falcon180b-47393` on line 65 where the `pthread_create()` function is called.
+why: If the vulnerability is not resolved, a scenario where `client_socket` value changes before the thread starts executing may lead to incorrect client handling or even cause the server to crash.
+how: To exploit this vulnerability, an attacker would need to connect multiple clients quickly in succession, potentially causing race conditions and undefined behavior in how client connections are handled.
+code-sources: The entry point for user input is through the socket connection accepted in the main while loop, where client message handling is performed in the `handle_client` function.
+code-sinks: The user's input is used in the `send` function inside the `handle_client` function.
+suggested-fix: 
+```diff
+ int client_socket = accept(server_socket, (struct sockaddr *) &client_addr, &client_addr_size);
+if (client_socket == -1) {
+    printf("Error accepting connection\n");
+    continue;
+}
+
+if (num_clients >= MAX_CLIENTS) {
+    send(client_socket, "Server is full\n", strlen("Server is full\n"), 0);
+    close(client_socket);
+    continue;
+}
+
+client_sockets[num_clients] = client_socket;
+num_clients++;
+
+pthread_t thread_id;
+- pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
++ int *new_client_socket = malloc(sizeof(int));
++ *new_client_socket = client_socket;
++ pthread_create(&thread_id, NULL, handle_client, (void *) new_client_socket);
+```
+explanation-suggested-fix: The suggested code change involves dynamically allocating memory for each `client_socket` and passing the allocated memory to the `pthread_create()` function. This ensures that each thread handles the correct client socket and prevents race conditions relating to the changing value of the local variable `client_socket`.
+method: UNKNOWN

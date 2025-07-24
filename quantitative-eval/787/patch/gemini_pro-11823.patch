@@ -1,0 +1,16 @@
+ 
+
+--- gemini_pro-11823    2023-10-12 12:00:00.000000000 +0000
++++ gemini_pro-11823_fixed    2023-10-12 12:05:00.000000000 +0000
+@@ -47,6 +47,8 @@
+ void deal_cards(Game *game) {
+     for (int i = 0; i < game->num_players; i++) {
+         for (int j = 0; j < MAX_HAND_SIZE; j++) {
++            if (game->num_cards_in_deck <= 0) {
++                fprintf(stderr, "Error: Not enough cards in deck to deal.\n");
++                exit(1);
++            }
+             game->hands[i].cards[j] = game->deck[game->num_cards_in_deck - 1];
+             game->num_cards_in_deck--;
+             game->hands[i].num_cards++;
+

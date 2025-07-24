@@ -1,0 +1,38 @@
+ 
+
+void run_simulation(traffic_flow_simulation_t *sim) {
+    // Initialize the random number generator
+    srand(time(NULL));
+
+    // Create a car
+    car_t car;
+    car.type = rand() % 3;
+    car.speed = rand() % 5 + 1;
+    car.position = 0;
+
+    // Add the car to the road segment
+-   sim->road_segments[NORTHBOUND].cars = realloc(sim->road_segments[NORTHBOUND].cars, (sim->road_segments[NORTHBOUND].num_cars + 1) * sizeof(car_t));
++   car_t *new_cars = realloc(sim->road_segments[NORTHBOUND].cars, (sim->road_segments[NORTHBOUND].num_cars + 1) * sizeof(car_t));
++   if (new_cars == NULL) {
++       // Handle memory allocation failure, e.g., by logging and exiting
++       fprintf(stderr, "Memory allocation failed\n");
++       exit(EXIT_FAILURE);
++   }
++   sim->road_segments[NORTHBOUND].cars = new_cars;
+    
+    sim->road_segments[NORTHBOUND].cars[sim->road_segments[NORTHBOUND].num_cars] = car;
+    sim->road_segments[NORTHBOUND].num_cars++;
+
+    // Run the simulation loop
+    while (1) {
+        // Update the simulation
+        update_simulation(sim);
+
+        // Draw the simulation
+        draw_simulation(sim);
+
+        // Sleep for 100 milliseconds
+        usleep(100000);
+    }
+}
+

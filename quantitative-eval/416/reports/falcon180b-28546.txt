@@ -1,0 +1,28 @@
+
+vuln-fix: Format String Vulnerability (CWE-134) in falcon180b-28546 at lines 25-26 (severity: High)
+what: The code prints user-provided data directly through a format string in the printf function, which can lead to a format string vulnerability. This could allow an attacker to execute arbitrary code or cause a denial-of-service.
+where: The vulnerability is located in the `handle_client` function, specifically at lines 25-26 in the file falcon180b-28546.
+why: If this weakness is not resolved, an attacker could manipulate the format string to read from or write to arbitrary memory locations, potentially leading to the execution of arbitrary code or causing the program to crash.
+how: An attacker would supply a specially crafted string containing format specifiers (e.g., `%x`, `%s`, `%n`) that exploit the format string vulnerability, allowing them to read sensitive information or alter the program’s execution flow.
+code-sources: The entry point for user input is the `recv` function call in the `handle_client` function where data is read from the client socket (line 18).
+code-sinks: The `printf` function call in the `handle_client` function at line 25, where the user input from the `buffer` is used as part of the format string.
+suggested-fix: 
+```cpp
+diff --git a/falcon180b-28546 b/falcon180b-28546
+index e69de29..b2a8e48 100644
+--- a/falcon180b-28546
++++ b/falcon180b-28546
+@@ -22,7 +22,7 @@ void *handle_client(void *arg) {
+ 
+         if (bytes_received <= 0) {
+             close(client_socket);
+             pthread_exit(0);
+         }
+ 
+-        printf("Client %d sent message: %s\n", client_socket, buffer);
++        printf("Client %d sent message: %.*s\n", client_socket, bytes_received, buffer);
+     }
+ }
+```
+explanation-suggested-fix: By using the `%.*s` format specifier, the `printf` function is instructed to print a specified maximum number of characters from the `buffer`, as provided by the `bytes_received` variable. This prevents an attacker from injecting format specifiers and exploits within the input data.
+method: UNKNOWN

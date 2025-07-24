@@ -1,0 +1,35 @@
+
+vuln-fix: Buffer Overflow (CWE-787) in falcon180b-30140 (severity: High)
+what: The code suffers from a buffer overflow vulnerability due to not properly validating the size of the client-supplied data before copying it into a fixed-size buffer.
+where: Line 15 in handle_client function in falcon180b-30140
+why: If an attacker sends a message larger than BUFFER_SIZE, it can overwrite adjacent memory, possibly causing a crash or allowing arbitrary code execution.
+how: An attacker can exploit this by sending a crafted message larger than 1024 bytes, which exceeds the BUFFER_SIZE, causing a buffer overflow.
+code-sources: 
+```C
+recv(client_socket_d, buffer, BUFFER_SIZE, 0);
+```
+code-sinks: 
+```C
+printf("Client %d sent message: %s\n", client_socket_d, buffer);
+```
+suggested-fix: 
+```diff
+--- falcon180b-30140   2023-10-01 10:00:00.000000000 +0000
++++ falcon180b-30140-fixed  2023-10-01 10:05:00.000000000 +0000
+@@ -15,8 +15,10 @@
+ 
+     while (1) {
+         memset(buffer, 0, BUFFER_SIZE);
+-        int bytes_received = recv(client_socket_d, buffer, BUFFER_SIZE, 0);
+-
++        int bytes_received = recv(client_socket_d, buffer, BUFFER_SIZE - 1, 0);
++        if (bytes_received > BUFFER_SIZE - 1) {
++            printf("Received message is too large\n");
++            break;
++        }
+         if (bytes_received <= 0) {
+             break;
+         }
+```
+explanation-suggested-fix: The suggested code diff fixes the vulnerability by reducing the amount of data received to BUFFER_SIZE - 1, which leaves space for a null terminator. It also adds a check to ensure that the buffer does not become overflowed, providing a message and breaking the loop if the received message is too large.
+method: UNKNOWN

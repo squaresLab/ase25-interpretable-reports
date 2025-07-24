@@ -1,0 +1,11 @@
+ 
+
+--- falcon180b-47817.c
++++ falcon180b-47817.c
+@@ -18,7 +18,7 @@
+ 
+         printf("Client %d said: %s\n", client_socket, buffer);
+ 
+-        printf("Client %d said: ", client_socket);
+-        printf("%s\n", buffer);
+

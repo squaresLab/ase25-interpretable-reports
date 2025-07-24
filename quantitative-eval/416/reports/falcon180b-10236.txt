@@ -1,0 +1,45 @@
+
+vuln-fix: Missing Bounds Check (CWE-119) in falcon180b-10236 on Lines `handle_client` function (severity: High)
+what: The code does not validate the length of data received from the client (`recv`) before printing and sending it to other clients, potentially leading to a buffer overflow.
+where: Lines 20-33 in `falcon180b-10236`, function `handle_client`
+why: Not resolving this weakness can allow an attacker to send a maliciously crafted message that overflows the buffer, leading to a potential crash or arbitrary code execution.
+how: An attacker can exploit this vulnerability by sending data larger than `BUFFER_SIZE` causing a buffer overflow, possibly leading to execution of arbitrary code, denial of service, or compromise of the underlying server.
+code-sources: 
+- The entry point of user input in the code is at Line 20 within the function `handle_client` where `recv(client_socket, buffer, BUFFER_SIZE, 0)` is called.
+code-sinks: 
+- The user input is processed and then printed using `printf` on Line 25.
+- It is also sent to other clients using the `send` function on Lines 28-30.
+suggested-fix: 
+```diff
+--- falcon180b-10236.c
++++ falcon180b-10236-fixed.c
+@@ -21,7 +21,7 @@
+     char buffer[BUFFER_SIZE];
+
+     while (1) {
+-        memset(buffer, 0, BUFFER_SIZE);
++        memset(buffer, 0, sizeof(buffer));
+         int bytes_received = recv(client_socket, buffer, BUFFER_SIZE-1, 0);
+
+         if (bytes_received <= 0) {
+@@ -26,7 +26,9 @@
+             break;
+         }
+
++        buffer[bytes_received] = '\0'; // Null terminate buffer to prevent overflow
++
+         printf("Client %d: %s\n", client_socket, buffer);
+
+         for (int i = 0; i < num_clients; i++) {
+@@ -59,6 +61,8 @@
+         client_sockets[num_clients] = client_socket;
+         num_clients++;
+
++        // Create a copy of client socket to avoid race condition
++        int *client_sock_copy = malloc(sizeof(int));
++        *client_sock_copy = client_socket;
+         pthread_create(&thread_ids[num_clients - 1], NULL, handle_client, (void *) client_sock_copy);
+     }
+```
+explanation-suggested-fix: The code diff ensures that the buffer is null-terminated to avoid buffer overflows. Additionally, by offsetting the `recv` to BUFFER_SIZE-1, it reserves space for the null terminator. The use of a dynamically allocated copy of `client_socket` passed to `pthread_create` prevents race conditions caused by the reuse of `client_socket` variable.
+method: CODEQL

@@ -1,0 +1,138 @@
+
+vuln-fix: Improper Input Validation (CWE-20) in gpt35-32493 (severity: High)
+what: The code fails to validate user input for the dimensions (width, height) and sizes of the shapes, leading to potential invalid or negative inputs.
+where: In `rect`, `triangle`, and `diamond` functions where user inputs are used directly:
+- `rect(width, height)` function starting at line 14
+- `triangle(size)` function starting at line 28
+- `diamond(size)` function starting at line 41
+why: Not resolving this weakness may lead to unexpected behavior or crashes of the program. For example, providing a negative size could result in an infinite loop or segmentation fault due to invalid memory access.
+how: An attacker can exploit this vulnerability by providing specially crafted negative or excessively large input values, which can cause unexpected behavior or crash the application.
+code-sources: 
+- `scanf("%d", &choice);` at line 61
+- `scanf("%d %d", &width, &height);` at line 69
+- `scanf("%d", &size);` at lines 73 and 77
+code-sinks: 
+- `rect(width, height);` at line 70
+- `triangle(size);` at line 74
+- `diamond(size);` at line 78
+suggested-fix: 
+```diff
+#include <stdio.h>
+#include <stdlib.h>
++ #include <limits.h>
+
+void dots(int num) {
+    for (int i = 0; i < num; i++) {
+        printf(".");
+    }
+}
+
+void line(int num) {
+    printf("+");
+    dots(num);
+    printf("+\n");
+}
+
+void rect(int width, int height) {
++    if (width <= 0 || height <= 0) {
++        printf("Invalid dimensions for rectangle.\n");
++        return;
++    }
+    line(width);
+    for (int i = 0; i < height; i++) {
+        printf("|");
+        dots(width);
+        printf("|\n");
+    }
+    line(width);
+}
+
+void triangle(int size) {
++    if (size <= 0) {
++        printf("Invalid size for triangle.\n");
++        return;
++    }
+    for (int i = 1; i <= size; i++) {
+        dots(size-i);
+        printf("/");
+        dots(i*2-2);
+        printf("\\\n");
+    }
+    line(size*2);
+}
+
+void diamond(int size) {
++    if (size <= 0) {
++        printf("Invalid size for diamond.\n");
++        return;
++    }
+    for (int i = 1; i <= size-1; i++) {
+        dots(size-i);
+        printf("/");
+        dots(i*2-2);
+        printf("\\\n");
+    }
+    line(size*2);
+    for (int j = size-1; j > 0; j--) {
+        dots(size-j);
+        printf("\\");
+        dots(j*2-2);
+        printf("/\n");
+    }
+    line(size*2);
+}
+
+int main() {
+    int choice;
+
+    printf("Choose a shape:\n");
+    printf("1. Rectangle\n");
+    printf("2. Triangle\n");
+    printf("3. Diamond\n");
+    scanf("%d", &choice);
+
++    if (choice < 1 || choice > 3) {
++        printf("Invalid choice.\n");
++        return 1;
++    }
+
+    switch(choice) {
+        case 1:
+            printf("Enter width and height of rectangle:\n");
+            int width, height;
+            scanf("%d %d", &width, &height);
++            if (width <= 0 || height <= 0 || width > INT_MAX || height > INT_MAX) {
++                printf("Invalid dimensions.\n");
++                return 1;
++            }
+            rect(width, height);
+            break;
+        case 2:
+            printf("Enter size of triangle:\n");
+            int size;
+            scanf("%d", &size);
++            if (size <= 0 || size > INT_MAX) {
++                printf("Invalid size.\n");
++                return 1;
++            }
+            triangle(size);
+            break;
+        case 3:
+            printf("Enter size of diamond:\n");
+            scanf("%d", &size);
++            if (size <= 0 || size > INT_MAX) {
++                printf("Invalid size.\n");
++                return 1;
++            }
+            diamond(size);
+            break;
+        default:
+            printf("Invalid choice.");
+            return 1;
+    }
+
+    return 0;
+}
+```
+explanation-suggested-fix: The suggested code diff ensures that input values are validated before they are used. It checks the dimensions and sizes to be positive and within the range of allowable values, which prevents the application from performing undefined or dangerous actions based on invalid input.
+method: UNKNOWN

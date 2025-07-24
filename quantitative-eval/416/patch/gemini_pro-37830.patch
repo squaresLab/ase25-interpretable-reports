@@ -1,0 +1,20 @@
+ 
+    
+    --- gemini_pro-37830.c
+    +++ gemini_pro-37830_fixed.c
+    @@ -15,7 +15,7 @@
+         int sockfd = *(int *)arg;
+
+         // Receive the client's message
+    -    char buffer[1024];
+    +    char buffer[1024] = {0};
+         int n = read(sockfd, buffer, sizeof(buffer));
+
+         // Print the client's message
+    -    printf("Client: %s", buffer);
+    +    printf("Client: %.*s", n, buffer);
+
+         // Send the greeting to the client
+         write(sockfd, greeting, strlen(greeting));
+    
+    

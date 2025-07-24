@@ -1,0 +1,62 @@
+
+vuln-fix: Concurrent Access to Shared Resource (CWE-362) in falcon180b-1262 (severity: High)
+what: The vulnerable code allows multiple threads to access and modify the `num_clients` and `client_sockets` variables concurrently without synchronization, leading to potential race conditions.
+where: Lines 9 (`int client_sockets[MAX_CLIENTS];`), 10 (`int num_clients = 0;`), 27 (`num_clients--`), and 70 (`num_clients++;`).
+why: Not resolving this weakness can lead to inconsistent application states, crashes, or security flaws such as unauthorized access or denial of service.
+how: An attacker could exploit this vulnerability by establishing multiple simultaneous connections or disconnecting maliciously, causing unpredictable behavior in the server due to race conditions in the shared variables.
+code-sources: User connections initiated in `accept_connections()` via `accept()` function.
+code-sinks: Modifications to `num_clients` and `client_sockets` in `handle_client()` and `accept_connections()`.
+suggested-fix: 
+```diff
+--- falcon180b-1262.c
++++ falcon180b-1262-fixed.c
+@@ -5,6 +5,7 @@
+ #include <sys/socket.h>
+ #include <arpa/inet.h>
+ #include <unistd.h>
++#include <pthread.h>
+ 
+ #define BUFFER_SIZE 1024
+ #define MAX_CLIENTS 10
+@@ -10,6 +11,8 @@
+ #define SERVER_PORT 8080
+ #define SERVER_IP "127.0.0.1"
+ 
++pthread_mutex_t clients_mutex = PTHREAD_MUTEX_INITIALIZER;
++
+ int client_sockets[MAX_CLIENTS];
+ int num_clients = 0;
+ 
+@@ -26,7 +29,10 @@
+         printf("Client %d sent: %s\n", client_socket, buffer);
+     }
+ 
++    pthread_mutex_lock(&clients_mutex);
+     close(client_socket);
+     num_clients--;
++    pthread_mutex_unlock(&clients_mutex);
+ }
+ 
+ void accept_connections() {
+@@ -64,12 +70,15 @@
+         }
+ 
+         client_sockets[num_clients] = client_socket;
++        pthread_mutex_lock(&clients_mutex);
+         num_clients++;
++        pthread_mutex_unlock(&clients_mutex);
+ 
+         pthread_t thread_id;
+         pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+     }
++    pthread_mutex_destroy(&clients_mutex);
+ }
+ 
+ int main() {
++    pthread_mutex_init(&clients_mutex, NULL);
+     accept_connections();
+     return 0;
+  }
+```
+explanation-suggested-fix: The suggested changes introduce a mutex (`clients_mutex`) to synchronize access to the shared `num_clients` and `client_sockets` variables. This prevents race conditions by ensuring that only one thread can modify these variables at a time.
+method: UNKNOWN

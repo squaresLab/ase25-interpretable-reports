@@ -1,0 +1,27 @@
+ 
+    
+    --- gemma7b-20082.c
+    +++ gemma7b-20082-fixed.c
+    @@ -20,6 +20,9 @@
+     
+     int csvReader_getLine(CSVReader *reader)
+     {
+    +    if (reader->size == 0) {
+    +        reader->buffer = malloc(MAX_BUFFER_SIZE);
+    +    }
+         char *line = NULL;
+         int lineSize = 0;
+
+    @@ -27,7 +30,10 @@
+         {
+             reader->buffer = realloc(reader->buffer, MAX_BUFFER_SIZE * (reader->size + 1));
+             reader->size++;
+    +   } else {
+    +        reader->buffer[reader->size - 1] = malloc(MAX_BUFFER_SIZE);
+         }
+    +
+         line = fgets(reader->buffer[reader->currentLine], MAX_BUFFER_SIZE, reader->file);
+     
+         if (line)
+    
+    

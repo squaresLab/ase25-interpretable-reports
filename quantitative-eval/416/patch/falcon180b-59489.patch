@@ -1,0 +1,20 @@
+ 
+    
+    --- falcon180b-59489.c   2023-10-01 12:00:00.000000000 +0000
+    +++ falcon180b-59489-fixed.c   2023-10-01 12:30:00.000000000 +0000
+    @@ -16,7 +16,7 @@
+             memset(buffer, 0, BUFFER_SIZE);
+             ssize_t bytes_received = recv(client_socket, buffer, BUFFER_SIZE - 1, 0);
+             if (bytes_received <= 0) {
+                 close(client_socket);
+                 printf("Client %d disconnected\n", client_socket);
+                 break;
+             }
+    -        printf("Client %d sent message: %s\n", client_socket, buffer);
+    +        buffer[BUFFER_SIZE - 1] = '\0'; // Ensure null-termination
+    +        printf("Client %d sent message: %.1023s\n", client_socket, buffer); // Limit to BUFFER_SIZE-1
+    
+         }
+
+    
+    

@@ -1,0 +1,7 @@
+ 
+
+24c24
+< sprintf(response, "Response to client %d", client_sock);
+---
+> snprintf(response, MAX_REQUEST_SIZE, "Response to client %d", client_sock);
+

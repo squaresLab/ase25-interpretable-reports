@@ -1,0 +1,59 @@
+ 
+    
+    --- falcon180b-31463.c
+    +++ falcon180b-31463-fixed.c
+    @@ -20,7 +20,7 @@
+     void *thread_func(void *arg) {
+         int id = *(int*) arg;
+         printf("Thread %d started\n", id);
+    
+    -    pthread_mutex_lock(&mutex);
+    +    static pthread_mutex_t id_mutex = PTHREAD_MUTEX_INITIALIZER;
+    
+         // Lock the mutex before accessing shared data
+    +    pthread_mutex_lock(&id_mutex);
+    
+    	 int local_id = id;
+    
+    +    pthread_mutex_unlock(&id_mutex);	
+    
+         pthread_mutex_lock(&mutex);
+    
+         // Wait for turn using condition variable
+         printf("Thread %d is waiting...\n", local_id);
+         pthread_cond_wait(&cond, &mutex);
+    
+         // Update shared data
+         shared_data++;
+         printf("Thread %d updated shared data to %d\n", local_id, shared_data);
+    
+         // Signal next thread
+         pthread_cond_signal(&cond);
+    
+         // Unlock the mutex
+         pthread_mutex_unlock(&mutex);
+    
+         return NULL;
+     }
+     
+     int main() {
+         int num_threads = 5;
+         pthread_t threads[num_threads];
+    
+         // Create threads
+         for (int i = 0; i < num_threads; i++) {
+    -        pthread_create(&threads[i], NULL, thread_func, (void*) &i);
+    +        int* arg = malloc(sizeof(*arg));
+    +        *arg = i;
+    +        pthread_create(&threads[i], NULL, thread_func, arg);
+         }
+    
+         // Join threads
+         for (int i = 0; i < num_threads; i++) {
+             pthread_join(threads[i], NULL);
+         }
+    
+         return 0;
+     }
+    
+    

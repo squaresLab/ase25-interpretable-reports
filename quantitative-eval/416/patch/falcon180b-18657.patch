@@ -1,0 +1,27 @@
+ 
+
+ --- vulnerable_code.c
+ +++ fixed_code.c
+ @@ -8,6 +8,7 @@
+ 
+#define MAX_CLIENTS 10
+#define BUFFER_SIZE 1024
+
++int server_socket;
+ int client_sockets[MAX_CLIENTS];
+ int num_clients = 0;
+ 
+@@ -45,6 +46,9 @@
+ }
+
+ int main() {
++    server_socket = socket(AF_INET, SOCK_STREAM, 0);
++    if (server_socket == -1) {
++        perror("Could not create server socket");
++        return 1;
++    }
+
+     int opt = 1;
+     setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+
+ 

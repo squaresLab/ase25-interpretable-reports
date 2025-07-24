@@ -1,0 +1,47 @@
+
+    vuln-fix: CWE-362: Race Condition in falcon180b-41132 (severity: High)
+    what: The code contains a race condition vulnerability due to improper handling of the client socket descriptor in a multithreaded context, allowing multiple threads to access shared variables without synchronization.
+    where: The race condition is located in the `accept_clients` function when creating threads and passing the client socket descriptor at the line containing `pthread_create`.
+    why: Not resolving this weakness can lead to undefined behavior, where threads might operate on incorrect or overlapping data, potentially causing crashes, data corruption, or unauthorized access to different clients’ data.
+    how: An attacker could exploit this vulnerability by connecting multiple clients simultaneously, causing race conditions where threads may inadvertently share or overwrite each other's data. This could lead to accessing or modifying data of other clients or crashing the server.
+    code-sources: The entry point is the `accept_clients` function, specifically the line with `int client_socket = accept(server_socket, (struct sockaddr *) &client_addr, &addr_size);`.
+    code-sinks: The sink is the `pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);`, which uses the client socket descriptor passed as an argument.
+    suggested-fix: 
+    ```diff
+    --- falcon180b-41132.c	2023-10-10 10:00:00.000000000 +0000
+    +++ falcon180b-41132-fixed.c	2023-10-10 10:15:00.000000000 +0000
+    @@ -40,7 +40,7 @@
+             if (listen(server_socket, MAX_CLIENTS) == -1) {
+                 perror("listen");
+                 exit(EXIT_FAILURE);
+             }
+     
+             printf("Server is listening on port %d\n", SERVER_PORT);
+     
+             while (1) {
+    -            struct sockaddr_in client_addr;
+    +            struct sockaddr_in *client_addr = malloc(sizeof(struct sockaddr_in));
+                 socklen_t addr_size = sizeof(*client_addr);
+                 int client_socket = accept(server_socket, (struct sockaddr *) client_addr, &addr_size);
+     
+                 if (client_socket == -1) {
+                     perror("accept");
+                     free(client_addr);
+                     exit(EXIT_FAILURE);
+                 }
+     
+                 printf("Client %d connected\n", client_socket);
+     
+    -            pthread_t thread_id;
+    -            pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+    +            int *client_sock_ptr = malloc(sizeof(int));
+    +            *client_sock_ptr = client_socket;
+    +            pthread_t thread_id;
+    +            pthread_create(&thread_id, NULL, handle_client, (void *) client_sock_ptr);
+                 num_clients++;
+    +            free(client_addr);
+             }
+         }
+     ```
+    explanation-suggested-fix: The suggested fix involves dynamically allocating memory to store client socket and client address structures independently for each thread. This prevents the race condition by ensuring each thread receives its own distinct copy, avoiding interference.
+    method: UNKNOWN

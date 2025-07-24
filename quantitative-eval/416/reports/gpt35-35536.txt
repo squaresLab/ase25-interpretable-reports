@@ -1,0 +1,46 @@
+
+vuln-fix: CWE-22: Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal') in gpt35-35536 (severity: High)
+what: The server code allows clients to specify arbitrary filenames, which can lead to path traversal vulnerabilities.
+where: The vulnerability is located in the function `client_handler` starting at line 62, specifically around the file handling operations.
+why: Failure to sanitize or properly validate file paths could allow an attacker to access and manipulate sensitive files on the server, leading to unauthorized data access or data loss.
+how: An attacker can exploit this vulnerability by sending malicious filenames such as "../../etc/passwd" to read or overwrite sensitive system files.
+code-sources: The code source is at `recv(client_sock, filename, BUF_SIZE, 0)`, where the filename is received from the client.
+code-sinks: The code sink is at `fopen(filename, "wb")`, where the received filename is used to open or create a file.
+suggested-fix: 
+```diff
+--- gpt35-35536.c	2023-10-14 18:30:00.000000000 +0200
++++ gpt35-35536-fixed.c	2023-10-14 18:40:00.000000000 +0200
+@@ -65,10 +65,24 @@
+ char recv_buf[BUF_SIZE];
+
+ //get the name of the file to be received from the client
+ memset(filename, '\0', BUF_SIZE);
+ if (recv(client_sock, filename, BUF_SIZE, 0) == -1) {
+     perror("Error: File name receipt failed");
+     return NULL;
+ }
+ 
++// Ensure the filename does not contain illegal characters
++char *illegal_chars = "../";
++if (strstr(filename, illegal_chars) != NULL) {
++    perror("Error: Illegal filename");
++    return NULL;
++}
++
++// Ensure the filename is a valid filename
++for (char *p = filename; *p; p++) {
++    if (*p == '/' || *p == '\\') {
++        perror("Error: Illegal filename");
++        return NULL;
++    }
++}
+ 
+ //open file or create if not present
+ FILE *fp;
+ if ((fp = fopen(filename, "wb")) == NULL) {
+     perror("Error: File creation failed");
+     return NULL;
+ }
+ 
+explanation-suggested-fix: The suggested fix adds checks to ensure the filename received from the client does not contain sequences that could allow path traversal (e.g., "../"). It also validates the filename to ensure it does not contain illegal characters such as '/' or '\' which could be used to navigate directories. These checks prevent an attacker from using path traversal techniques to access or modify files outside the intended directory.
+method: UNKNOWN

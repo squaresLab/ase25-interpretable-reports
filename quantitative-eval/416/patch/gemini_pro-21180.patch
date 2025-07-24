@@ -1,0 +1,41 @@
+ 
+
+#include <stdio.h>
+#include <stdlib.h>
+
+int main()
+{
+    // Initialize the semaphores
+    for (int i = 0; i < NUM_TRAFFIC_LIGHTS; i++)
+    {
+        sem_init(&traffic_lights[i], 0, 0);
+    }
+
+    // Create the traffic light threads with individual traffic_light_ids
+    int *traffic_light_id[NUM_TRAFFIC_LIGHTS];
+    for (int i = 0; i < NUM_TRAFFIC_LIGHTS; i++)
+    {
+        traffic_light_id[i] = malloc(sizeof(int));
+        *traffic_light_id[i] = i;
+        pthread_create(&traffic_light_threads[i], NULL, traffic_light_controller, (void *)traffic_light_id[i]);
+    }
+
+    // Join the traffic light threads
+    for (int i = 0; i < NUM_TRAFFIC_LIGHTS; i++)
+    {
+        pthread_join(traffic_light_threads[i], NULL);
+        free(traffic_light_id[i]);
+    }
+
+    // Destroy the semaphores
+    for (int i = 0; i < NUM_TRAFFIC_LIGHTS; i++)
+    {
+        sem_destroy(&traffic_lights[i]);
+    }
+
+    // Destroy the traffic lights mutex
+    pthread_mutex_destroy(&traffic_lights_mutex);
+
+    return 0;
+}
+

@@ -1,0 +1,30 @@
+
+vuln-fix: Unbounded Write Vulnerability (CWE-120, CWE-787, CWE-805) in gpt35-16205 (severity: High)
+what: The code contains a buffer overflow vulnerability due to unbounded write operations in the `handle_client` function. The `buffer` array is used to store data received from clients without checking the length of the received data, leading to potential overflow.
+where: The vulnerability occurs in the function `handle_client` on line 44 in the file `gpt35-16205`.
+why: Not resolving this buffer overflow vulnerability may allow attackers to overwrite critical memory regions, potentially leading to arbitrary code execution, crashes, or data corruption.
+how: An attacker can exploit this vulnerability by sending a message that exceeds the buffer size (`BUFFER_SIZE`) to the server, which will cause the buffer to overflow, leading to possible arbitrary code execution or a denial-of-service condition.
+code-sources: The entry point for user input is in the `recv` function call in the `handle_client` function.
+code-sinks: The user input is handled in the `buffer` array and subsequently used in the `send_message_to_clients` function.
+suggested-fix: 
+```diff
+--- a/gpt35-16205
++++ b/gpt35-16205
+@@ -41,6 +41,7 @@ void *handle_client(void *arg) {
+         int bytes_received = recv(client_socket, buffer, BUFFER_SIZE - 1, 0);
+         if (bytes_received == 0) {
+             printf("Client %d disconnected\n", client_socket);
++            buffer[bytes_received] = '\0';
+             sprintf(buffer, "Client %d has left the chat\n", client_socket);
+             send_message_to_clients(buffer, client_socket);
+             break;
+@@ -45,11 +46,14 @@ void *handle_client(void *arg) {
+ 
+-        sprintf(buffer, "Client %d: %s", client_socket, buffer);
++        
++        char client_message[BUFFER_SIZE];
++        snprintf(client_message, sizeof(client_message), "Client %d: %s", client_socket, buffer);
+         send_message_to_clients(client_message, client_socket);
+```
+explanation-suggested-fix: The suggested code fix ensures that the receiver buffer's null-terminator is added to prevent reading past the buffer's end. Additionally, it introduces a safer `snprintf` function for formatting the client message, which includes size-boundaries to prevent buffer overflow.
+method: CODEQL

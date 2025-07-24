@@ -1,0 +1,15 @@
+ 
+    
+    --- a/falcon180b-35947
+    +++ b/falcon180b-35947
+    @@ -37,7 +37,7 @@ void sanitize_input(char* input) {
+    
+    char* get_input(char* prompt) {
+        char* input = (char*)malloc(MAX_INPUT * sizeof(char)); // Allocate memory on the heap
+        printf("%s", prompt);
+        fgets(input, MAX_INPUT, stdin);
+        sanitize_input(input);
+        return input;
+    }
+    
+    

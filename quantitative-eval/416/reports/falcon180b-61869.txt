@@ -1,0 +1,46 @@
+
+vuln-fix: CWE-362: Concurrent Execution using Shared Resource with Improper Synchronization ('Race Condition') in falcon180b-61869:21-33 (severity: High)
+what: The code has a race condition vulnerability in line 31, where the `client_sockets` array and `num_clients` variable are accessed and modified by multiple threads without proper synchronization.
+where: Lines 21-33, file falcon180b-61869
+why: If this race condition is not resolved, it can lead to corrupted data, unexpected behavior, or crashes of the server, ultimately compromising the integrity and availability of the system.
+how: An attacker can exploit this vulnerability by sending multiple connection requests simultaneously, causing the race condition. This can lead to inconsistencies and potential crashes.
+code-sources: The entry point is `accept` function in `accept_connections()` function.
+code-sinks: The vulnerable action occurs when the application assigns and increments `client_sockets[num_clients]` and `num_clients` within the `accept_connections()` function.
+suggested-fix: 
+```
+diff --git a/falcon180b-61869 b/falcon180b-61869
+index e69de29..a0232dd 100644
+--- a/falcon180b-61869
++++ b/falcon180b-61869
+@@ -7,6 +7,7 @@
+ #include <arpa/inet.h>
+ #include <pthread.h>
+ #include <unistd.h>
++#include <pthread.h>
+
+ #define BUF_SIZE 1024
+ #define MAX_CONNECTIONS 10
+@@ -16,6 +17,8 @@ int num_clients = 0;
+ pthread_mutex_t client_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+ void *handle_client(void *arg) {
+     int client_socket = *(int *) arg;
+@@ -30,11 +33,11 @@ void accept_connections() {
+         if (num_clients >= MAX_CONNECTIONS) {
+             close(client_socket);
+             printf("Maximum number of clients reached\n");
+             continue;
+         }
+
++        pthread_mutex_lock(&client_mutex);
+         client_sockets[num_clients] = client_socket;
+         num_clients++;
++        pthread_mutex_unlock(&client_mutex);
+
+         pthread_t thread_id;
+         pthread_create(&thread_id, NULL, handle_client, &client_socket);
+     }
+ }
+```
+explanation-suggested-fix: The suggested fix introduces a mutex lock around the critical section where `client_sockets` and `num_clients` are accessed in the `accept_connections` function. This ensures that these shared resources are not accessed simultaneously by multiple threads, thus eliminating the race conditions.
+method: UNKNOWN

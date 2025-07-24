@@ -1,0 +1,16 @@
+ 
+
+--- gemini_pro-14062.c
++++ gemini_pro-14062.c
+@@ -172,7 +172,7 @@
+     // Process the client's message
+     if (strncmp(buffer, "/name ", 6) == 0) {
+         // Client is setting their name
+-        strcpy(client->name, buffer + 6);
++        strncpy(client->name, buffer + 6, sizeof(client->name) - 1);
++        client->name[sizeof(client->name) - 1] = '\0';
+         send(client->socket, "Name set\n", 9, 0);
+     } else if (strncmp(buffer, "/quit", 5) == 0) {
+         // Client is quitting
+
+    

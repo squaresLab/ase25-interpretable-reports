@@ -1,0 +1,31 @@
+ 
+
+diff --git a/falcon180b-47537 b/falcon180b-47537
+index d5d5d5d..e5e5e5e 100644
+--- a/falcon180b-47537
++++ b/falcon180b-47537
+@@ -34,7 +34,7 @@ void accept_connections() {
+         int client_socket = accept(server_socket, NULL, NULL);
+ 
+         if (client_socket == -1) {
+             break;
+         }
+ 
+         if (num_clients >= MAX_CLIENTS) {
+             close(client_socket);
+             continue;
+         }
+ 
+-        client_sockets[num_clients] = client_socket;
++        int *client_socket_ptr = malloc(sizeof(int));
++        *client_socket_ptr = client_socket;
+ 
+         num_clients++;
+ 
+         pthread_t thread_id;
+-        pthread_create(&thread_id, NULL, handle_client, (void *)&client_socket);
++        pthread_create(&thread_id, NULL, handle_client, (void *)client_socket_ptr);
+     }
+ }
+ 
+

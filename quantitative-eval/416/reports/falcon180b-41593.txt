@@ -1,0 +1,73 @@
+    
+vuln-fix: CWE-787: Out-of-bounds Write in falcon180b-41593 (severity: High)
+what: The vulnerability here is due to a race condition in accessing the `client_socket` variable in the `main()` function and the `handle_client` function.
+where: Lines where `pthread_create` is called and the `client_socket` is used in the `handle_client` function in the file falcon180b-41593.
+why: If not resolved, this could lead to the same client socket reference being passed to multiple threads, causing unpredictable behavior, data corruption, or crashes.
+how: An attacker could exploit this vulnerability by rapidly connecting and disconnecting clients, causing multiple threads to operate on the same client socket descriptor, which can lead to out-of-bounds writes.
+code-sources: User inputs enter through the `recv` function in the `handle_client` function which reads data from the socket.
+code-sinks: Printing the `buffer` using `printf` in the `handle_client` function as well as reading from the `client_socket`.
+suggested-fix: 
+```diff
+ --- falcon180b-41593
+ +++ falcon180b-41593-fixed
+ @@ -14,7 +14,7 @@
+        while (1) {
+            memset(buffer, 0, BUFFER_SIZE);
+            int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+ 
+            if (bytes_received <= 0) {
+                close(client_socket);
+                pthread_exit(0);
+            }
+ 
+            printf("Client %d sent: %s\n", client_socket, buffer);
+        }
+    }
+        
+    int main() {
+        int opt = 1;
+ -      setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+ +      server_socket = socket(AF_INET, SOCK_STREAM, 0);
+ +      if (server_socket == 0) {
+ +          perror("Socket failed");
+ +          exit(EXIT_FAILURE);
+        }
+        
+        struct sockaddr_in server_addr, client_addr;
+        memset(&server_addr, 0, sizeof(server_addr));
+        server_addr.sin_family = AF_INET;
+        server_addr.sin_addr.s_addr = INADDR_ANY;
+        server_addr.sin_port = htons(8080);
+ 
+        bind(server_socket, (struct sockaddr *)&server_addr, sizeof(server_addr));
+        listen(server_socket, 3);
+ 
+ +      printf("Server is running on port 8080\n");
+        
+        while (1) {
+            struct sockaddr_in client_addr;
+            socklen_t addr_size = sizeof(client_addr);
+            int client_socket = accept(server_socket, (struct sockaddr *)&client_addr, &addr_size);
+ 
+            if (num_clients >= MAX_CLIENTS) {
+                close(client_socket);
+                printf("Maximum number of clients reached\n");
+                continue;
+            }
+ 
+ -          client_sockets[num_clients] = client_socket;
+ -          num_clients++;
+ +          int *new_sock = malloc(sizeof(int));
+ +          *new_sock = client_socket;
+ 
+            pthread_t thread_id;
+ -          pthread_create(&thread_id, NULL, handle_client, (void *)&client_socket);
+ +          pthread_create(&thread_id, NULL, handle_client, (void *)new_sock);
+        }
+        
+        return 0;
+    }
+
+```
+explanation-suggested-fix: The suggested code diff creates a new heap-allocated integer for the client socket before passing it to `pthread_create`. This ensures each thread gets its own unique copy of the client socket descriptor, resolving the race condition.
+method: UNKNOWN

@@ -1,0 +1,27 @@
+ 
+
+--- falcon180b-50766.c.orig    2023-10-06 12:00:00.000000000 +0000
++++ falcon180b-50766.c.fixed   2023-10-06 12:15:00.000000000 +0000
+@@ -28,6 +28,9 @@
+         if (bytes_received <= 0) {
+             break;
+         }
++        if (num_clients >= MAX_CLIENTS) {
++            printf("Maximum clients reached, dropping connection from client %d\n", client_socket);
++            close(client_socket); return NULL; }
+
+         printf("Client %d sent message: %s\n", client_socket, buffer);
+         for (int i = 0; i < num_clients; i++) {
+             if (i != client_socket) {
+@@ -44,6 +44,9 @@
+         printf("Waiting for client connections...\n");
+         int client_socket = accept(server_socket, NULL, NULL);
+         printf("Client %d connected\n", client_socket);
+
++        if (num_clients >= MAX_CLIENTS) {
++            printf("Maximum client limit exceeded. Closing connection %d\n", client_socket);
++            close(client_socket); continue; }
+         pthread_t thread_id;
+         pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+         client_sockets[num_clients++] = client_socket;
+

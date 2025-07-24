@@ -1,0 +1,18 @@
+ 
+
+--- vulnerable/gpt35-67438.c
++++ fixed/gpt35-67438.c
+@@ -21,6 +21,12 @@
+     for (i = 0; i < c->num_gates; i++) {
+         in[0] = in[1] = -1;
+         for (j = 0; j < c->num_gates; j++) {
++            // Add bounds check on gate inputs
++            if (c->gates[i].input[0] < 0 || c->gates[i].input[0] >= MAXWIRES || 
++                c->gates[i].input[1] < 0 || c->gates[i].input[1] >= MAXWIRES) {
++                fprintf(stderr, "Error: Gate input index out of bounds\n");
++                exit(EXIT_FAILURE);
++            }
+             for (k = 0; k < 2; k++) {
+                 if (c->gates_wired[j][k] == i) {
+                     in[k] = j;
+

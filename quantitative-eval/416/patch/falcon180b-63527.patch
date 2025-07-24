@@ -1,0 +1,20 @@
+ 
+
+--- falcon180b-63527.c 2023-10-12
++++ falcon180b-63527.c 2023-10-12-fix
+@@ -14,8 +14,10 @@
+ void *handle_client(void *arg) {
+     int client_socket = *(int *)arg;
+     char buffer[BUFFER_SIZE];
+
++    pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
++
+     while (fgets(buffer, BUFFER_SIZE, stdin)!= NULL) {
++        pthread_mutex_lock(&mutex);
+         send(client_socket, buffer, strlen(buffer), 0);
++        pthread_mutex_unlock(&mutex);
+     }
+
+     close(client_socket);
+     return NULL;
+

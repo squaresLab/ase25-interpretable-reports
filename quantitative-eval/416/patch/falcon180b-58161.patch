@@ -1,0 +1,40 @@
+ 
+
+--- falcon180b-58161.c
++++ falcon180b-58161-fixed.c
+@@ -39,7 +39,7 @@
+         if (bytes_received <= 0) {
+             printf("Client %d disconnected\n", client_socket);
+             close(client_socket);
+-            pthread_exit(0);
++            break;
+         }
+
+         printf("Client %d sent: %s\n", client_socket, buffer);
+@@ -56,9 +56,15 @@
+
+         if (num_clients >= MAX_CLIENTS) {
+             printf("Maximum number of clients reached\n");
++            close(client_socket);
+             continue;
+         }
+
++        int *new_socket = malloc(sizeof(int));
++        if (new_socket == NULL) {
++            printf("Error allocating memory\n");
++            close(client_socket);
++            continue;
++        }
++        *new_socket = client_socket;
+ 
+         client_sockets[num_clients] = client_socket;
+         printf("Client %d connected\n", client_socket);
+@@ -66,7 +72,7 @@
+ 
+         pthread_t thread_id;
+-        pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
++        pthread_create(&thread_id, NULL, handle_client, (void *) new_socket);
+         thread_ids[num_clients - 1] = thread_id;
+     }
+ }
+

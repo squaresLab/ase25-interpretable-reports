@@ -1,0 +1,49 @@
+
+    vuln-fix: CWE-415: Double Free in falcon180b-54782 at lines 37-55 (severity: High)
+    what: The `client_socket` is being passed by reference to the `pthread_create` function, which means the same address is shared between the main function and the thread. When the thread closes the `client_socket`, it is also closed in the main function context when the same socket is reused, leading to a double-free error.
+    where: The vulnerability is located in the handle_client function at line 55 in the file falcon180b-54782. Also, it is used in the main function at lines 47, 49, 51.
+    why: If this vulnerability is not resolved, an attacker might exploit it to cause the application to crash or execute arbitrary code, leading to a Denial of Service or potential system compromise.
+    how: By sending crafted network packets to the server, an attacker can ensure that the same client socket address gets reused causing it to be closed twice, leading to a double free vulnerability.
+    code-sources: At line 47, the client socket is accepted via the `accept` function call.
+    code-sinks: At line 55, the `close` function is called on the `client_socket` and in the handle_client function.
+    suggested-fix:
+    ```diff
+    --- falcon180b-54782.c (original)
+    +++ falcon180b-54782.c (fixed)
+    @@ -47,7 +47,7 @@
+             int client_socket = accept(server_socket, NULL, NULL);
+
+             if (num_clients >= MAX_CLIENTS) {
+                 send(client_socket, "Server is full. Please try again later.\n", strlen("Server is full. Please try again later.\n"), 0);
+                 close(client_socket);
+                 continue;
+             }
+
+    -        client_sockets[num_clients] = client_socket;
+    -        num_clients++;
+    -
+    +        int *client_sock = malloc(sizeof(int));
+    +        *client_sock = client_socket;
+            pthread_t thread_id;
+    -        pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+    +        pthread_create(&thread_id, NULL, handle_client, (void *) client_sock);
+         }
+     
+         return 0;
+    }
+    
+    @@ -55,7 +55,7 @@
+         }
+     
+         printf("Received message from client: %s\n", buffer);
+     }
+     
+     close(client_socket);
+    -    return NULL;
+    +    free(socket_desc);
+    +    return NULL;
+    }
+    ```
+
+    explanation-suggested-fix: By allocating memory for each client socket before passing it to `pthread_create`, we ensure that each thread has its own copy of the socket to work with. This prevents the double-free error since we are no longer sharing the same address between the main function and the thread. Additionally, freeing the allocated memory after closing the socket avoids memory leaks.
+    method: UNKNOWN

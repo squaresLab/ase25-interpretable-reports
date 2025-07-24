@@ -1,0 +1,36 @@
+ 
+    
+    --- falcon180b-13301.c 2023-10-04 10:21:00.000000000 +0000
+    +++ falcon180b-13301_fixed.c 2023-10-04 10:24:00.000000000 +0000
+    @@ -15,6 +15,7 @@
+    
+    void *handle_client(void *arg) {
+        int client_socket = *(int *)arg;
+    +   char buffer[BUFFER_SIZE + 1]; // Add space for null terminator
+    
+        while (1) {
+            memset(buffer, 0, BUFFER_SIZE);
+            int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+    +       if (bytes_received < 0) {
+    +           perror("recv");
+    +           break;
+    +       }
+            if (bytes_received <= 0) {
+                break;
+            }
+    +       buffer[BUFFER_SIZE] = '\0'; // Ensure null termination
+    
+            char *delimiter = strchr(buffer, DELIMITER);
+            if (delimiter != NULL) {
+                *delimiter = '\0';
+    @@ -44,7 +45,7 @@
+        }
+    
+        close(client_socket);
+    -   return NULL;
+    +    return NULL;
+    }
+    
+    int main() {
+    
+    

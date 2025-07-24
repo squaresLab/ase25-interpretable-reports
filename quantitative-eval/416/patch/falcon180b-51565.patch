@@ -1,0 +1,18 @@
+ 
+
+--- a/falcon180b-51565
++++ b/falcon180b-51565
+@@ -13,6 +13,7 @@
+ void *handle_client(void *socket_desc) {
+     int sock = *(int *) socket_desc;
+     char buffer[BUFFER_SIZE];
++    int bytes_received;
+
+     while(1) {
+         memset(buffer, 0, BUFFER_SIZE);
+-        int bytes_received = recv(sock, buffer, BUFFER_SIZE, 0);
++        bytes_received = recv(sock, buffer, BUFFER_SIZE - 1, 0);
+ 
+         if(bytes_received <= 0) {
+             break;
+

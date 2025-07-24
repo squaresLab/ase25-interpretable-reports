@@ -1,0 +1,41 @@
+
+vuln-fix: Race Condition (CWE-362) in falcon180b-628.c (severity: High)
+what: The code creates a race condition because the `client_socket` variable in `accept_connections` is shared by multiple threads without synchronization.
+where: Lines within the `accept_connections` function.
+why: A race condition can result in undefined behavior where multiple threads may read and write shared data concurrently, leading to crashes or incorrect program behavior.
+how: An attacker could exploit this vulnerability by rapidly connecting and disconnecting clients, causing the `client_socket` variable to be overwritten or corrupted, which could lead to unexpected behavior or crashes.
+code-sources: The entry point is at `accept(server_socket, (struct sockaddr *) &client_addr, &addr_size);` in the `accept_connections` function.
+code-sinks: The action involving user input is the assignment `client_sockets[num_clients++] = client_socket;` within the `accept_connections` function.
+suggested-fix: 
+```diff
+--- falcon180b-628.c   2023-10-11 12:34:56.000000000 +0000
++++ falcon180b-628-fixed.c  2023-10-11 12:35:56.000000000 +0000
+@@ -40,10 +40,11 @@
+         struct sockaddr_in client_addr;
+         socklen_t addr_size = sizeof(client_addr);
+         int client_socket = accept(server_socket, (struct sockaddr *) &client_addr, &addr_size);
+ 
+         if (client_socket == -1) {
+             perror("accept");
+             continue;
+         }
+ 
++        int *new_client_socket = malloc(sizeof(int));
++        *new_client_socket = client_socket;
++
+         if (num_clients >= MAX_CLIENTS) {
+             close(client_socket);
+             continue;
+         }
+ 
+-        client_sockets[num_clients++] = client_socket;
++        client_sockets[num_clients++] = *new_client_socket;
+         pthread_t thread_id;
+-        pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
++        pthread_create(&thread_id, NULL, handle_client, (void *) new_client_socket);
++        pthread_detach(thread_id);
+     }
+ }
+```
+explanation-suggested-fix: The fix involves allocating memory for a new integer pointer `new_client_socket`, saving the accepted client socket in this pointer, and passing this pointer to the thread. This prevents the race condition on `client_socket` by ensuring each thread operates on its own copy of the client socket descriptor.
+method: UNKNOWN

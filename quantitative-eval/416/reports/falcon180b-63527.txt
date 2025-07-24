@@ -1,0 +1,30 @@
+
+vuln-fix: CWE-362: Race Condition in falcon180b-63527 (severity: High)
+what: The code in `handle_client` reads input from `stdin` without any synchronization mechanism to ensure the proper sequencing of input handling across multiple threads. This can lead to race conditions and undefined behavior.
+where: The race condition occurs at line 13 in `handle_client()` in the file `falcon180b-63527`.
+why: If the race condition is not resolved, it could lead to inconsistent data being sent to clients, data loss, or buffer overflows. This might further exploit other vulnerabilities, leading to potential system crashes or unauthorized access.
+how: An attacker could exploit this vulnerability by sending multiple input streams simultaneously, confusing the server, and causing it to mishandle or corrupt data, leading to an unstable state or exposure of sensitive information.
+code-sources: The entry point is the `fgets` function at line 14 in `handle_client()`, which reads user input from `stdin`.
+code-sinks: The `send` function at line 15 in `handle_client()`, which sends the data read from `stdin` over the network to the connected client.
+suggested-fix: 
+```diff
+--- falcon180b-63527.c 2023-10-12
++++ falcon180b-63527.c 2023-10-12-fix
+@@ -14,8 +14,10 @@
+ void *handle_client(void *arg) {
+     int client_socket = *(int *)arg;
+     char buffer[BUFFER_SIZE];
+
++    pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
++
+     while (fgets(buffer, BUFFER_SIZE, stdin)!= NULL) {
++        pthread_mutex_lock(&mutex);
+         send(client_socket, buffer, strlen(buffer), 0);
++        pthread_mutex_unlock(&mutex);
+     }
+
+     close(client_socket);
+     return NULL;
+```
+explanation-suggested-fix: The suggested fix introduces a mutex to synchronize the critical section where `fgets` reads data from `stdin` and `send` writes it to the client socket. This ensures that only one thread can execute these operations at a time, thus preventing race conditions.
+method: UNKNOWN

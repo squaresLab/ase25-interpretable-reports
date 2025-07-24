@@ -1,0 +1,23 @@
+ 
+    
+    --- original/falcon180b-3300.c
+    +++ fixed/falcon180b-3300.c
+    @@ -19,11 +19,11 @@
+     
+         while(1) {
+             memset(buffer, 0, BUFFER_SIZE);
+    -        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+    +        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE - 1, 0);
+     
+             if(bytes_received <= 0) {
+                 close(client_socket);
+                 clients[num_clients - 1] = -1;
+                 num_clients--;
+                 break;
+             }
+    +        buffer[BUFFER_SIZE - 1] = '\0'; // Ensure null-terminated string
+     
+             for(int i = 0; i < num_clients; i++) {
+                 if(clients[i]!= -1) {
+    
+    

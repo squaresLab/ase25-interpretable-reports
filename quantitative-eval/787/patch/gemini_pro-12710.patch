@@ -1,0 +1,35 @@
+
+    
+    --- gemini_pro-12710.c
+    +++ gemini_pro-12710_fixed.c
+    @@ -47,11 +47,14 @@
+     
+         // Lend them an ear, asking for their needs.
+         char patientName[100];
+    +    memset(patientName, 0, sizeof(patientName));
+         Medicine *medicine;
+         int quantity;
+         printf("What ails thee, good sir or madam? Enter thy name:\n");
+    -    scanf("%s", patientName);
+    +    scanf("%99s", patientName); // Limit input length to prevent overflow
+     
+         // Determine the medicine they seek.
+         char medicineName[100];
+    +    memset(medicineName, 0, sizeof(medicineName));
+         printf("What medicine dost thou require? Enter its name:\n");
+    -    scanf("%s", medicineName);
+    +    scanf("%99s", medicineName); // Limit input length to prevent overflow
+     
+         // Search our humble abode for the desired elixir.
+         for (int i = 0; i < sizeof(medicines) / sizeof(Medicine); i++) {
+    @@ -84,7 +87,7 @@
+         transaction.medicine = medicine;
+         transaction.quantity = quantity;
+         transaction.date = malloc(11);
+    -    strcpy(transaction.date, "Ye Olde Date"); // Thou shalt fill this in later, fair scribe.
+    +    strncpy(transaction.date, "Ye Olde Date", 10); // Limit length to prevent overflow
+     
+         // Bid farewell to our esteemed patron.
+         printf("May thy ailments be cast away! Fare thee well!\n");
+    
+    

@@ -1,0 +1,76 @@
+
+vuln-fix: Race Condition (CWE-362) in falcon180b-33373 (severity: High)
+what: The code has a race condition due to the `task_id` variable being shared between the main thread and the newly created threads, which can lead to undefined behavior.
+where: The vulnerability is in the `add_task()` function, specifically at the lines where `task_id` is set after the mutex is released and then used in `pthread_create`.
+why: If not resolved, this can lead to incorrect task creation, overlap of task IDs, and potential crashes of the application due to unexpected behavior in the thread execution.
+how: An attacker could exploit this vulnerability by causing multiple tasks to be added simultaneously, potentially leading to race conditions where multiple threads access and modify the same variable.
+code-sources: User input is not directly involved in this case as tasks are being added programmatically in `main()`.
+code-sinks: Actions performed using the `task_id` in `task_func` function.
+suggested-fix: 
+```diff
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+
+// Global variable to keep track of the number of tasks
+int num_tasks = 0;
+
+// Mutex for thread-safe access to the num_tasks variable
+pthread_mutex_t num_tasks_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+// Function to create a new task
+void* task_func(void* arg) {
+    int task_id = *(int*) arg;
+    printf("Starting task %d\n", task_id);
+    sleep(1);
+    printf("Finished task %d\n", task_id);
+    return NULL;
+}
+
+// Function to add a new task to the scheduler
+void add_task() {
+    pthread_mutex_lock(&num_tasks_mutex);
+    num_tasks++;
+    int task_id = num_tasks;  // Capture the task_id while holding the mutex
+    pthread_mutex_unlock(&num_tasks_mutex);
+
+    pthread_t thread_id;
+    // Allocate memory for task_id argument
+    int *task_id_ptr = malloc(sizeof(int));
+    *task_id_ptr = task_id;
+    pthread_create(&thread_id, NULL, task_func, task_id_ptr); 
+    printf("Added task %d\n", task_id);
+}
+
+// Function to remove a task from the scheduler
+void remove_task(int task_id) {
+    pthread_mutex_lock(&num_tasks_mutex);
+    num_tasks--;
+    pthread_mutex_unlock(&num_tasks_mutex);
+
+    printf("Removed task %d\n", task_id);
+}
+
+// Function to print the current state of the scheduler
+void print_state() {
+    pthread_mutex_lock(&num_tasks_mutex);
+    printf("Current number of tasks: %d\n", num_tasks);
+    pthread_mutex_unlock(&num_tasks_mutex);
+}
+
+int main() {
+    add_task();
+    add_task();
+    add_task();
+
+    sleep(2);
+
+    remove_task(1);
+
+    print_state();
+
+    return 0;
+}
+```
+explanation-suggested-fix: The suggested fix captures the `task_id` while holding the mutex, ensuring that each task gets a unique ID without interference from other threads. By passing a dynamically allocated memory containing `task_id` to the thread, it ensures each thread operates on its own copy, avoiding shared state issues.
+method: UNKNOWN

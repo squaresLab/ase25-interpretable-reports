@@ -1,0 +1,11 @@
+ 
+
+108c108
+<         recv_msg[bytes_received] = '\0';
+---
+>         if (bytes_received < MAX_MSG_SIZE) {
+>             recv_msg[bytes_received] = '\0';
+>         } else {
+>             recv_msg[MAX_MSG_SIZE - 1] = '\0';
+>         }
+

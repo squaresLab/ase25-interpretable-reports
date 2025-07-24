@@ -1,0 +1,20 @@
+ 
+
+88,91c88,92
+<     // Resolve the hostname to an IP address
+<     if (inet_aton(hostname, &addr.sin_addr) == 0) {
+<         perror("inet_aton");
+<         return -1;
+---
+>     // Validate and resolve the hostname to an IP address
+>     if (!is_valid_hostname(hostname) || inet_aton(hostname, &addr.sin_addr) == 0) {
+>         fprintf(stderr, "Invalid hostname: %s\n", hostname);
+>         return -1;
+> 
+>     // Add a function to validate the hostname
+>     int is_valid_hostname(const char *hostname) {
+>         // Add appropriate hostname validation logic here
+>         // Example: Ensure it only contains valid characters and is within correct length
+>         return 1; // Placeholder - return 0 if invalid
+>     }
+

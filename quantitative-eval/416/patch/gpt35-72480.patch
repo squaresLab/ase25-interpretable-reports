@@ -1,0 +1,17 @@
+
+    
+    --- gpt35-72480.c
+    +++ gpt35-72480.c
+    @@ -39,7 +39,7 @@
+             break;
+             
+         case 2:
+             printf("Enter the HEX color code: ");
+    -        scanf("%s",color);
+    +        scanf("%19s",color);
+             printf("The RGB color code is (%d, %d, %d)\n", 
+                 (int)strtol(color+0, &ch, 16),
+                 (int)strtol(color+2, &ch, 16),
+    
+
+    

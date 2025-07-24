@@ -1,0 +1,24 @@
+
+    vuln-fix: Buffer Overflow (CWE-120) in falcon180b-68315 (severity: High)
+    what: The vulnerability is a buffer overflow caused by the use of `strlen(buffer)` instead of `bytes_received` when sending data to other clients.
+    where: The vulnerability is located in the `handle_client` function.
+    why: Not resolving this buffer overflow could lead to data corruption, crashes, or potentially allowing attackers to execute arbitrary code.
+    how: An attacker could exploit this vulnerability by sending a crafted message that exceeds the expected buffer length, causing the program to read beyond the bounds of the buffer and potentially overwrite adjacent memory.
+    code-sources: Data received through the socket in the `recv` call.
+    code-sinks: Data sent through the socket in the `send` call.
+    suggested-fix: 
+    ```
+    diff --git a/falcon180b-68315 b/falcon180b-68315
+    index abcdefg..hijklmn 100644
+    --- a/falcon180b-68315
+    +++ b/falcon180b-68315
+    @@ -19,7 +19,7 @@ void *handle_client(void *arg) {
+        for(int i=0; i<num_clients; i++) {
+            if(clients[i]!= client_socket) {
+                send(clients[i], buffer, strlen(buffer), 0);
+    +           send(clients[i], buffer, bytes_received, 0);
+            }
+        }
+    ```
+    explanation-suggested-fix: The suggested fix replaces `strlen(buffer)` with `bytes_received`. This ensures that the number of bytes sent is exactly the number of bytes received, preventing buffer overflow by avoiding unintended access beyond the buffer's boundaries.
+    method: UNKNOWN

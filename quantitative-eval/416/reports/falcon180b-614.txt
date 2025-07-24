@@ -1,0 +1,25 @@
+   
+    vuln-fix: Unbounded Write (CWE-120, CWE-787, CWE-805) in falcon180b-614, line 39 (severity: High)
+    what: The vulnerability identified is a buffer overflow due to an unbounded write operation when copying the client name without checking its length.
+    where: The vulnerability is located in the file falcon180b-614 at line 39.
+    why: Failure to resolve this weakness may lead to a buffer overflow, causing the application to crash, or allowing an attacker to execute arbitrary code with the same privileges as the running process.
+    how: An attacker could exploit this vulnerability by sending a specially crafted client name exceeding the allocated buffer size, potentially leading to memory corruption and arbitrary code execution.
+    code-sources: The entry point is the `recv` function at line 38, which reads data from the client.
+    code-sinks: The action performed using this input is the `strcpy` function at line 39.
+    suggested-fix: 
+    ```diff
+    --- original/falcon180b-614.c
+    +++ fixed/falcon180b-614.c
+    @@ -37,7 +37,7 @@
+         // Get client name
+         char name_buffer[10];
+         recv(client_sock, name_buffer, sizeof(name_buffer), 0);
+    -    strcpy(clients[num_clients].name, name_buffer);
+    +    strncpy(clients[num_clients].name, name_buffer, sizeof(clients[num_clients].name) - 1);
+    +    clients[num_clients].name[sizeof(clients[num_clients].name) - 1] = '\0';
+    
+         // Send welcome message to client
+         sprintf(buffer, "Welcome to the chat, %s!\n", clients[num_clients].name);
+    ```
+    explanation-suggested-fix: The suggested code diff replaces the `strcpy` function with `strncpy` to ensure that no more than the allocated length of the `name` buffer is copied. Adding a null terminator ensures the string is properly terminated, preventing buffer overflow.
+    method: CODEQL

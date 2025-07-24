@@ -1,0 +1,21 @@
+ 
+
+@@ -64,11 +64,13 @@ int main() {
+     while (1) {
+         char buffer[MAX_MESSAGE_LENGTH];
+         int bytes_received;
+-        if ((bytes_received = recv(STDIN_FILENO, buffer, MAX_MESSAGE_LENGTH, 0)) == -1) {
++        if ((bytes_received = recv(STDIN_FILENO, buffer, MAX_MESSAGE_LENGTH - 1, 0)) == -1) {
+             printf("Error receiving message: %s\n", strerror(errno));
+             continue;
+         }
+
+         if (bytes_received == 0) {
+             printf("Connection closed\n");
+             break;
+         }
++
++        buffer[bytes_received] = '\0';  // Ensure null-termination
+         broadcast_message(STDIN_FILENO, buffer);
+     }
+

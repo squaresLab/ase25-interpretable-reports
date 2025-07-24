@@ -1,0 +1,28 @@
+
+    vuln-fix: CWE-787: Out-of-bounds Write in falcon180b-68603 (severity: High)
+    what: The code does not properly handle the case where `num_clients` exceeds `MAX_CLIENTS`, which can cause an out-of-bounds write to the `client_sockets` array.
+    where: `falcon180b-68603` file, around line 67.
+    why: If this weakness is not resolved, a potential consequence is writing beyond the bounds of the `client_sockets` array, which can corrupt data and cause the server to crash or behave unpredictably. This could also be leveraged for arbitrary code execution.
+    how: An attacker could repeatedly connect clients to the server, causing `num_clients` to exceed `MAX_CLIENTS`. This would lead to out-of-bounds writes in the `client_sockets` array.
+    code-sources: User connections made to the server via `accept` function calls.
+    code-sinks: Writing to the `client_sockets` array and using the array in the `send` function.
+    suggested-fix: ```diff
+--- falcon180b-68603.c
++++ falcon180b-68603.c
+@@ -66,6 +66,10 @@
+         pthread_t thread_id;
+         pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+ 
++        // Check for maximum client limit
++        if (num_clients >= MAX_CLIENTS) {
++            printf("Maximum client limit reached. Rejecting client %d\n", client_socket);
++            close(client_socket);
++        } else {
++            client_sockets[num_clients++] = client_socket;
++        }
+     }
+ 
+     return 0;
+    ```
+    explanation-suggested-fix: The suggested fix introduces a check before adding a new client socket to the `client_sockets` array. If the number of clients has reached `MAX_CLIENTS`, the new client connection is rejected, and the socket is closed. This prevents writing beyond the bounds of the `client_sockets` array.
+    method: UNKNOWN

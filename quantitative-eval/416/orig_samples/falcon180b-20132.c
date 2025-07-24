@@ -1,0 +1,55 @@
+//Falcon-180B DATASET v1.0 Category: Threading Library Implementation ; Style: Donald Knuth
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+
+// Mutex lock for critical section
+pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+
+// Condition variable for thread synchronization
+pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
+
+// Global variable shared by all threads
+int shared_var = 0;
+
+// Function executed by each thread
+void* thread_func(void* arg) {
+    int id = *(int*) arg;
+
+    printf("Thread %d started\n", id);
+
+    // Lock the mutex before entering critical section
+    pthread_mutex_lock(&lock);
+
+    // Wait for turn using condition variable
+    printf("Thread %d waiting...\n", id);
+    pthread_cond_wait(&cond, &lock);
+    printf("Thread %d got the lock\n", id);
+
+    // Critical section
+    shared_var++;
+    printf("Thread %d incremented shared_var to %d\n", id, shared_var);
+
+    // Signal next thread and unlock mutex
+    pthread_cond_signal(&cond);
+    pthread_mutex_unlock(&lock);
+
+    return NULL;
+}
+
+int main() {
+    int num_threads = 5;
+    pthread_t threads[num_threads];
+
+    // Create threads
+    for (int i = 0; i < num_threads; i++) {
+        pthread_create(&threads[i], NULL, thread_func, (void*) &i);
+    }
+
+    // Join threads
+    for (int i = 0; i < num_threads; i++) {
+        pthread_join(threads[i], NULL);
+    }
+
+    return 0;
+}

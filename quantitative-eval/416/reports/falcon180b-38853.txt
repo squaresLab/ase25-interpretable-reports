@@ -1,0 +1,43 @@
+
+    vuln-fix: CWE-362: Race Condition in falcon180b-38853 (severity: High)
+    what: The vulnerable code has a race condition on the shared variable `clients` and `num_clients`, as it allows concurrent access and modification without proper synchronization.
+    where: The vulnerable lines are in the `main` function where client connections are accepted and added to the `clients` array. Specifically, lines 43-52.
+    why: If the race condition is not resolved, it could lead to data corruption, crashes, and unpredictable behavior due to multiple threads accessing shared resources simultaneously.
+    how: An attacker could potentially exploit this vulnerability by creating multiple concurrent connections, which might lead to inconsistent states in the `clients` array. This can lead to heap corruption, memory leaks, or crashes.
+    code-sources: Entry point is the client connection accepted in the `main` function: `int client_socket = accept(server_socket, NULL, NULL);`
+    code-sinks: Actions performed are adding the client socket to the `clients` array and creating a new thread to handle the client connection: `clients[num_clients] = client_socket; ... pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);`
+    suggested-fix: 
+    ```diff
+    --- falcon180b-38853.c
+    +++ falcon180b-38853-fixed.c
+    @@ -13,6 +13,7 @@
+     #define BUFFER_SIZE 1024
+
+     int clients[MAX_CLIENTS];
+     int num_clients = 0;
+    +pthread_mutex_t clients_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+     void *handle_client(void *socket_desc) {
+         int client_socket = *(int *) socket_desc;
+    @@ -44,16 +45,20 @@
+         while (1) {
+             int client_socket = accept(server_socket, NULL, NULL);
+             if (num_clients >= MAX_CLIENTS) {
+                 send(client_socket, "Server is full\n", strlen("Server is full\n"), 0);
+                 close(client_socket);
+             } else {
+    +            pthread_mutex_lock(&clients_mutex);
+                 clients[num_clients] = client_socket;
+                 num_clients++;
+    +            pthread_mutex_unlock(&clients_mutex);
+                 pthread_t thread_id;
+                 pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+             }
+         }
+
+         return 0;
+     }
+    ```
+
+    explanation-suggested-fix: The suggested code diff introduces a mutex (`clients_mutex`) to protect the critical section where the `clients` array and `num_clients` are accessed and modified. This ensures that only one thread can execute this section at a time, preventing race conditions.
+    method: UNKNOWN

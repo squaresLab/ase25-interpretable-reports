@@ -1,0 +1,29 @@
+
+
+--- falcon180b-59240.c	2023-10-06 08:13:51.977909978 +0000
++++ falcon180b-59240-fixed.c	2023-10-06 08:20:34.123456789 +0000
+@@ -15,9 +15,13 @@
+     while (1)
+     {
+         memset(buffer, 0, BUFFER_SIZE);
+-        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
++        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE - 1, 0);
++
++        if (bytes_received < 0)
++        {
++            close(client_socket);
++            pthread_exit(0);
++        }
+
+-        if (bytes_received <= 0)
++        buffer[bytes_received] = '\0';  // Null-terminate the buffer
+
+-        {
+-            close(client_socket);
+-            pthread_exit(0);
+-        }
+
+         printf("Client %d sent: %s\n", client_socket, buffer);
+     }
+
+

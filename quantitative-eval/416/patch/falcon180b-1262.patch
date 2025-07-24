@@ -1,0 +1,52 @@
+ 
+
+--- falcon180b-1262.c
++++ falcon180b-1262-fixed.c
+@@ -5,6 +5,7 @@
+ #include <sys/socket.h>
+ #include <arpa/inet.h>
+ #include <unistd.h>
++#include <pthread.h>
+ 
+ #define BUFFER_SIZE 1024
+ #define MAX_CLIENTS 10
+@@ -10,6 +11,8 @@
+ #define SERVER_PORT 8080
+ #define SERVER_IP "127.0.0.1"
+ 
++pthread_mutex_t clients_mutex = PTHREAD_MUTEX_INITIALIZER;
++
+ int client_sockets[MAX_CLIENTS];
+ int num_clients = 0;
+ 
+@@ -26,7 +29,10 @@
+         printf("Client %d sent: %s\n", client_socket, buffer);
+     }
+ 
++    pthread_mutex_lock(&clients_mutex);
+     close(client_socket);
+     num_clients--;
++    pthread_mutex_unlock(&clients_mutex);
+ }
+ 
+ void accept_connections() {
+@@ -64,12 +70,15 @@
+         }
+ 
+         client_sockets[num_clients] = client_socket;
++        pthread_mutex_lock(&clients_mutex);
+         num_clients++;
++        pthread_mutex_unlock(&clients_mutex);
+ 
+         pthread_t thread_id;
+         pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+     }
++    pthread_mutex_destroy(&clients_mutex);
+ }
+ 
+ int main() {
++    pthread_mutex_init(&clients_mutex, NULL);
+     accept_connections();
+     return 0;
+  }
+

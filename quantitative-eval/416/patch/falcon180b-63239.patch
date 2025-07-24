@@ -1,0 +1,17 @@
+
+
+--- falcon180b-63239.c
++++ falcon180b-63239-fixed.c
+@@ -30,6 +30,11 @@
+ 
+ void start_monitoring(int sock) {
+     pthread_t thread_id;
++    if (num_sockets >= MAX_SOCKETS) {
++        printf("Maximum number of sockets reached. Cannot monitor more sockets.\n");
++        close(sock);
++        return;
++    }
+     pthread_create(&thread_id, NULL, monitor_thread, (void *) &sock);
+     num_sockets++;
+ }
+

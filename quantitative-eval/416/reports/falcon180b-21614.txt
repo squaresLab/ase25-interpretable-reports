@@ -1,0 +1,55 @@
+
+vuln-fix: CWE-362: Race Condition in falcon180b-21614 at lines 52-68 (severity: Medium)
+what: The mentioned code has a race condition vulnerability due to the unprotected access and modification of shared resource `num_clients` from multiple threads. 
+where: 
+- Lines 52-68 in falcon180b-21614: `client_sockets[num_clients] = client_socket; num_clients++;` happens without any synchronization mechanism.
+why: If the race condition is exploited, it can lead to overwriting or skipping client socket assignments, causing loss of client connections or server crashes.
+how: An attacker could exploit this by rapidly connecting multiple clients concurrently, potentially causing inconsistent `num_clients` values or incorrect `client_sockets` array entries.
+code-sources: 
+- Line 52: `client_socket = accept(server_socket, NULL, NULL);` (entry point where user input is accepted)
+code-sinks: 
+- Lines 55-56: `client_sockets[num_clients] = client_socket; num_clients++;` (actions using the user input)
+suggested-fix: 
+```diff
+--- falcon180b-21614.c
++++ falcon180b-21614_fixed.c
+@@ -2,6 +2,7 @@
+ #include <stdlib.h>
+ #include <string.h>
+ #include <unistd.h>
++#include <pthread.h>
+ #include <sys/socket.h>
+ #include <arpa/inet.h>
+ #include <pthread.h>
+@@ -12,6 +13,9 @@
+ #define BUFFER_SIZE 1024 
+
+ int client_sockets[MAX_CLIENTS];
+ int num_clients = 0;
++pthread_mutex_t client_lock;
++
++void initialize() { pthread_mutex_init(&client_lock, NULL); }
+
+ void *handle_client(void *arg) {
+     int client_socket = *(int *)arg;
+@@ -52,6 +56,7 @@
+         int client_socket = accept(server_socket, NULL, NULL);
+
+         if (num_clients >= MAX_CLIENTS) {
++            pthread_mutex_lock(&client_lock);
+             close(client_socket);
+             printf("Server is full!\n");
++            pthread_mutex_unlock(&client_lock);
+             continue;
+         }
+
++        pthread_mutex_lock(&client_lock);
+         client_sockets[num_clients] = client_socket;
+         num_clients++;
++        pthread_mutex_unlock(&client_lock);
+         pthread_t thread_id;
+         pthread_create(&thread_id, NULL, handle_client, (void *)&client_socket);
+     }
+```
+explanation-suggested-fix: The proposed changes introduce a mutex named `client_lock`. This mutex is locked before modifying the shared resource (`num_clients`) and unlocked immediately after. This ensures that only one thread can modify `num_clients` at a time, mitigating the race condition.
+method: UNKNOWN

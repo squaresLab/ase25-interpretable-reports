@@ -1,0 +1,29 @@
+
+vuln-fix: CWE-787: Out-of-bounds Write in falcon180b-30194 (severity: High)
+what: The code has a vulnerability where the `client_socket` variable's address is passed to the `pthread_create` function, leading to potential out-of-bounds write issues.
+where: Lines involving `pthread_create(&thread_id, NULL, handle_client, (void *)&client_socket);` in the file falcon180b-30194
+why: If this vulnerability is not resolved, it can lead to memory corruption resulting in unpredictable behavior, crashes, or allowing an attacker to execute arbitrary code within the compromised process.
+how: An attacker could exploit this by rapidly connecting and disconnecting clients, causing the `client_socket` variable to be overwritten and potentially allowing them to manipulate the memory.
+code-sources: The entry point for user input is primarily through the `recv` function within the `handle_client` function, which reads data into the buffer from the client socket.
+code-sinks: The primary action performed using user input is printing to the console with `printf` in the line `printf("Client %d sent: %s\n", client_socket, buffer);`.
+suggested-fix: 
+```diff
+--- falcon180b-30194.c
++++ falcon180b-30194-fixed.c
+@@ -50,6 +50,7 @@
+     while (1) {
+         int client_socket = accept(server_socket, NULL, NULL);
+ 
++        int *client_sock_ptr = malloc(sizeof(int));
++        *client_sock_ptr = client_socket;
+         if (client_socket != -1) {
+             printf("Client %d connected\n", client_socket);
+ 
+             pthread_t thread_id;
+-            pthread_create(&thread_id, NULL, handle_client, (void *)&client_socket);
++            pthread_create(&thread_id, NULL, handle_client, (void *) client_sock_ptr);
+
+             client_sockets[num_clients++] = client_socket;
+```
+explanation-suggested-fix: The suggested code change involves dynamically allocating memory for the client socket variable and then passing a pointer to this memory to the `pthread_create` function. This ensures that each thread works with its own copy of the client socket value rather than a shared variable that can be overwritten.
+method: UNKNOWN

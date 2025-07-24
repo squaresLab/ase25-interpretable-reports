@@ -1,0 +1,42 @@
+
+vuln-fix: CWE-134: Use of Externally-Controlled Format String in falcon180b-10629 at lines 15 and 18 (severity: High)
+what: The code uses `printf` to output the client's message directly without sanitizing the input. This can lead to format string vulnerabilities if the user input contains format specifiers.
+where: The vulnerability is located in the `handle_client` function, specifically at these lines:
+```c
+printf("Client %d sent message: %s\n", client_socket, buffer);
+send(client_socket, buffer, strlen(buffer), 0);
+```
+why: Not resolving this vulnerability can allow an attacker to manipulate the format string, leading to arbitrary code execution, crashes, or information leaks.
+how: An attacker could send a message containing format specifiers like `%x`, `%s`, etc., which would then be interpreted by `printf`. Depending on the specifiers used, this could leak memory contents or crash the server.
+code-sources: The source of user input is in the `recv` function call at line 13:
+```c
+int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+```
+code-sinks: The sink where user input is used unsafely is in the `printf` function call at line 15:
+```c
+printf("Client %d sent message: %s\n", client_socket, buffer);
+```
+suggested-fix: 
+```diff
+--- falcon180b-10629.c
++++ falcon180b-10629-fixed.c
+@@ -12,7 +12,15 @@
+ {
+     int client_socket = *(int *) arg;
+     char buffer[BUFFER_SIZE];
++    char safe_buffer[BUFFER_SIZE + 50]; // Extra space for fixed formatting
+
+     while (1) {
+         memset(buffer, 0, BUFFER_SIZE);
+         int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+         if (bytes_received <= 0) {
+             break;
+         }
+-        printf("Client %d sent message: %s\n", client_socket, buffer);
++        snprintf(safe_buffer, sizeof(safe_buffer), "Client %d sent message: %s\n", client_socket, buffer);
++        fputs(safe_buffer, stdout);
+         send(client_socket, buffer, strlen(buffer), 0);
+     }
+```
+explanation-suggested-fix: The vulnerability is resolved by using the `snprintf` function instead of `printf`. `snprintf` allows for the safe formatting of strings by limiting the amount of data written and avoiding direct interpretation of user input for formatting. Using `fputs` to print the output further prevents potential issues with format strings.
+method: UNKNOWN

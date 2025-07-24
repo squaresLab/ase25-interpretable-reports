@@ -1,0 +1,36 @@
+    
+vuln-fix: Command Injection (CWE-78) in falcon180b-4935 lines 23-28 and 48 (severity: High)
+
+what: The vulnerability is a command injection flaw where user input is not properly sanitized before being used to execute system commands.
+
+where: The vulnerability is located in the `execute_command` function at falcon180b-4935, around lines 48 and throughout the function where `execvp` is used to execute user-supplied commands.
+
+why: One possible consequence of not resolving this weakness is that an attacker could execute arbitrary commands on the system, causing data leakage, data loss, or a complete system compromise.
+
+how: An attacker could exploit this vulnerability by providing specially crafted input that includes shell metacharacters or commands meant to escape intended restrictions and execute arbitrary commands.
+
+code-sources: `fgets(command, MAX_COMMAND_LENGTH, stdin)` in the `main()` function at falcon180b-4935 line 16.
+
+code-sinks: `execvp(arguments[0], arguments)` in the `execute_command` function at falcon180b-4935 line 48.
+
+suggested-fix:
+```diff
+--- a/falcon180b-4935
++++ b/falcon180b-4935
+@@ -45,6 +45,8 @@ int execute_command(char** arguments) {
+     } else {
+         pid = fork();
+ 
++        if (arguments[0] == NULL || strchr(arguments[0], ';') != NULL || strchr(arguments[0], '&') != NULL || strchr(arguments[0], '|') != NULL) {
++            fprintf(stderr, "Invalid command.\n"); return 1; 
++        }
++
+         if (pid == 0) {
+             if (execvp(arguments[0], arguments) == -1) {
+                 perror("execvp");
+```
+
+explanation-suggested-fix: The suggested code diff adds validation checks to ensure that the command does not include special characters such as `;`, `&`, or `|`, which are commonly used for command chaining and can lead to command injection vulnerabilities. By validating user input before executing it, the risk of an attacker injecting and executing arbitrary commands is mitigated.
+
+method: UNKNOWN
+`

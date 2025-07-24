@@ -1,0 +1,33 @@
+ 
+
+--- gpt35-11639.c
++++ gpt35-11639.c
+@@ -24,7 +24,7 @@
+ void *handle_client(void *cli_socket) {
+   int socket_fd = *(int *)cli_socket;
+   char client_username[20];
+-  read(socket_fd, client_username, sizeof(client_username));
++  read(socket_fd, client_username, sizeof(client_username)-1);
++  client_username[sizeof(client_username)-1] = '\0';
+   
+   // store client data
+   client_data new_client = { socket_fd };
+-  strcpy(new_client.username, client_username);
++  strncpy(new_client.username, client_username, sizeof(new_client.username)-1);
++  new_client.username[sizeof(new_client.username)-1] = '\0';
+@@ -41,7 +41,7 @@
+     int valread = read(socket_fd, buffer, 1024); 
+     if (valread == 0) {
+       // client has disconnected
+       close(socket_fd);
+       printf("%s has disconnected\n", client_username);
+       pthread_exit(NULL);
+     }
+     
+     // format client message
+     memset(msg, 0, sizeof(msg));
+-    sprintf(msg, "%s: %s", client_username, buffer);
++    snprintf(msg, sizeof(msg), "%s: %s", client_username, buffer);
+     
+     // broadcast message to all clients
+

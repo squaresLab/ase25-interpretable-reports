@@ -1,0 +1,90 @@
+    
+vuln-fix: CWE-787: Out-of-bounds Write in falcon180b-341 (severity: HIGH)
+what: The vulnerability arises because the generated keys (private_key and public_key) are assigned addresses of local variables within the `generate_keys` function. Once this function exits, those addresses become invalid, resulting in undefined behavior, which can lead to out-of-bounds write when these pointers are dereferenced.
+where: falcon180b-341, line 27 and line 33
+why: Not resolving this weakness can lead to undefined behavior including program crashes or potential arbitrary code execution, compromising the application’s security.
+how: An attacker can exploit this vulnerability by triggering the use of the invalid pointers to cause a crash or to execute arbitrary code by carefully manipulating the program’s memory.
+code-sources: Generate user-generated keys: line 27 and line 33 use of rand()
+code-sinks: Usage of key pointers: line 27 assigns private_key, line 33 assigns public_key, encryption and decryption functions
+suggested-fix: 
+```diff
+#include<stdio.h>
+#include<stdlib.h>
+#include<time.h>
+
+//Defining the structure for the public and private keys
+typedef struct{
+    int public_key;
+    int private_key;
+}key_pair;
+
+//Function to generate the prime numbers
+...
+
+//Function to generate the keys
+void generate_keys(key_pair *key){
+    int private_key = rand() % 10000;
+-    key->private_key = &private_key;
++    key->private_key = private_key;
+
+    while(1){
+        int public_key = rand() % 10000;
+        if(is_prime(public_key)){
+-            key->public_key = &public_key;
++            key->public_key = public_key;
+            break;
+        }
+    }
+}
+
+//Function to encrypt the message
+void encrypt(int message, int public_key, int *encrypted_message){
+    int temp = message;
+    int result = 1;
+
+    while(temp!= 0){
+        if(temp % 2 == 1){
+            result = (result * public_key) % 10000;
+        }
+        temp /= 2;
+        public_key = (public_key * public_key) % 10000;
+    }
+
+    *encrypted_message = result;
+}
+
+//Function to decrypt the message
+void decrypt(int encrypted_message, int private_key, int *decrypted_message){
+    int temp = encrypted_message;
+    int result = 1;
+
+    while(temp!= 0){
+        if(temp % 2 == 1){
+            result = (result * private_key) % 10000;
+        }
+        temp /= 2;
+    }
+
+    *decrypted_message = result;
+}
+
+int main(){
+    key_pair key;
+    generate_keys(&key);
+
+    int message = 12345;
+    int encrypted_message;
+    encrypt(message, key.public_key, &encrypted_message);
+
+    printf("Encrypted message: %d\n", encrypted_message);
+
+    int decrypted_message;
+    decrypt(encrypted_message, key.private_key, &decrypted_message);
+
+    printf("Decrypted message: %d\n", decrypted_message);
+
+    return 0;
+}
+```
+explanation-suggested-fix: The suggested fix involves changing the type of private_key and public_key in the key_pair structure from pointers to integers. This ensures that they hold the actual keys rather than pointers to local variables, eliminating the invalid pointer dereference when the keys are accessed later in the program.
+method: UNKNOWN

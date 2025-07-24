@@ -1,0 +1,24 @@
+ 
+
+--- gemini_pro-23401.c
++++ gemini_pro-23401-fixed.c
+@@ -45,7 +45,7 @@
+   // Initialize the traffic lights
+   for (int i = 0; i < NUM_LIGHTS; i++) {
+     lights[i].state = RED;
+     lights[i].color = RED_COLOR;
+   }
+ 
+   // Create the threads
++  int indexes[NUM_LIGHTS];
+   for (int i = 0; i < NUM_LIGHTS; i++) {
++    indexes[i] = i;
+-    pthread_create(&threads[i], NULL, change_light_state, &i);
++    pthread_create(&threads[i], NULL, change_light_state, &indexes[i]);
+   }
+ 
+   // Join the threads
+   for (int i = 0; i < NUM_LIGHTS; i++) {
+     pthread_join(threads[i], NULL);
+   }
+

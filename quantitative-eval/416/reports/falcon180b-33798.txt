@@ -1,0 +1,17 @@
+
+vuln-fix: Buffer Overflow (CWE-120, CWE-787, CWE-805) in falcon180b-33798 (severity: high)
+what: The code has a buffer overflow vulnerability in the `handle_client` function when using `sprintf` to format the `message` buffer, which does not check the length of the buffer being written to.
+where: The vulnerability is located in the `handle_client` function at line 32 in falcon180b-33798.
+why: If not resolved, an attacker can exploit this vulnerability to execute arbitrary code, cause the program to crash, or expose sensitive information.
+how: An attacker would send a large enough input to the server such that the buffer exceeds the `BUFFER_SIZE` limit, causing a buffer overflow when `sprintf` writes data beyond the bounds of the `message` array.
+code-sources: Input received from the `recv` function on line 10.
+code-sinks: The vulnerable `sprintf` call on line 32.
+suggested-fix: 
+```diff
+32c32
+< sprintf(message, "Client %d: %s", client_socket, buffer);
+---
+> snprintf(message, BUFFER_SIZE, "Client %d: %s", client_socket, buffer);
+```
+explanation-suggested-fix: Replacing `sprintf` with `snprintf` ensures that the size of the output written to the `message` buffer does not exceed `BUFFER_SIZE`, thereby preventing a buffer overflow.
+method: UNKNOWN

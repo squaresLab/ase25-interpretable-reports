@@ -1,0 +1,80 @@
+
+vuln-fix: CWE-665 Improper Initialization and CWE-787 Out-of-bounds Write in falcon180b-51302 (severity: High)
+what: The vulnerability is due to improper initialization of the `server_socket` and the potential out-of-bounds write that can occur with the `clients` array.
+where: 
+- Improper Initialization of `server_socket` at `setsockopt` in main function
+- Out-of-bounds write in `clients` array in `main` function 
+
+why: Failure to properly initialize the `server_socket` can lead to undefined behavior, which may cause security issues such as crashes or data corruption. Additionally, not properly checking the bounds before writing to the `clients` array may lead to an out-of-bounds write, which could corrupt memory or allow an attacker to execute arbitrary code.
+
+how: An attacker could exploit the uninitialized `server_socket` to perform a denial-of-service (DoS) attack by causing the application to crash or behave unexpectedly. By exploiting the out-of-bounds write, an attacker could potentially overwrite memory, leading to arbitrary code execution or corruption.
+
+code-sources: Entry point for user input is through the `recv` function call in `handle_client`.
+code-sinks: Actions performed using user input include the call to `send`, where data from the user is sent back.
+
+suggested-fix: 
+```diff
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <pthread.h>
+
+#define MAX_CLIENTS 10
+#define BUFFER_SIZE 1024
+
+int clients[MAX_CLIENTS];
+int num_clients = 0;
+int server_socket;
+
+void *handle_client(void *arg) {
+    int client_socket = *(int *) arg;
+    char buffer[BUFFER_SIZE];
+    while (1) {
+        memset(buffer, 0, BUFFER_SIZE);
+        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+        if (bytes_received <= 0) {
+            close(client_socket);
+            break;
+        }
+        send(client_socket, buffer, strlen(buffer), 0);
+    }
+}
+
+int main() {
++   server_socket = socket(AF_INET, SOCK_STREAM, 0);
++   if (server_socket < 0) {
++       perror("socket failed");
++       exit(EXIT_FAILURE);
++   }
+    int opt = 1;
+    setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+    struct sockaddr_in server_addr;
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    server_addr.sin_port = htons(8080);
+    bind(server_socket, (struct sockaddr *) &server_addr, sizeof(server_addr));
+    listen(server_socket, 5);
+    printf("Server started on port 8080\n");
+    while (1) {
+        int client_socket = accept(server_socket, NULL, NULL);
+        if (num_clients >= MAX_CLIENTS) {
+            close(client_socket);
+        } else {
+            clients[num_clients++] = client_socket;
+            pthread_t thread_id;
+            pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+        }
+    }
+    close(server_socket);
+    return 0;
+}
+```
+explanation-suggested-fix: The suggested fix initializes the `server_socket` by calling the `socket` function and checks if it fails to create the socket. Additionally, the check for the number of clients `num_clients` is changed from `==` to `>=` before writing to the `clients` array, preventing an out-of-bounds write.
+
+method: CODEQL

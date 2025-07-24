@@ -1,0 +1,8 @@
+
+
+24c24
+<         printf("Received message: %s\n", buffer);
+---
+>         printf("Received message: %.1024s\n", buffer);
+
+

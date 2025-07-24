@@ -1,0 +1,35 @@
+
+    vuln-fix: CWE-415 Double Free in falcon180b-40026 (severity: High)
+    what: The code contains a Double Free vulnerability because the same memory address (client_socket) is being dereferenced and potentially freed multiple times in the `handle_client` function and `accept_connections`.
+    where: handle_client function, falcon180b-40026, lines 16-24; accept_connections function, falcon180b-40026, lines 30-40.
+    why: If the same memory is erroneously freed multiple times, it can cause program instability, crashes, or can be exploited by an attacker to execute arbitrary code.
+    how: An attacker can exploit this vulnerability by causing the server to accept multiple client connections and ensuring that the same socket descriptor (`client_socket`) is handled multiple times, leading to runtime errors or potential code execution.
+    code-sources: Entry point for user input occurs at the recv function in the handle_client function, where data is received from the client.
+    code-sinks: Actions using user input include the printf statement in handle_client and the send call in accept_connections, as well as the close function which closes the client socket descriptor.
+    suggested-fix: 
+```diff
+--- falcon180b-40026.old.c 2023-10-31
++++ falcon180b-40026.new.c 2023-10-31
+@@ -33,7 +33,7 @@
+ 
+         g_clients[g_num_clients++] = client_socket;
+         pthread_t thread_id;
+-        pthread_create(&thread_id, NULL, handle_client, (void *)&client_socket);
++        int *client_sock_ptr = malloc(sizeof(int));
++        *client_sock_ptr = client_socket;
++        pthread_create(&thread_id, NULL, handle_client, (void *)client_sock_ptr);
+     }
+ }
+ 
+@@ -21,7 +21,7 @@
+         printf("Client %d: %s\n", client_socket, buffer);
+     }
+ 
+-    close(client_socket);
++    close(client_socket);
++    free(param);
+     return NULL;
+ }
+``` 
+    explanation-suggested-fix: The suggested fix dynamically allocates memory for the client socket descriptor and passes its pointer to the `pthread_create` function. This prevents the issue of the same `client_socket` value being used across multiple threads. The allocated memory is freed inside the `handle_client` function after it’s no longer needed, ensuring no memory leak or double free occurs.
+    method: UNKNOWN

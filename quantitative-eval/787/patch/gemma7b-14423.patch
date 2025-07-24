@@ -1,0 +1,111 @@
+ 
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define MAX_BOARD_SIZE 64
+
+typedef struct Board {
+    int board[MAX_BOARD_SIZE * MAX_BOARD_SIZE]; // Fix 1: Increased size to accurately represent a 2D board
+    int turn;
+    char winner;
+} Board;
+
+void initialize_board(Board *board) {
+-    board->board[64] = -1; // Fix 2: Correct initialization within bounds
++    for (int i = 0; i < MAX_BOARD_SIZE * MAX_BOARD_SIZE; i++) {
++        board->board[i] = -1;
++    }
+    board->turn = 0;
+    board->winner = '\0';
+}
+
+void place_piece(Board *board, int x, int y, char piece) {
+-    if (board->board[x] != -1) {
++    if (x < 0 || x >= MAX_BOARD_SIZE || y < 0 || y >= MAX_BOARD_SIZE) {
++        return; // Invalid positions are not allowed
++    }
+
++    if (board->board[x + y * MAX_BOARD_SIZE] != -1) { // Correct indexing
+        return;
+    }
+-    board->board[x] = y; 
+-    board->board[x + MAX_BOARD_SIZE] = piece; 
++    board->board[x + y * MAX_BOARD_SIZE] = piece; // Correct indexing
+}
+
+char get_winner(Board *board) {
+    // Check rows
+    for (int r = 0; r < MAX_BOARD_SIZE; r++) {
+-        if (board->board[r] == board->board[r + MAX_BOARD_SIZE] && board->board[r] != -1) {
++        // Assuming a different winning rule, modify as needed
++        for (int c = 1; c < MAX_BOARD_SIZE; c++) {
++            if (board->board[r * MAX_BOARD_SIZE] != board->board[r * MAX_BOARD_SIZE + c] || board->board[r * MAX_BOARD_SIZE] == -1)
++                break;
++            if (c == MAX_BOARD_SIZE - 1) { // Found a row win
++                return (char)board->board[r * MAX_BOARD_SIZE];
++            }
++        }
+    }
+
+    // Check columns
+    for (int c = 0; c < MAX_BOARD_SIZE; c++) {
+-        if (board->board[c] == board->board[c + MAX_BOARD_SIZE] && board->board[c] != -1) {
++        // Assuming a different winning rule, modify as needed
++        for (int r = 1; r < MAX_BOARD_SIZE; r++) {
++            if (board->board[c] != board->board[r * MAX_BOARD_SIZE + c] || board->board[c] == -1)
++                break;
++            if (r == MAX_BOARD_SIZE - 1) { // Found a column win
++                return (char)board->board[c];
++            }
++        }
+    }
+
+    // Check diagonals
+-    for (int d = 0; d < MAX_BOARD_SIZE; d++) {
+-        if (board->board[d] == board->board[d + MAX_BOARD_SIZE] && board->board[d] != -1) {
+-            return board->board[d];
++    // Assuming winning condition is to have same value diagonally
++    for (int i = 1; i < MAX_BOARD_SIZE; i++) {
++        if (board->board[0] != board->board[i * MAX_BOARD_SIZE + i] || board->board[0] == -1)
++            break;
++        if (i == MAX_BOARD_SIZE - 1)
++            return (char)board->board[0];
++    }
+
++    for (int i = 1; i < MAX_BOARD_SIZE; i++) {
++        if (board->board[MAX_BOARD_SIZE - 1] != board->board[i * MAX_BOARD_SIZE + (MAX_BOARD_SIZE - 1 - i)] || board->board[MAX_BOARD_SIZE - 1] == -1)
++            break;
++        if (i == MAX_BOARD_SIZE - 1)
++            return (char)board->board[MAX_BOARD_SIZE - 1];
+    }
+
+    // No winner
+    return '\0';
+}
+
+int main() {
+    Board board;
+    initialize_board(&board);
+
+    // Place pieces
+    place_piece(&board, 0, 0, 'a');
+    place_piece(&board, 1, 0, 'b');
+    place_piece(&board, 2, 0, 'c');
+    place_piece(&board, 3, 0, 'd');
+
+    // Get winner
+    char winner = get_winner(&board);
+
+    // Print winner
+    if (winner != '\0') {
+        printf("Winner: %c\n", winner);
+    } else {
+        printf("No winner\n");
+    }
+
+    return 0;
+}
+
+

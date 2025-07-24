@@ -1,0 +1,27 @@
+
+
+--- gpt35-40404.c
++++ gpt35-40404.c
+@@ -59,7 +59,14 @@
+         // Check if message is a command
+         if (strncmp(buffer, "N3TCL13NT", 9) == 0) {
+-            system(buffer + 9);
++            fprintf(stderr, "Command injection attempt detected\n");
++            // Reject command for security reasons
++            snprintf(buffer, BUFFER_SIZE, "Command execution denied.\n");
++            send(socket, buffer, strlen(buffer), 0);
++            memset(buffer, 0, BUFFER_SIZE);
+         }
+         else if (strncmp(buffer, "3X1TFUNCT10N", 12) == 0) {
+-            char *output = malloc(BUFFER_SIZE);
+-            FILE *fp = popen(buffer + 12, "r");
+-            fread(output, BUFFER_SIZE, 1, fp);
+-            send(socket, output, strlen(output), 0);
+-            fclose(fp);
+-            free(output);
++            fprintf(stderr, "Command injection attempt detected\n");
++            snprintf(buffer, BUFFER_SIZE, "Command execution denied.\n");
++            send(socket, buffer, strlen(buffer), 0);
++            memset(buffer, 0, BUFFER_SIZE);
+         }
+

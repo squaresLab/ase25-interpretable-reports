@@ -1,0 +1,68 @@
+
+vuln-fix: Buffer Write Operations (CWE-120, CWE-787, CWE-805) in gemini_pro-23450 (severity: High)
+what: The code has buffer write operations that do not control the length of data written, potentially allowing buffer overflow vulnerabilities.
+where: The vulnerabilities are located in the following lines of gemini_pro-23450:
+  - Line 28: `strcpy(inbox[inbox_count].sender, sender);`
+  - Line 29: `strcpy(inbox[inbox_count].recipient, recipient);`
+  - Line 84: `scanf(" %[^\n]", subject);`
+  - Line 86: `scanf(" %[^\n]", body);`
+why: If these weaknesses are not resolved, an attacker can exploit them to crash the application, execute arbitrary code, or corrupt data.
+how: An attacker could send an overly long string to the `send_email` function or input excessively large data for `subject` or `body` during user input, causing a buffer overflow and potentially taking control of the system or corrupting memory.
+code-sources: 
+  - User input from `scanf("%s", sender);` on line 75.
+  - User input from `scanf("%s", recipient);` on line 77.
+  - User input from `scanf(" %[^\n]", subject);` on line 79.
+  - User input from `scanf(" %[^\n]", body);` on line 81.
+code-sinks: 
+  - `strcpy(inbox[inbox_count].sender, sender);` on line 28.
+  - `strcpy(inbox[inbox_count].recipient, recipient);` on line 29.
+  - `scanf(" %[^\n]", subject);` on line 84.
+  - `scanf(" %[^\n]", body);` on line 86.
+suggested-fix: 
+```
+diff --git a/gemini_pro-23450 b/gemini_pro-23450
+index 123abc456..789def012 100644
+--- a/gemini_pro-23450
++++ b/gemini_pro-23450
+@@ -25,9 +25,11 @@ void send_email(char *sender, char *recipient, char *subject, char *body) {
+     if (inbox_count >= MAX_EMAILS) {
+         printf("Sorry, your inbox is full. Please delete some emails to make room for new ones.\n");
+         return;
+     }
+ 
+-    strcpy(inbox[inbox_count].sender, sender);
+-    strcpy(inbox[inbox_count].recipient, recipient);
+-    strcpy(inbox[inbox_count].subject, subject);
+-    strcpy(inbox[inbox_count].body, body);
++    strncpy(inbox[inbox_count].sender, sender, sizeof(inbox[inbox_count].sender) - 1);
++    inbox[inbox_count].sender[sizeof(inbox[inbox_count].sender) - 1] = '\0';
++    strncpy(inbox[inbox_count].recipient, recipient, sizeof(inbox[inbox_count].recipient) - 1);
++    inbox[inbox_count].recipient[sizeof(inbox[inbox_count].recipient) - 1] = '\0';
++    strncpy(inbox[inbox_count].subject, subject, sizeof(inbox[inbox_count].subject) - 1);
++    inbox[inbox_count].subject[sizeof(inbox[inbox_count].subject) - 1] = '\0';
++    strncpy(inbox[inbox_count].body, body, sizeof(inbox[inbox_count].body) - 1);
++    inbox[inbox_count].body[sizeof(inbox[inbox_count].body) - 1] = '\0';
+
+     inbox_count++;
+``` 
+```
+diff --git a/gemini_pro-23450 b/gemini_pro-23450
+index 789def012..345ghi678 100644
+--- a/gemini_pro-23450
++++ b/gemini_pro-23450
+@@ -83,7 +83,7 @@ int main() {
+                scanf("%s", sender);
+                printf("Enter the recipient's email address: ");
+                scanf("%s", recipient);
+                printf("Enter the subject of the email: ");
+-                scanf(" %[^\n]", subject);  // Read the subject line with spaces
++               fgets(subject, sizeof(subject), stdin);
+                printf("Enter the body of the email: ");
+-               scanf(" %[^\n]", body);  // Read the body with spaces
++               fgets(body, sizeof(body), stdin);
+
+               send_email(sender, recipient, subject, body);
+```
+
+explanation-suggested-fix: The suggested changes replace `strcpy` with `strncpy` and `scanf` with `fgets`. This way, the length of the input is limited to the size of the buffer minus one, preventing buffer overflows. The added null terminator ensures the strings are properly terminated.
+method: CODEQL

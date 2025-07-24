@@ -1,0 +1,59 @@
+
+    vuln-fix: CWE-362: Race Condition in falcon180b-24691 (severity: Medium)
+    what: The vulnerability arises from the race condition in the client handling code. When a new client connection is accepted, the client_socket is directly passed to a new thread. There is a period during which the shared resource (client_socket) is accessed without synchronization, introducing the possibility of a race condition.
+    where: The race condition vulnerability is located in the following lines of falcon180b-24691:
+
+```c
+while (1) {
+    int client_socket = accept(server_socket, NULL, NULL);
+    if (client_socket == -1) {
+        printf("Error accepting connection\n");
+        continue;
+    }
+    num_clients++;
+    if (num_clients >= MAX_CLIENTS) {
+        close(client_socket);
+        printf("Server is full\n");
+        continue;
+    }
+    clients[num_clients - 1] = client_socket;
+    pthread_t thread_id;
+    pthread_create(&thread_id, NULL, handle_client, (void *)&client_socket);
+}
+```
+    why: Failing to address this race condition may allow attackers or unintended users to manipulate shared resources leading to unpredictable behavior, including crashes or corrupted data. 
+    how: An attacker could exploit this race condition by opening and closing connections rapidly, potentially causing multiple threads to operate on the same client_socket, leading to incorrect handling of client connections and possible server instability.
+    code-sources: The primary entry point for user input is the accept() function call, where new client sockets are accepted.
+    code-sinks: The primary sinks include recv() and send() functions, which are utilized within the handle_client() function to interact with client input.
+    suggested-fix: 
+```diff
+diff --git a/falcon180b-24691 b/falcon180b-24691
+index abcdefg..hijklmn 100644
+--- a/falcon180b-24691
++++ b/falcon180b-24691
+@@ -44,14 +44,15 @@ int main() {
+         int client_socket = accept(server_socket, NULL, NULL);
+         if (client_socket == -1) {
+             printf("Error accepting connection\n");
+-            continue;
++            close(client_socket);
++            continue;
+         }
+         int *client_sock_ptr = malloc(sizeof(*client_sock_ptr));
+         *client_sock_ptr = client_socket;
+         num_clients++;
+         if (num_clients >= MAX_CLIENTS) {
+-            close(client_socket);
++            close(*client_sock_ptr);
++            free(client_sock_ptr);
+             printf("Server is full\n");
+             continue;
+         }
+-        clients[num_clients - 1] = client_socket;
+         pthread_t thread_id;
+-        pthread_create(&thread_id, NULL, handle_client, (void *)&client_socket);
++        pthread_create(&thread_id, NULL, handle_client, client_sock_ptr);
+     }
+```
+    explanation-suggested-fix: The recommended code changes resolve the race condition by allocating memory for each client socket and passing a pointer to this memory to the thread. This ensures that each thread receives a unique copy of the client_socket value, thus avoiding shared access issues.
+    method: UNKNOWN

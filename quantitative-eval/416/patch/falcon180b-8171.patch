@@ -1,0 +1,35 @@
+ 
+    
+    --- old_falcon180b-8171.c
+    +++ new_falcon180b-8171.c
+    @@ -31,7 +31,7 @@
+             break;
+         }
+     
+    -    printf("Client %d sent: %s\n", client_socket, buffer);
+    +    printf("Client %d sent: %s\n", client_socket, buffer);  // This is relatively safe, no changes here.
+         for (int i = 0; i < num_clients; i++) {
+    -        if (client_sockets[i]!= client_socket) {
+    +        if (client_sockets[i] != client_socket) {
+                 send(client_sockets[i], buffer, strlen(buffer), 0);
+             }
+         }
+    @@ -45,8 +45,15 @@
+     
+         client_sockets[num_clients++] = client_socket;
+         pthread_t thread_id;
+    -    pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+    -}
+    +    
+    +    // Use a heap-allocated copy of client_socket to avoid race conditions
+    +    int *client_sock_copy = malloc(sizeof(int));
+    +    if (client_sock_copy == NULL) {
+    +        perror("Failed to allocate memory for client socket");
+    +        close(client_socket);
+    +        continue;
+    +    }
+    +    *client_sock_copy = client_socket;
+    +    pthread_create(&thread_id, NULL, handle_client, (void *) client_sock_copy);
+     }
+     
+    

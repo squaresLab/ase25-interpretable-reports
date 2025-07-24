@@ -1,0 +1,14 @@
+ 
+    
+    --- falcon180b-64660
+    +++ falcon180b-64660
+    @@ -44,6 +44,7 @@
+     
+         // Initialize semaphore
+         sem_init(&semaphore, 0, 1);
+    +    num_fibonacci = NUM_FIBONACCI;
+
+         // Create threads
+         for (int i = 0; i < NUM_THREADS; i++) {
+    
+    

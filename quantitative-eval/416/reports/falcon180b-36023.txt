@@ -1,0 +1,39 @@
+
+vuln-fix: Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal') (CWE-22) and Buffer Overflow in falcon180b-36023 (severity: High)
+what: The application does not properly handle buffer sizes in recv and uses user-controlled input in printf without sanitization. This allows an attacker to cause a buffer overflow and potentially execute arbitrary code on the server, as well as perform Format String vulnerabilities.
+where: 
+1. recv(sock, buffer, BUFFER_SIZE, 0); in thread_client function.
+2. printf("Client %d: %s\n", sock, buffer); in thread_client function.
+why: 
+1. Buffer Overflows can lead to arbitrary code execution and compromise the system hosting the code.
+2. Improper handling of format strings can result in leaking sensitive information or executing arbitrary code.
+how: An attacker can craft a payload that exceeds the BUFFER_SIZE or includes malicious format specifiers that leverage the lack of sanitization on the buffer which could execute arbitrary code or leak memory content.
+code-sources: recv(sock, buffer, BUFFER_SIZE, 0);
+code-sinks: printf("Client %d: %s\n", sock, buffer);
+suggested-fix: 
+```diff
+--- falcon180b-36023.c
++++ falcon180b-36023-fixed.c
+@@ -15,13 +15,16 @@
+     int sock = *(int *) arg;
+     char buffer[BUFFER_SIZE];
+
+     while (1) {
+-        memset(buffer, 0, BUFFER_SIZE);
+-        recv(sock, buffer, BUFFER_SIZE, 0);
+-        printf("Client %d: %s\n", sock, buffer);
+-        send(sock, buffer, strlen(buffer), 0);
++	if (recv(sock, buffer, BUFFER_SIZE-1, 0) <= 0) {
++	    break;
++	}
++	buffer[BUFFER_SIZE-1] = '\0'; // Ensuring null termination
++	printf("Client %d: %.1000s\n", sock, buffer);
++	send(sock, buffer, strnlen(buffer, BUFFER_SIZE-1), 0);
+     }
+
+     close(sock);
+     pthread_exit(0);
+ }
+```
+explanation-suggested-fix: Ensuring that the buffer is properly null-terminated prevents potential buffer overflows. Using formatted string specifiers with a length specifier limits the risk of format string vulnerabilities. The change to `recv` ensures that no more than `BUFFER_SIZE-1` characters are read, leaving space for the null terminator.
+method: CODEQL

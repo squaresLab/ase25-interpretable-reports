@@ -1,0 +1,31 @@
+
+    vuln-fix: Buffer Overflow (CWE-120/CWE-787/CWE-805) in gpt35-34852 (severity: High)
+    what: The vulnerability is a buffer overflow, where the length of the data written into the buffer is not controlled.
+    where: Line 95 in the file gpt35-34852: `strcat(message, buffer);`
+    why: If not resolved, this vulnerability can allow an attacker to write beyond the memory bounds of the buffer, potentially leading to arbitrary code execution, data corruption, or application crashes.
+    how: An attacker could send a message to the server that exceeds the size of the `message` or `buffer` arrays, causing an overflow when `strcat` concatenates the `buffer` to `message`.
+    code-sources: Line 85 in gpt35-34852: `recv(client_fd, buffer, sizeof(buffer), 0)`
+    code-sinks: Line 95 in gpt35-34852: `strcat(message, buffer)`
+    suggested-fix: 
+    ```diff
+    --- gpt35-34852   2023-10-10 10:00:00.000000000 +0000
+    +++ gpt35-34852.fixed  2023-10-10 12:00:00.000000000 +0000
+    @@ -92,8 +92,11 @@
+             if (recv(client_fd, buffer, sizeof(buffer), 0) < 0) {
+                 perror("recv");
+                 exit(EXIT_FAILURE);
+    +         }
+    +
+    +         // Ensure no buffer overflow occurs
+    +         buffer[sizeof(buffer) - 1] = '\0';
+
+             // Preparing message to be sent back to client
+    -        strcpy(message, "Server received: ");
+    -        strcat(message, buffer);
+    +        snprintf(message, sizeof(message), "Server received: %s", buffer);
+
+             // Sending message back to client
+             if (send(client_fd, message, strlen(message), 0) < 0) {
+    ```
+    explanation-suggested-fix: The proposed fix replaces the unsafe `strcat` usage with `snprintf`, which ensures that the overflow does not occur by controlling the amount of data written into the `message` buffer. Additionally, it ensures that the `buffer` is null-terminated before usage. This change prevents buffer overflows by safely concatenating the strings.
+    method: CODEQL

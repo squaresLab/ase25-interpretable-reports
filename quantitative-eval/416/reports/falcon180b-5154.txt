@@ -1,0 +1,41 @@
+
+vuln-fix: CWE-415 Double Free in falcon180b-5154 at lines 24-35 (severity: High)
+what: The vulnerability occurs when the same memory location is freed more than once. In this case, the `client_socket` is passed to `pthread_create` which causes `handle_client` to operate on a potentially inconsistent state, eventually resulting in a double free scenario which can crash the application.
+where: The vulnerable lines are within the `handle_client` function inside falcon180b-5154:
+```c
+24    while (1) {
+25        memset(buffer, 0, BUFFER_SIZE);
+26        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+
+27        if (bytes_received <= 0) {
+28            close(client_socket);
+29            pthread_exit(NULL);
+30       }
+
+31       send(client_socket, buffer, strlen(buffer), 0);
+32   }
+```
+why: Not resolving this vulnerability can lead to a program crash or, in some cases, allow an attacker to execute arbitrary code if they can manipulate the memory allocator in precise ways.
+how: An attacker could sustain multiple connections and cause disconnections in an attempt to find scenarios where the memory is incorrectly managed, ultimately leading to a double-free.
+code-sources: Entry point for user input is from the socket `client_socket` established by the `recv` function.
+code-sinks: The `close(client_socket)` operation and the subsequent repeated use of `client_socket` represent the sink.
+suggested-fix: 
+```diff
+24    while (1) {
+25        memset(buffer, 0, BUFFER_SIZE);
+26        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+
+27        if (bytes_received <= 0) {
+-            close(client_socket);
+-            pthread_exit(NULL);
++           break;
+28       }
+
+29       send(client_socket, buffer, strlen(buffer), 0);
+30   }
+
++   close(client_socket);
++   pthread_exit(NULL);
+```
+explanation-suggested-fix: The suggested fix ensures the `close(client_socket)` is executed only once and after breaking out of the loop. This avoids redundancy and ensures memory is managed correctly, preventing any potential double-free scenarios.
+method: UNKNOWN

@@ -1,0 +1,104 @@
+
+vuln-fix: CWE-362: Race Condition in falcon180b-68951 (severity: High)
+
+what: The vulnerable code allows a race condition to occur when clients array and num_clients are accessed and modified by multiple threads without any synchronization mechanism.
+
+where: The vulnerability is located in the functions `handle_client` and `accept_connections` in the `falcon180b-68951` file.
+
+why: If this vulnerability is not resolved, it could potentially cause the server to crash, corrupt data, or allow an attacker to execute arbitrary code.
+
+how: An attacker could exploit this by rapidly connecting and disconnecting from the server, potentially causing `num_clients` to become inconsistent or creating a scenario where multiple threads try to modify `clients` array concurrently, leading to undefined behavior.
+
+code-sources: The entry point where user input enters the application is the `recv` function in the `handle_client` function.
+
+code-sinks: The actions performed by the application using user input are the `printf` function and the `send` function in the `handle_client` function.
+
+suggested-fix: 
+```diff
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <pthread.h>
+
+#define MAX_CLIENTS 10
+#define BUFFER_SIZE 1024
+#define PORT 8080
+#define SERVER_IP "127.0.0.1"
+
+int clients[MAX_CLIENTS];
+int num_clients = 0;
+pthread_mutex_t clients_mutex = PTHREAD_MUTEX_INITIALIZER;  // Add a mutex for synchronization
+
+void *handle_client(void *arg) {
+    int client_socket = *(int *) arg;
+    char buffer[BUFFER_SIZE];
+    while (1) {
+        memset(buffer, 0, BUFFER_SIZE);
+        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+        if (bytes_received <= 0) {
+            break;
+        }
+        printf("Client %d sent: %s\n", client_socket, buffer);
+
+        pthread_mutex_lock(&clients_mutex);  // Lock the mutex before accessing shared data
+        int i;
+        for (i = 0; i < num_clients; i++) {
+            if (clients[i] != client_socket) {
+                send(clients[i], buffer, strlen(buffer), 0);
+            }
+        }
+        pthread_mutex_unlock(&clients_mutex); // Unlock the mutex after accessing shared data
+    }
+    close(client_socket);
+    return NULL;
+}
+
+void accept_connections(int server_socket) {
+    while (1) {
+        int client_socket = accept(server_socket, NULL, NULL);
+        if (client_socket == -1) {
+            break;
+        }
+        printf("Client connected on socket %d\n", client_socket);
+
+        pthread_mutex_lock(&clients_mutex);  // Lock the mutex before modifying shared data
+        if (num_clients < MAX_CLIENTS) {
+            pthread_t thread_id;
+            pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+            clients[num_clients++] = client_socket;
+        }
+        pthread_mutex_unlock(&clients_mutex); // Unlock the mutex after modifying shared data
+    }
+}
+
+int main() {
+    int server_socket = socket(AF_INET, SOCK_STREAM, 0);
+    if (server_socket == -1) {
+        printf("Error creating socket\n");
+        return 1;
+    }
+    struct sockaddr_in server_addr;
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.s_addr = inet_addr(SERVER_IP);
+    server_addr.sin_port = htons(PORT);
+    if (bind(server_socket, (struct sockaddr *) &server_addr, sizeof(server_addr)) == -1) {
+        printf("Error binding socket\n");
+        return 1;
+    }
+    if (listen(server_socket, MAX_CLIENTS) == -1) {
+        printf("Error listening on socket\n");
+        return 1;
+    }
+    printf("Server listening on port %d\n", PORT);
+    accept_connections(server_socket);
+    return 0;
+}
+```
+
+explanation-suggested-fix: The suggested code diff introduces a mutex named `clients_mutex` to protect the shared resources, specifically the `clients` array and `num_clients` variable. By locking this mutex before accessing or modifying these shared resources and unlocking it afterwards, we prevent multiple threads from concurrently accessing and modifying these resources, thereby eliminating the race condition.
+
+method: UNKNOWN

@@ -1,0 +1,79 @@
+
+vuln-fix: CWE-170: Improper Null Termination in falcon180b-26671 (severity: High)
+what: The vulnerability stems from improper handling of null-terminated strings. Specifically, `strtok` usage on line 25 does not ensure the string is null-terminated, and subsequently, `strlen(message)` could read beyond the allocated buffer.
+where: falcon180b-26671, lines 25-28
+why: If the buffer does not contain a null terminator after `recv`, functions like `strtok` and `strlen` can cause undefined behavior or memory corruption, leading to potential crashes or data leaks.
+how: An attacker could send a carefully crafted message without a null terminator. This could cause the server to read beyond the buffer boundaries, potentially leaking or corrupting memory.
+code-sources: `recv(client_socket, buffer, MAX_MESSAGE_LENGTH, 0);` on line 19
+code-sinks: `strtok(buffer, " ");` on line 25, `send(client_socket, message, strlen(message), 0);` on line 27
+suggested-fix: 
+```diff
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <pthread.h>
+
+#define MAX_CLIENTS 10
+#define MAX_MESSAGE_LENGTH 1024
+#define PORT 8080
+
+int client_sockets[MAX_CLIENTS];
+int num_clients = 0;
+
+void *handle_client(void *arg) {
+    int client_socket = *(int *) arg;
+    char buffer[MAX_MESSAGE_LENGTH];
+
+    while (1) {
+        memset(buffer, 0, MAX_MESSAGE_LENGTH);
+        int bytes_received = recv(client_socket, buffer, MAX_MESSAGE_LENGTH - 1, 0);  // Fix: Reserve one byte for the null terminator
+        buffer[bytes_received] = '\0';  // Fix: Null-terminate the buffer
+
+        if (bytes_received <= 0) {
+            close(client_socket);
+            pthread_exit(0);
+        }
+
+        char *message = strtok(buffer, " ");
+        send(client_socket, message, strlen(message), 0);
+    }
+}
+
+int main() {
+    int server_socket = socket(AF_INET, SOCK_STREAM, 0);
+    struct sockaddr_in server_addr;
+
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(PORT);
+    server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+
+    bind(server_socket, (struct sockaddr *) &server_addr, sizeof(server_addr));
+    listen(server_socket, 3);
+
+    printf("Server started on port %d\n", PORT);
+
+    while (1) {
+        socklen_t client_size = sizeof(client_sockets[num_clients]);
+        int client_socket = accept(server_socket, (struct sockaddr *) &client_sockets[num_clients], &client_size);
+
+        if (num_clients >= MAX_CLIENTS) {
+            close(client_socket);
+            printf("Maximum clients reached\n");
+        } else {
+            pthread_t thread_id;
+            pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+            num_clients++;
+        }
+    }
+
+    return 0;
+}
+```
+explanation-suggested-fix: The suggested code diff ensures that the buffer received is null-terminated by reserving one byte during the `recv` call for the null terminator and explicitly setting this null terminator after `recv` completes. This prevents `strtok` and `strlen` from reading beyond the buffer boundaries, thereby mitigating the risk of memory corruption or undefined behavior.
+method: UNKNOWN

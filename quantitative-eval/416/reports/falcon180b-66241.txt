@@ -1,0 +1,45 @@
+ 
+vuln-fix: Improper Handling of Client Connections (CWE-665) in falcon180b-66241 (severity: HIGH)
+what: The vulnerability lies in improper handling of client connections, specifically in the `client_socket` variable passed to the `pthread_create` function. This could lead to a race condition where multiple threads access and modify the `client_socket` value concurrently, causing incorrect behavior or crashes.
+where: 
+    Line 41: `pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);`
+    Line 24: `void *handle_client(void *arg)`
+    Line 26: `int client_socket = *(int *) arg;`
+
+why: If this vulnerability is not resolved, it can lead to serious concurrency issues including server crashes or improper handling of client connections, which may result in loss of data integrity and availability.
+how: An attacker could exploit this by rapidly connecting and disconnecting clients, attempting to trigger a race condition. This might result in server crashes or mismanagement of client connections.
+code-sources: 
+    Line 41: `accept(server_socket, (struct sockaddr *) &clients[num_clients], &client_size);`
+code-sinks: 
+    Line 44: `pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);`
+    Line 27: `int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);`
+
+suggested-fix: 
+```diff
+--- falcon180b-66241.c
++++ falcon180b-66241_fixed.c
+@@ -38,11 +38,10 @@
+ 
+     while (num_clients < MAX_CLIENTS) {
+         socklen_t client_size = sizeof(clients[num_clients]);
+-        int client_socket = accept(server_socket, (struct sockaddr *) &clients[num_clients], &client_size);
++        int *client_socket = malloc(sizeof(int));
++        *client_socket = accept(server_socket, (struct sockaddr *) &clients[num_clients], &client_size);
+
+         if (*client_socket == -1) {
+             printf("Error accepting client\n");
+             free(client_socket);
+-        } else {
+-            printf("Client %d connected\n", *client_socket);
+-            pthread_t thread_id;
+-            pthread_create(&thread_id, NULL, handle_client, (void *) client_socket);
++        } else { 
++            printf("Client %d connected\n", *client_socket);
++            pthread_t thread_id;
++            pthread_create(&thread_id, NULL, handle_client, (void *) client_socket);
+             num_clients++;
+         }
+     }
+```
+explanation-suggested-fix: The suggested fix allocates memory dynamically for each `client_socket`, ensuring that each thread has its own unique copy of `client_socket`. This prevents the race condition by avoiding shared access to the same memory location.
+method: UNKNOWN

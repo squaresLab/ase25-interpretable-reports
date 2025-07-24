@@ -1,0 +1,37 @@
+`
+vuln-fix: CWE-362: Race Condition in falcon180b-41619 (severity: Medium)
+what: The code has a race condition vulnerability in the `accept_connections` function when a new client connection is handled by the `handle_client` function. Specifically, the variable `client_socket` is passed to the `pthread_create` call by reference and is shared among all threads, leading to a race condition.
+where: Lines affecting the vulnerability are primarily in the `accept_connections` function and the `pthread_create` line within falcon180b-41619.
+why: Not resolving this weakness can result in multiple threads accessing and potentially modifying the same `client_socket` concurrently, leading to unpredictable behavior, data corruption, or denial of service.
+how: An attacker could exploit this vulnerability by rapidly connecting and disconnecting clients, causing the server to behave unexpectedly since multiple threads might be created with the same or incorrect `client_socket`.
+code-sources: The entry point to user input is through the network, specifically the `recv` call in the `handle_client` function.
+code-sinks: Actions performed using user input occur in the `printf` statement within the `handle_client` function and the creation of a new thread in the `accept_connections` function.
+suggested-fix: 
+```diff
+--- falcon180b-41619.c   2023-10-01 10:00:00.000000000 +0000
++++ falcon180b-41619-fixed.c   2023-10-01 10:30:00.000000000 +0000
+@@ -33,8 +33,13 @@
+     while (1) {
+         int client_socket = accept(server_socket, NULL, NULL);
+
+         if (client_socket == -1) {
+             printf("Error accepting connection\n");
+             continue;
+         }
+
++        int *client_socket_ptr = malloc(sizeof(int));
++        if (client_socket_ptr == NULL) {
++            printf("Memory allocation failed\n");
++            close(client_socket);
++            continue;
++        }
++        *client_socket_ptr = client_socket;
++
+         pthread_t thread_id;
+-        pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
++        pthread_create(&thread_id, NULL, handle_client, (void *) client_socket_ptr);
+     }
+ }
+```
+explanation-suggested-fix: The suggested code diff resolves the vulnerability by allocating memory for each client's socket descriptor and passing this allocated memory to the thread handling the client. This ensures each thread receives a unique `client_socket` pointer, preventing the race condition.
+method: UNKNOWN

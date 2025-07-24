@@ -1,0 +1,77 @@
+
+vuln-fix: Data race vulnerability (CWE-362) in falcon180b-67521 at multiple lines (severity: High)
+what: The code has a data race condition caused by improper synchronization access to shared variables `bags_arrived` and `bags_handled`, which might lead to unpredictable behavior.
+where: 
+- Line 12: Initialization of mutex
+- Line 21: Locking mutex 
+- Line 24: Checking `bags_arrived`
+- Line 29: Unlocking mutex
+- Line 40: Locking mutex 
+- Line 42: Incrementing `bags_arrived`
+- Line 44: Unlocking mutex
+why: If the data race is not resolved, two or more threads could simultaneously read and write to the same variables, causing inconsistencies and potential crashes in the application.
+how: An attacker could exploit this vulnerability by creating a scenario where multiple threads manipulate `bags_arrived` and `bags_handled` concurrently, potentially leading to incorrect program execution or crashes.
+code-sources: `baggage_arrival(void *threadid)` initializes the threads in `main()` with the statement `pthread_create(&threads[i], NULL, baggage_arrival, (void *) &i)`.
+code-sinks: Actions performed within the `while (1)` loop in the `baggage_handler(void *threadid)` function and the `for` loop in the `baggage_arrival(void *threadid)` function.
+suggested-fix:
+```diff
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+
+#define NUM_BAGS 100
+#define NUM_THREADS 5
+
+int bags_arrived = 0;
+int bags_handled = 0;
+
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+
+void *baggage_handler(void *threadid) {
+    int tid = *((int *) threadid);
+    printf("Baggage Handler %d started\n", tid);
+
+    while (1) {
+        pthread_mutex_lock(&mutex);
+        if (bags_arrived == NUM_BAGS) {
+            pthread_mutex_unlock(&mutex); // Added unlock before exiting
+            printf("Baggage Handler %d finished\n", tid);
+            pthread_exit(NULL);
+        }
+        pthread_mutex_unlock(&mutex);
+
+        sleep(1);
+    }
+}
+
+void *baggage_arrival(void *threadid) {
+    int tid = *((int *) threadid);
+    printf("Baggage Arrival %d started\n", tid);
+
+    for (int i = 0; i < 20; i++) {
+        pthread_mutex_lock(&mutex);
+        bags_arrived++;
+        printf("Baggage Arrival %d arrived with bag %d\n", tid, i);
+        pthread_mutex_unlock(&mutex);
+
+        sleep(1);
+    }
+}
+
+int main() {
+    pthread_t threads[NUM_THREADS];
+    int thread_ids[NUM_THREADS]; // Added an array to hold thread ids
+
+    for (int i = 0; i < NUM_THREADS; i++) {
+        thread_ids[i] = i;
+        pthread_create(&threads[i], NULL, baggage_arrival, (void *) &thread_ids[i]);
+    }
+
+    for (int i = 0; i < NUM_THREADS; i++) {
+        pthread_join(threads[i], NULL);
+    }
+
+    return 0;
+```
+explanation-suggested-fix: The suggested code diff addresses the data race by ensuring mutex is unlocked before exiting the function if `bags_arrived` is equal to `NUM_BAGS`. Moreover, an array `thread_ids` is used to pass distinct thread IDs to each thread, preventing the issue of multiple threads using the same ID.
+method: UNKNOWN

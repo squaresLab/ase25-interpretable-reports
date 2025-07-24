@@ -1,0 +1,33 @@
+ 
+    
+    diff --git a/falcon180b-2435 b/falcon180b-2435
+    index abcdef7..1234567 100644
+    --- a/falcon180b-2435
+    +++ b/falcon180b-2435
+    @@ -45,8 +45,11 @@ int main() {
+         pthread_mutex_t client_mutex = PTHREAD_MUTEX_INITIALIZER;
+    
+         while (1) {
+    -        if (num_clients >= MAX_CLIENTS) {
+    -            printf("Server is full. Cannot accept more clients.\n");
+    -            close(client_socket);
+    -            continue;
+    -        }
+    +        socklen_t addr_size = sizeof(client_addr);
+    +        int client_socket = accept(server_socket, (struct sockaddr *) &client_addr, &addr_size);
+    
+    +        pthread_mutex_lock(&client_mutex);
+ +        if (num_clients >= MAX_CLIENTS) {
+ +            printf("Server is full. Cannot accept more clients.\n");
+ +            close(client_socket);
+ +            pthread_mutex_unlock(&client_mutex);
+ +            continue;
+         }
+    
+ +        client_sockets[num_clients] = client_socket;
+ +        num_clients++;
+ +        pthread_create(&threads[num_clients - 1], NULL, handle_client, (void *) &client_socket);
+ +        pthread_mutex_unlock(&client_mutex);
+    +    }
+    
+    

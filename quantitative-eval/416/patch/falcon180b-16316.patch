@@ -1,0 +1,28 @@
+ 
+
+diff --git a/falcon180b-16316 b/falcon180b-16316
+index d15af18..23d9b37 100644
+--- a/falcon180b-16316
++++ b/falcon180b-16316
+@@ -21,7 +21,7 @@ void broadcast(int sender_socket, char message[]) {
+ void *listen_thread(void *socket) {
+     int new_socket = *((int *) socket);
+     char buffer[BUFFER_SIZE];
+-    while (1) {
++    while (1) {
+         memset(buffer, 0, BUFFER_SIZE);
+         int bytes_received = recv(new_socket, buffer, BUFFER_SIZE, 0);
+         if (bytes_received <= 0) {
+@@ -25,6 +25,10 @@ void *listen_thread(void *socket) {
+             break;
+         }
+-        broadcast(new_socket, buffer);
++        buffer[BUFFER_SIZE - 1] = '\0'; // Ensure null-termination
++        if (strlen(buffer) < BUFFER_SIZE) {
++            broadcast(new_socket, buffer);
++        } else {
++            // Handle the error appropriately
++            printf("Received message too large\n");
++        }
+     }
+

@@ -1,0 +1,45 @@
+ 
+    vuln-fix: Double Free (CWE-415) in falcon180b-18483 (severity: high)
+    what: The code has a double free vulnerability. It attempts to close the same client socket descriptor multiple times if the same `client_socket` is passed by reference to multiple threads.
+    where: line 53 and line 81 in `falcon180b-18483`
+    why: Closing the same file descriptor multiple times can cause undefined behavior, possibly leading to crashes or corruption in the memory management system.
+    how: An attacker might exploit this by forcing repeated connections in a manner that ensures the same socket descriptor is reused and closed multiple times, potentially leading to a denial of service through application crashes.
+    code-sources: The sources are the incoming connections accepted on line 39 and line 81.
+    code-sinks: The sinks are the printing of the client messages (line 19) and the closing of the client sockets (line 23) after the handle_client function.
+    suggested-fix:
+    ```diff
+    --- falcon180b-18483-orig.c
+    +++ falcon180b-18483-fixed.c
+    @@ -51,7 +51,7 @@
+            continue;
+        }
+
+    -    if (thread_count >= MAX_CLIENTS) {
+    +    if (thread_count >= MAX_CLIENTS) {
+            printf("Maximum number of clients reached\n");
+            close(client_socket);
+            continue;
+        }
+    @@ -73,6 +73,7 @@
+            printf("Error accepting connection\n");
+            continue;
+        }
+
+    +   int *new_client_socket = malloc(sizeof(int));
+    +   *new_client_socket = client_socket;
+        if (thread_count >= MAX_CLIENTS) {
+            printf("Maximum number of clients reached\n");
+            close(client_socket);
+            continue;
+        }
+
+    -    pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+    +    pthread_create(&thread_id, NULL, handle_client, (void *) new_client_socket);
+        thread_count++;
+    }
+
+    return 0;
+    ```
+
+    explanation-suggested-fix: This fix resolves the double free vulnerability by allocating a new memory block to store the client socket descriptor when creating a new thread. This prevents multiple threads from sharing the same pointer to the client socket descriptor.
+    method: UNKNOWN

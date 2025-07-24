@@ -1,0 +1,33 @@
+
+    vuln-fix: CWE-366: TOCTOU (Time-of-check Time-of-use) Race Condition in gpt35-12636 at lines 12-20 (severity: Medium)
+    what: The vulnerability is a race condition due to passing the address of the loop variable `i` to the thread function. Since all threads share this variable, they may read its value at different times, leading to unpredictable behavior.
+    where: 
+        - Relevant lines: 12-20 in the function main
+        - File: gpt35-12636
+    why: If the index values are corrupted, the threads may not perform their intended operations correctly, possibly leading to data corruption or program crashes.
+    how: An attacker might exploit this by influencing the timing of thread execution to cause threads to receive incorrect index values, leading to unpredictable behavior.
+    code-sources: Line 17 where `&i` is passed to `pthread_create` as `arg` (thread creation).
+    code-sinks: Entire `thread_function`, especially where `index` is used.
+    suggested-fix: 
+```diff
+--- gpt35-12636.c
++++ gpt35-12636_fixed.c
+@@ -9,6 +9,7 @@
+ {
+     int res;
+     pthread_t threads[NUM_THREADS];
++    int thread_args[NUM_THREADS];
+
+     for(int i = 0; i < NUM_THREADS; i++)
+     {
+-        printf("Creating thread %d\n", i);
+-        res = pthread_create(&threads[i], NULL, thread_function, (void *)&i);
++        thread_args[i] = i;
++        printf("Creating thread %d\n", i);
++        res = pthread_create(&threads[i], NULL, thread_function, (void *)&thread_args[i]);
+         if (res != 0)
+         {
+             perror("Thread creation failed");
+```
+    explanation-suggested-fix: The suggested code change moves the thread argument outside of the immediate scope of the loop by introducing an array `thread_args`. Each element of this array is passed to the respective thread, ensuring that each thread gets a consistent and unique value of `i`. This avoids the race condition by eliminating shared access to the loop variable.
+    method: UNKNOWN

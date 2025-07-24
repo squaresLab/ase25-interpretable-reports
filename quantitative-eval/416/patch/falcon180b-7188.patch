@@ -1,0 +1,21 @@
+ 
+
+diff --git a/falcon180b-7188 b/falcon180b-7188
+index 7d947de..b989cbe 100644
+--- a/falcon180b-7188
++++ b/falcon180b-7188
+@@ -30,8 +30,10 @@ void *handle_client(void *arg) {
+         printf("Request received from client %d: %s\n", client_socket, buffer);
+ 
+         if (strcmp(buffer, "turn on") == 0) {
+-            system("echo 'Turning on lights'");
++            // system("echo 'Turning on lights'");
++            send(client_socket, "Turning on lights", strlen("Turning on lights"), 0);
+         } else if (strcmp(buffer, "turn off") == 0) {
+-            system("echo 'Turning off lights'");
++            // system("echo 'Turning off lights'");
++            send(client_socket, "Turning off lights", strlen("Turning off lights"), 0);
+         } else {
+             send(client_socket, "Invalid request", strlen("Invalid request"), 0);
+         }
+

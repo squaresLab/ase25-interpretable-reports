@@ -1,0 +1,29 @@
+ 
+    
+    64,68c64,72
+    < if(num_clients >= MAX_CLIENTS) {
+    <     close(client_sock);
+    <     printf("Maximum number of clients reached\n");
+    <     continue;
+    < }
+    <
+    ---
+    > if(num_clients >= MAX_CLIENTS) {
+    >     close(client_sock);
+    >     printf("Maximum number of clients reached\n");
+    >     continue;
+    > }
+    > 
+    > int *client_sock_ptr = malloc(sizeof(int));
+    > if (client_sock_ptr == NULL) {
+    >     printf("Error allocating memory\n");
+    >     close(client_sock);
+    >     continue;
+    > }
+    > *client_sock_ptr = client_sock;
+    > 
+    69a74
+    > pthread_detach(thread_id);
+    > free(client_sock_ptr);
+    
+    

@@ -1,0 +1,7 @@
+ 
+
+32c32
+< sprintf(message, "Client %d: %s", client_socket, buffer);
+---
+> snprintf(message, BUFFER_SIZE, "Client %d: %s", client_socket, buffer);
+

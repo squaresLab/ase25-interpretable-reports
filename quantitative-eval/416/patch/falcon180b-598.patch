@@ -1,0 +1,44 @@
+ 
+
+--- falcon180b-598.c   2023-10-12 12:00:00.000000000 +0000
++++ falcon180b-598-fixed.c   2023-10-12 12:00:00.000000000 +0000
+@@ -42,11 +42,11 @@
+         if (client_socket == -1) {
+             printf("Error accepting connection.\n");
+             continue;
+         }
+ 
+-        if (num_clients >= MAX_CLIENTS) {
++        pthread_mutex_lock(&client_lock);
++        if (num_clients >= MAX_CLIENTS) {
+             close(client_socket);
+             printf("Maximum number of clients reached.\n");
++            pthread_mutex_unlock(&client_lock);
+             continue;
+         }
+ 
+         clients[num_clients++] = client_socket;
+         pthread_mutex_unlock(&client_lock);
+@@ -94,9 +94,11 @@
+         if (client_socket == -1) {
+             printf("Error accepting connection.\n");
+             continue;
+         }
+ 
++        pthread_mutex_lock(&client_lock);
+         if (num_clients >= MAX_CLIENTS) {
+             close(client_socket);
+             printf("Maximum number of clients reached.\n");
++            pthread_mutex_unlock(&client_lock);
+             continue;
+         }
+ 
+         clients[num_clients++] = client_socket;
++        pthread_mutex_unlock(&client_lock);
+         pthread_t thread_id;
+         pthread_create(&thread_id, NULL, handle_client, (void *)&client_socket);
+     }
+
+     return 0;
+ }
+

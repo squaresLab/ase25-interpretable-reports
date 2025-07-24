@@ -1,0 +1,31 @@
+ 
+
+--- falcon180b-628.c   2023-10-11 12:34:56.000000000 +0000
++++ falcon180b-628-fixed.c  2023-10-11 12:35:56.000000000 +0000
+@@ -40,10 +40,11 @@
+         struct sockaddr_in client_addr;
+         socklen_t addr_size = sizeof(client_addr);
+         int client_socket = accept(server_socket, (struct sockaddr *) &client_addr, &addr_size);
+ 
+         if (client_socket == -1) {
+             perror("accept");
+             continue;
+         }
+ 
++        int *new_client_socket = malloc(sizeof(int));
++        *new_client_socket = client_socket;
++
+         if (num_clients >= MAX_CLIENTS) {
+             close(client_socket);
+             continue;
+         }
+ 
+-        client_sockets[num_clients++] = client_socket;
++        client_sockets[num_clients++] = *new_client_socket;
+         pthread_t thread_id;
+-        pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
++        pthread_create(&thread_id, NULL, handle_client, (void *) new_client_socket);
++        pthread_detach(thread_id);
+     }
+ }
+

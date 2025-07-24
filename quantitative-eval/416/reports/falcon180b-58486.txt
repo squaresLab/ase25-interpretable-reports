@@ -1,0 +1,99 @@
+
+vuln-fix: CWE-362: Concurrent Execution using Shared Resource with Improper Synchronization ('Race Condition') in falcon180b-58486 (severity: High)
+what: The vulnerability arises from the `clients` array and `num_clients` variable being accessed and modified concurrently by multiple threads without proper synchronization, which can lead to race conditions.
+where: The vulnerability is located in the `handle_client` function and the `main` function in the file falcon180b-58486.
+why: Not resolving this weakness can lead to undefined behavior, including the possibility of memory corruption, application crashes, or data inconsistency.
+how: An attacker could exploit this vulnerability by connecting and disconnecting multiple times, potentially causing the server to mismanage its clients array, leading to unpredictable behavior of the server.
+code-sources: The entry point for user input is the network socket accepted via the `accept` function call in the `main` function.
+code-sinks: The actions performed by the application using user input include the `recv`, `send`, and `printf` functions inside the `handle_client` function.
+suggested-fix: 
+```diff
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <pthread.h>
+
+#define MAX_CLIENTS 10
+#define BUFFER_SIZE 1024
+
+int clients[MAX_CLIENTS];
+int num_clients = 0;
+pthread_mutex_t clients_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+void *handle_client(void *client_socket) {
+    int client_socket_copy = *((int *) client_socket);
+    char buffer[BUFFER_SIZE];
+
+    while(1) {
+        memset(buffer, 0, BUFFER_SIZE);
+        int bytes_received = recv(client_socket_copy, buffer, BUFFER_SIZE, 0);
+
+        if(bytes_received <= 0) {
+            close(client_socket_copy);
+            pthread_mutex_lock(&clients_mutex);
+            for(int i = 0; i < num_clients; i++) {
+                if(clients[i] == client_socket_copy) {
+                    for(int j = i; j < num_clients - 1; j++) {
+                        clients[j] = clients[j + 1];
+                    }
+                    num_clients--;
+                    break;
+                }
+            }
+            pthread_mutex_unlock(&clients_mutex);
+            break;
+        }
+
+        printf("Client %d sent: %s\n", client_socket_copy, buffer);
+        pthread_mutex_lock(&clients_mutex);
+        for(int i = 0; i < num_clients; i++) {
+            if(clients[i] != client_socket_copy) {
+                send(clients[i], buffer, strlen(buffer), 0);
+            }
+        }
+        pthread_mutex_unlock(&clients_mutex);
+    }
+    return NULL;
+}
+
+int main() {
+    int server_socket = socket(AF_INET, SOCK_STREAM, 0);
+
+    struct sockaddr_in server_addr;
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(8080);
+    server_addr.sin_addr.s_addr = INADDR_ANY;
+
+    bind(server_socket, (struct sockaddr *) &server_addr, sizeof(server_addr));
+    listen(server_socket, 5);
+
+    printf("Server started on port 8080\n");
+
+    while(1) {
+        int client_socket = accept(server_socket, NULL, NULL);
+
+        pthread_mutex_lock(&clients_mutex);
+        if(num_clients == MAX_CLIENTS) {
+            pthread_mutex_unlock(&clients_mutex);
+            close(client_socket);
+            printf("Server is full. Please try again later.\n");
+            continue;
+        }
+
+        clients[num_clients++] = client_socket;
+        pthread_mutex_unlock(&clients_mutex);
+
+        pthread_t thread_id;
+        pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+        pthread_detach(thread_id);
+    }
+
+    return 0;
+}
+```
+explanation-suggested-fix: The suggested code diff introduces a mutex `clients_mutex`, which is used to lock and unlock the critical sections where `clients` and `num_clients` are accessed and modified. This ensures that these shared resources are properly synchronized, preventing race conditions.
+method: UNKNOWN

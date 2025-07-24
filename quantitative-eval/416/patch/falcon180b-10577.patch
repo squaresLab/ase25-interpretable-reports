@@ -1,0 +1,64 @@
+ 
+
+diff --git a/falcon180b-10577 b/falcon180b-10577
+index abcdefg..hijklmn 100644
+--- a/falcon180b-10577
++++ b/falcon180b-10577
+@@ -7,6 +7,7 @@
+ #include <arpa/inet.h>
+ #include <pthread.h>
+ #include <stdio.h>
++#include <semaphore.h>
+
+ #define MAX_CLIENTS 10
+ #define BUFFER_SIZE 1024
+@@ -13,6 +14,8 @@
+
+ int clients[MAX_CLIENTS];
+ int num_clients = 0;
++sem_t client_sem;
++
+ void *handle_client(void *arg) {
+     int client_socket = *(int *)arg;
+     char buffer[BUFFER_SIZE];
+@@ -26,10 +29,14 @@
+     }
+
+     close(client_socket);
++
++    sem_wait(&client_sem);
+     for (int i = 0; i < num_clients; i++) {
+         if (clients[i] == client_socket) {
+             clients[i] = -1;
+         }
+     }
+     num_clients--;
++    sem_post(&client_sem);
+ }
+
+ int main() {
+@@ -44,8 +51,12 @@
+     while (1) {
+         int client_socket = accept(server_socket, NULL, NULL);
+ 
++        sem_wait(&client_sem);
+         if (num_clients >= MAX_CLIENTS) {
+             send(client_socket, "Server is full\n", 15, 0);
+             close(client_socket);
++            sem_post(&client_sem);
+             continue;
+         }
+ 
+         clients[num_clients] = client_socket;
+         num_clients++;
++        sem_post(&client_sem);
+ 
+         pthread_t thread_id;
+         pthread_create(&thread_id, NULL, handle_client, (void *)&client_socket);
+     }
++
++    sem_init(&client_sem, 0, 1);
++ 
+     return 0;
+ }
+

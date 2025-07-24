@@ -1,0 +1,7 @@
+ 
+
+57a58
+>           if (bytes_received > BUFFER_SIZE - 1) {
+>               printf("Received data exceeds buffer size, disconnecting client %d\n", client_socket);
+>               break;
+>           }

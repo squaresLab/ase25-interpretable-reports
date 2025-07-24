@@ -1,0 +1,16 @@
+ 
+    
+    --- falcon180b-12669.c
+    +++ falcon180b-12669-fixed.c
+    @@ -37,7 +37,8 @@
+        pthread_t threads[NUM_THREADS];
+        int thread_args[NUM_THREADS];
+        for (int i = 0; i < NUM_THREADS; i++) {
+    +       thread_args[i] = i;
+    +       pthread_create(&threads[i], NULL, traffic_light, &thread_args[i]);
+    -       pthread_create(&threads[i], NULL, traffic_light, &i);
+        }
+        for (int i = 0; i < NUM_THREADS; i++) {
+            pthread_join(threads[i], NULL);
+    
+    

@@ -1,0 +1,15 @@
+ 
+
+21c21
+< char send_buffer[BUFFER_SIZE];
+---
+> char send_buffer[BUFFER_SIZE + 4]; // +4 to account for "ECHO"
+32c32
+<         send_buffer[0] = 'E';
+---
+>         strncpy(send_buffer, "ECHO", 4);
+38c38
+<         int bytes_sent = send(client_socket, send_buffer, strlen(send_buffer), 0);
+---
+>         int bytes_sent = send(client_socket, send_buffer, 4, 0);
+

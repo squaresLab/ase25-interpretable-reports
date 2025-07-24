@@ -1,0 +1,22 @@
+ 
+
+--- gpt35-73780.c
++++ gpt35-73780-fixed.c
+@@ -65,6 +65,15 @@
+     filetype = strchr(filename, '.') + 1;
+
+     // Validate and sanitize filename
++    if (strstr(filename, "..") != NULL || filename[0] == '/') {
++        sprintf(buffer, "HTTP/1.1 400 Bad Request\r\nContent-Type: text/html\r\n\r\n<html><body><h1>Bad Request</h1></body></html>");
++        if (send(client_socket, buffer, strlen(buffer), 0) < 0)
++        {
++            perror("Send failed");
++            exit(EXIT_FAILURE);
++        }
++        close(client_socket);
++        pthread_exit(NULL);
++    }
+ 
+     // Open file for reading, send error message if file not found
+     if ((fd = open(filename, O_RDONLY)) == -1)
+ 

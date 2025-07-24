@@ -1,0 +1,36 @@
+ 
+
+diff --git a/falcon180b-66050 b/falcon180b-66050
+index abcdef1..1234567 100644
+--- a/falcon180b-66050
++++ b/falcon180b-66050
+@@ -63,13 +63,19 @@ int main() {
+             if (client_sockets[i] == 0) {
+                 client_sockets[i] = client_socket;
+-                pthread_create(&threads[i], NULL, handle_client, &client_socket);
++                int *new_sock = malloc(sizeof(int));
++                *new_sock = client_socket;
++                pthread_create(&threads[i], NULL, handle_client, (void *)new_sock);
+                 break;
+             }
+         }
+     }
+ 
+     return 0;
+ }
+
+void *handle_client(void *socket_desc) {
+    int sock = *(int *) socket_desc;
+    char buffer[BUFFER_SIZE];
+
+    while (1) {
+        memset(buffer, 0, BUFFER_SIZE);
+@@ -31,6 +37,7 @@ void *handle_client(void *socket_desc) {
+    }
+
+    close(sock);
++    free(socket_desc);
+    return NULL;
+}
+
+    

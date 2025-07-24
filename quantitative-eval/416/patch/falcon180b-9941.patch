@@ -1,0 +1,30 @@
+ 
+
+--- falcon180b-9941	2023-10-01 12:00:00.000000000 +0000
++++ falcon180b-9941-fixed	2023-10-01 13:00:00.000000000 +0000
+@@ -15,12 +15,16 @@
+         if (recv(client_socket, buffer, BUFFER_SIZE, 0) <= 0) {
+             close(client_socket);
+             pthread_exit(0);
+         }
+
+         // Use safer alternative to system to avoid command injection
+-        if (strncmp(buffer, "on", 3) == 0) {
+-            system("echo 1 > /dev/ttyACM0");
+-        } else if (strncmp(buffer, "off", 4) == 0) {
+-            system("echo 0 > /dev/ttyACM0");
++        if (strcmp(buffer, "on\n") == 0) {
++            FILE *fp = fopen("/dev/ttyACM0", "w");
++            fprintf(fp, "1\n");
++            fclose(fp);
++        } else if (strcmp(buffer, "off\n") == 0) {
++            FILE *fp = fopen("/dev/ttyACM0", "w");
++            fprintf(fp, "0\n");
++            fclose(fp);
+         }
+     }
+
+     return NULL;
+ }
+ 
+

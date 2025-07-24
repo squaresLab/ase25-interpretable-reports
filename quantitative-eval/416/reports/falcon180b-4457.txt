@@ -1,0 +1,88 @@
+
+    vuln-fix: CWE-367: Time-of-check Time-of-use (TOCTOU) in falcon180b-4457 line 23 (severity: High)
+    what: The vulnerability lies in a race condition caused by the assumption that `num_clients` has not changed between its usage and execution of the subsequent code, potentially leading to out-of-bounds array access or inconsistencies in the clients array.
+    where: The vulnerability is located in the `handle_client` function, particularly around `clients[num_clients--] = -1;` at line 23 and `clients[num_clients++] = client_sock;` at line 49 in the file `falcon180b-4457`.
+    why: If not resolved, the race condition could lead to crashes, unauthorized access, or other undefined behaviors, as multiple threads modify `num_clients` and the `clients` array simultaneously without synchronization.
+    how: An attacker could exploit this vulnerability by connecting or disconnecting multiple clients rapidly, causing inconsistencies due to the non-atomic read-modify-write operations on `num_clients`.
+    code-sources: The `recv` function at line 15, which receives user input from a socket.
+    code-sinks: The `send` function at line 20, which sends the received data to other clients.
+    suggested-fix: 
+    ```diff
+    --- falcon180b-4457.old 2023-10-01 10:00:00.000000000 +0000
+    +++ falcon180b-4457.new 2023-10-01 10:00:00.000000000 +0000
+    @@ -11,6 +11,7 @@
+     #define BUF_SIZE 1024
+     
+     int clients[MAX_CLIENTS];
+    +pthread_mutex_t clients_mutex = PTHREAD_MUTEX_INITIALIZER;
+     int num_clients = 0;
+     
+     void *handle_client(void *client_socket) {
+    @@ -21,10 +22,11 @@
+         while (1) {
+             memset(buf, 0, BUF_SIZE);
+             int bytes_received = recv(client_sock, buf, BUF_SIZE, 0);
+     
+             if (bytes_received <= 0) {
+    +            pthread_mutex_lock(&clients_mutex);
+                 close(client_sock);
+    +            clients[num_clients--] = -1;
+    +            pthread_mutex_unlock(&clients_mutex);
+                 break;
+             }
+     
+             for (int i = 0; i < num_clients; i++) {
+                 if (clients[i] != -1) {
+                     send(clients[i], buf, bytes_received, 0);
+                 }
+             }
+         }
+     
+         return NULL;
+     }
+     
+     int main() {
+         int server_sock = socket(AF_INET, SOCK_STREAM, 0);
+     
+         if (server_sock == -1) {
+             printf("Error creating socket\n");
+             exit(1);
+         }
+     
+         struct sockaddr_in server_addr;
+         memset(&server_addr, 0, sizeof(server_addr));
+         server_addr.sin_family = AF_INET;
+         server_addr.sin_port = htons(8080);
+         inet_pton(AF_INET, "127.0.0.1", &server_addr.sin_addr);
+     
+         if (bind(server_sock, (struct sockaddr *) &server_addr, sizeof(server_addr)) == -1) {
+             printf("Error binding socket\n");
+             exit(1);
+         }
+     
+         if (listen(server_sock, MAX_CLIENTS) == -1) {
+             printf("Error listening on socket\n");
+             exit(1);
+         }
+     
+         printf("Server started on port 8080\n");
+     
+         while (1) {
+             struct sockaddr_in client_addr;
+             socklen_t client_size = sizeof(client_addr);
+             int client_sock = accept(server_sock, (struct sockaddr *) &client_addr, &client_size);
+     
+             if (client_sock != -1) {
+    +            pthread_mutex_lock(&clients_mutex);
+                 clients[num_clients++] = client_sock;
+    +            pthread_mutex_unlock(&clients_mutex);
+                 pthread_t thread_id;
+                 pthread_create(&thread_id, NULL, handle_client, (void *) &client_sock);
+             }
+         }
+     
+         return 0;
+    }
+    ```
+    explanation-suggested-fix: The suggested fix adds a `pthread_mutex_t` to synchronize access to the `clients` array and `num_clients` variable. By locking the mutex whenever modifying these shared resources, it prevents race conditions and ensures atomic modifications, thereby eliminating the TOCTOU vulnerability.
+    method: UNKNOWN

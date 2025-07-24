@@ -1,0 +1,44 @@
+
+    vuln-fix: CWE-805: Buffer Overflow in falcon180b-4163 (severity: High)
+    what: The vulnerability is a buffer overflow issue where the `recv` function can read more bytes than the size of the buffer `BUFFER_SIZE`, potentially causing a buffer overflow.
+    where: The vulnerability occurs at the line `int bytes_received = recv(client_socket_copy, buffer, BUFFER_SIZE, 0);` in the function `handle_client` in the file falcon180b-4163.
+    why: A buffer overflow can lead to arbitrary code execution, allowing an attacker to take control of the server or crash the application, leading to denial of service.
+    how: An attacker can send a specially crafted message larger than `BUFFER_SIZE` to trigger the buffer overflow, which can then overwrite adjacent memory, control program flow, or cause application termination.
+    code-sources: The entry point is the client's connection and the data received from the client via the `recv` function in `handle_client`.
+    code-sinks: The action performed is reading data into `buffer` from the client socket.
+    suggested-fix: 
+    ```
+    diff --git a/falcon180b-4163 b/falcon180b-4163
+    index e69de29..b6fc4e1 100644
+    --- a/falcon180b-4163
+    +++ b/falcon180b-4163
+    @@ -11,6 +11,7 @@
+     #define MAX_CLIENTS 10
+     #define BUFFER_SIZE 1024
+     
+    +#define MAX_MESSAGE_SIZE 1024
+     int clients[MAX_CLIENTS];
+     int num_clients = 0;
+     
+    @@ -21,7 +22,14 @@ void *handle_client(void *client_socket) {
+         int client_socket_copy = *((int *) client_socket);
+     
+         char buffer[BUFFER_SIZE];
+    +    char message[MAX_MESSAGE_SIZE];
+         while (1) {
+             memset(buffer, 0, BUFFER_SIZE);
+    -        int bytes_received = recv(client_socket_copy, buffer, BUFFER_SIZE, 0);
+    +        int bytes_received = recv(client_socket_copy, message, MAX_MESSAGE_SIZE, 0);
+     
+    +        if (bytes_received > BUFFER_SIZE) {
+    +            // handle too large message
+    +            printf("Message too large to handle.\n");
+    +            continue;
+    +        }
+    +
+             if (bytes_received <= 0) {
+                 break;
+             }
+    ```
+    explanation-suggested-fix: The suggested code diff introduces a new buffer `message` to hold the incoming data and checks if the received data size exceeds `BUFFER_SIZE`. If it does, it logs an appropriate message and skips processing that data. This prevents buffer overflow by ensuring that only data that fits within the `buffer` is subsequently processed.
+    method: UNKNOWN

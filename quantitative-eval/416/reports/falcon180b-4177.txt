@@ -1,0 +1,42 @@
+
+    vuln-fix: Buffer Overflow (CWE-120) in falcon180b-4177 (severity: High)
+    what: The vulnerability is a buffer overflow, where data that is input by the client is not properly validated before being stored in a buffer. Specifically, the buffer `char buffer[BUFFER_SIZE]` in the `handle_client` function can be overflowed if more than `BUFFER_SIZE` bytes are received.
+    where: The vulnerability is located in the `handle_client` function in the file falcon180b-4177, mainly around line numbers where `recv` and `printf` are used to handle and print incoming data from clients.
+    why: If this buffer overflow is exploited, it could lead to various consequences such as application crashes, execution of arbitrary code, or compromise of sensitive information.
+    how: An attacker can send a payload larger than 1024 bytes to overflow the buffer `buffer`, potentially gaining the ability to execute arbitrary code on the server or crash the server, leading to a denial of service.
+    code-sources: The entry point where user input enters is through the `recv` function call in the `handle_client` function.
+    code-sinks: The output or usage of the user-provided data happens at both the `printf` function and the `send` function within the `handle_client` function.
+    suggested-fix: 
+    ```diff
+    --- falcon180b-4177.c
+    +++ falcon180b-4177_fixed.c
+    @@ -11,10 +11,12 @@
+     
+     void *handle_client(void *arg) {
+         int client_socket = *(int *)arg;
+    -    char buffer[BUFFER_SIZE];
+    +    char buffer[BUFFER_SIZE] = {0};
+
+    +    ssize_t bytes_received;
+
+         while (1) {
+             memset(buffer, 0, BUFFER_SIZE);
+    -        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+    +        bytes_received = recv(client_socket, buffer, BUFFER_SIZE - 1, 0);
+
+             if (bytes_received <= 0) {
+                 break;
+    @@ -24,7 +26,7 @@
+             }
+
+             printf("Client %d sent: %s\n", client_socket, buffer);
+             for (int i = 0; i < num_clients; i++) {
+                 if (clients[i] != client_socket) {
+    -                send(clients[i], buffer, strlen(buffer), 0);
+    +                send(clients[i], buffer, bytes_received, 0);
+                 }
+             }
+         }
+    ```
+    explanation-suggested-fix: The suggested changes ensure that the `recv` function does not write beyond the bounds of the buffer by receiving a maximum of `BUFFER_SIZE - 1` bytes and always null-terminating the string. Additionally, instead of using `strlen(buffer)` when sending data, the actual number of bytes received (`bytes_received`) is used, maintaining correct message length.
+    method: UNKNOWN

@@ -1,0 +1,22 @@
+
+vuln-fix: CWE-119: Buffer Overflow in falcon180b-66629 (severity: High)
+what: The code contains a buffer overflow vulnerability where the `BUFFER_SIZE` limit may be exceeded if user input isn't properly validated. The `recv` function can receive more data than the allocated `buffer` can hold if the `BUFFER_SIZE` constraint is bypassed.
+where: The vulnerability is located at line 16 in the function `handle_client`:
+```c
+int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+```
+why: Not resolving this weakness can lead to potential exploitation by attackers to overwrite adjacent memory locations, which could cause the application to crash, lead to data corruption, or allow remote code execution.
+how: An attacker could send specially crafted input data that exceeds the `BUFFER_SIZE`, causing a buffer overflow. This could overwrite adjacent memory on the stack, potentially modifying the execution flow to execute arbitrary code.
+code-sources: The entry point in the code where user input enters the application is at `recv(client_socket, buffer, BUFFER_SIZE, 0);` in the `handle_client` function.
+code-sinks: The action performed by the application using user input is `printf("Client %d: %s\n", client_socket, buffer);` and `send(clients[i], buffer, strlen(buffer), 0);`
+suggested-fix:
+```diff
+int bytes_received = recv(client_socket, buffer, BUFFER_SIZE - 1, 0); 
+if (bytes_received <= 0) {
+    break;
+}
+buffer[bytes_received] = '\0'; // null-terminate buffer to avoid any overflow in subsequent operations
+printf("Client %d: %s\n", client_socket, buffer);
+```
+explanation-suggested-fix: The suggested fix modifies the `recv` function to receive a maximum of `BUFFER_SIZE - 1` bytes to ensure that an additional byte is available for null termination. Additionally, by manually null-terminating the buffer, it ensures that any subsequent operations with the buffer (such as printing or sending it to other clients) don't exceed the buffer bounds.
+method: UNKNOWN

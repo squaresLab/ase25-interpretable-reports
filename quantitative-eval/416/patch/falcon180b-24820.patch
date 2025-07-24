@@ -1,0 +1,44 @@
+ 
+
+--- falcon180b-24820.c     (original)
++++ falcon180b-24820.c     (fixed)
+@@ -22,6 +22,8 @@
+         if (bytes_received <= 0) {
+             close(client_socket);
+             break;
+         }
+         printf("Client %d sent: %s\n", client_socket, buffer);
+         send(client_socket, buffer, strlen(buffer), 0);
+     }
++    // Ensure the client socket is no longer referenced
++    free(arg);
+ }
+ 
+ int main() {
+@@ -40,6 +42,9 @@
+             continue;
+         }
+
+         for (int i = 0; i < MAX_CLIENTS; i++) {
+             if (clients[i] == 0) {
+                 clients[i] = client_socket;
+                 num_clients++;
+@@ -49,7 +54,7 @@
+             }
+         }
+
+         if (num_clients == MAX_CLIENTS) {
+             close(client_socket);
+             printf("Server is full\n");
+         } else {
+             pthread_t thread_id;
+-            pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
++            int *pclient = malloc(sizeof(int));
++            *pclient = client_socket;
++            pthread_create(&thread_id, NULL, handle_client, pclient);
+         }
+     }
+ 
+     return 0;
+ }
+ 

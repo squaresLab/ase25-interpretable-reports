@@ -1,0 +1,88 @@
+
+vuln-fix: CWE-EX [CWE-362: Concurrent Execution using Shared Resource with Improper Synchronization ('Race Condition')] in falcon180b-24667 (severity: High)
+what: The code presents a race condition due to improper synchronization when accessing and modifying the shared resource `client_sockets` and `num_clients` in a multi-threaded environment.
+where: Lines where `client_sockets` and `num_clients` are accessed and modified in the `accept_connections` function and passed to the `handle_client` function within a thread.
+why: A race condition in this code could lead to data corruption or unexpected behavior such as clients not being handled correctly, which could impact the stability and security of the server application.
+how: An attacker could exploit this race condition by initiating multiple connections rapidly, potentially causing the application to handle clients incorrectly or crash, leading to a denial of service.
+code-sources: The `accept` function, where new client connections are accepted.
+code-sinks: The `pthread_create` function, where the accepted client socket is passed to a new thread and used in the `handle_client` function.
+suggested-fix: 
+```diff
+#include <stdio.h>
++#include <pthread.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <pthread.h>
+
+#define MAX_CLIENTS 10
+#define BUFFER_SIZE 1024
+
+int client_sockets[MAX_CLIENTS];
+int num_clients = 0;
++pthread_mutex_t clients_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+void *handle_client(void *arg) {
+    int client_socket = *(int *) arg;
+    char buffer[BUFFER_SIZE];
+    while (1) {
+        memset(buffer, 0, BUFFER_SIZE);
+        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+        if (bytes_received <= 0) {
+            break;
+        }
+        if (strstr(buffer, "attack") != NULL) {
+            printf("Attack detected from client %d\n", client_socket);
+        }
+    }
+    close(client_socket);
+    return NULL;
+}
+
+void accept_connections() {
+    while (num_clients < MAX_CLIENTS) {
+        int server_socket = socket(AF_INET, SOCK_STREAM, 0);
+        struct sockaddr_in server_addr;
+        memset(&server_addr, 0, sizeof(server_addr));
+        server_addr.sin_family = AF_INET;
+        server_addr.sin_port = htons(8080);
+        server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+        bind(server_socket, (struct sockaddr *)&server_addr, sizeof(server_addr));
+        listen(server_socket, 5);
+
+        while (1) {
+            int client_socket = accept(server_socket, NULL, NULL);
+            if (client_socket == -1) {
+                printf("Error accepting connection\n");
+                break;
+            }
+            +pthread_mutex_lock(&clients_mutex);
+            if (num_clients >= MAX_CLIENTS) {
+                pthread_mutex_unlock(&clients_mutex);
+                close(client_socket);
+                continue;
+            }
+            printf("Client %d connected\n", num_clients);
+            client_sockets[num_clients] = client_socket;
+            num_clients++;
+            pthread_t thread_id;
+            pthread_create(&thread_id, NULL, handle_client, (void *)&client_socket);
+            +pthread_mutex_unlock(&clients_mutex);
+        }
+
+        close(server_socket);
+    }
+}
+
+int main() {
+    accept_connections();
+    return 0;
+}
+```
+explanation-suggested-fix: The proposed fix introduces a mutex `clients_mutex` which locks the critical section in the `accept_connections` function where `client_sockets` and `num_clients` are modified. This ensures that these shared resources are accessed and modified atomically, preventing race conditions.
+method: UNKNOWN

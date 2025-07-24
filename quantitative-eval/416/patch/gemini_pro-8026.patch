@@ -1,0 +1,25 @@
+ 
+
+--- gemini_pro-8026.c
++++ gemini_pro-8026_fixed.c
+@@ -60,14 +60,17 @@
+ 	while (1) {
+ 		int client_socket = accept(server_socket, NULL, NULL);
+ 		if (client_socket == -1) {
+ 			perror("accept");
+ 			continue;
+ 		}
+
++		int *client_sock_ptr = malloc(sizeof(int));
++		*client_sock_ptr = client_socket;
++
+ 		pthread_t thread;
+-		if (pthread_create(&thread, NULL, handle_client, &client_socket) != 0) {
++		if (pthread_create(&thread, NULL, handle_client, client_sock_ptr) != 0) {
+ 			perror("pthread_create");
+			close(client_socket);
++			free(client_sock_ptr);
+ 			continue;
+ 		}
+ 	}
+

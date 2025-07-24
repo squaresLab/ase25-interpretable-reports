@@ -1,0 +1,34 @@
+ 
+
+--- falcon180b-34119 
++++ falcon180b-34119 patched
+@@ -18,11 +18,17 @@
+     int client_socket = *((int*) arg);
+     char buffer[MAX_MSG_LEN];
+
+     while (1) {
+         memset(buffer, 0, MAX_MSG_LEN);
+-        int bytes_received = recv(client_socket, buffer, MAX_MSG_LEN, 0);
++        int bytes_received = recv(client_socket, buffer, MAX_MSG_LEN - 1, 0);
+
+         if (bytes_received <= 0) {
+             close(client_socket);
+             break;
+         }
+
++        // Ensure null-termination
++        buffer[bytes_received] = '\0';
++
++        // Check for buffer overflow
++        if (bytes_received >= MAX_MSG_LEN - 1) {
++            fprintf(stderr, "Potential buffer overflow detected from client %d\n", client_socket);
++            continue;
++        }
+
+         printf("Client %d sent message: %s\n", client_socket, buffer);
+
+         // Broadcast the message to all connected clients
+         for (int i = 0; i < num_clients; i++) {
+             if (client_socket!= client_sockets[i]) {
+
+    

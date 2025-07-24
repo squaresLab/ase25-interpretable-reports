@@ -1,0 +1,19 @@
+ 
+--- falcon180b-68603.c
++++ falcon180b-68603.c
+@@ -66,6 +66,10 @@
+         pthread_t thread_id;
+         pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+ 
++        // Check for maximum client limit
++        if (num_clients >= MAX_CLIENTS) {
++            printf("Maximum client limit reached. Rejecting client %d\n", client_socket);
++            close(client_socket);
++        } else {
++            client_sockets[num_clients++] = client_socket;
++        }
+     }
+ 
+     return 0;
+    
+    

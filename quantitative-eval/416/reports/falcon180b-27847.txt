@@ -1,0 +1,46 @@
+
+vuln-fix: Buffer Overflow (CWE-120) in falcon180b-27847 (severity: high)
+what: The vulnerability is a potential buffer overflow issue in the function `handle_client`. Specifically, if a client sends a message that exactly matches the buffer's size limit, it could potentially overwrite adjacent memory due to improper handling of null-termination.
+where: The vulnerability is located in the following lines:
+```c
+        memset(buffer, 0, BUFFER_SIZE);
+        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+
+        if (bytes_received <= 0) {
+            close(client_socket);
+            pthread_exit(NULL);
+        }
+
+        printf("Client %d sent: %s\n", client_socket, buffer);
+```
+why: Not resolving this weakness can lead to a buffer overflow, which attackers can exploit to execute arbitrary code, crash the system, or perform other malicious activities.
+how: An attacker would exploit this vulnerability by sending data that exactly or exceeds the size of `BUFFER_SIZE` without a null-terminator to the `recv` function causing potential buffer overflow when `printf` attempts to print it.
+code-sources: The user input entry point is the `recv` function call in `handle_client`.
+code-sinks: The sink is the `printf` function call that uses the received buffer without verifying its contents.
+suggested-fix:
+```diff
+--- original_file.c
++++ fixed_file.c
+@@ -12,12 +12,14 @@
+
+ void *handle_client(void *arg) {
+     int client_socket = *(int *) arg;
+-    char buffer[BUFFER_SIZE];
++    char buffer[BUFFER_SIZE + 1];
+
+     while (1) {
+         memset(buffer, 0, BUFFER_SIZE);
+         int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+
+         if (bytes_received <= 0) {
+             close(client_socket);
+             pthread_exit(NULL);
+         }
+
++        buffer[bytes_received] = '\0'; // Ensure null-termination
+         printf("Client %d sent: %s\n", client_socket, buffer);
+     }
+ }
+```
+explanation-suggested-fix: The suggested code change ensures that the received data is always null-terminated by modifying the buffer size and adding a line that sets the null character at the end of the received data. This prevents potential buffer overflow when using the received data.
+method: UNKNOWN

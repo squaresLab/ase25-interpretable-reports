@@ -1,0 +1,12 @@
+***************
+*** 112,115
+-     // Resolve the hostname to an IP address
+-     if (inet_aton(hostname, &addr.sin_addr) == 0) {
+-         perror("inet_aton");
+-         return -1;
+--- 112,116 -----
++     // Validate and resolve the hostname to an IP address
++     if (!is_valid_hostname(hostname) || inet_aton(hostname, &addr.sin_addr) == 0) {
++         fprintf(stderr, "Invalid hostname: %s\n", hostname);
++         return -1;
++ 

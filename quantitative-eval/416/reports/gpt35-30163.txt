@@ -1,0 +1,60 @@
+
+    vuln-fix: Buffer Overflow (CWE-120) in gpt35-30163 (severity: High)
+    what: The `recv` function in the `connection_handler` function does not properly limit the amount of data copied into the `message_buffer` buffer.
+    where: gpt35-30163, lines within the `connection_handler` function, specifically:
+      - Line: `while (recv(sock, message_buffer, 2000, 0) > 0) {`
+      - Line: `if (recv(sock, message_buffer, 2000, 0) < 0) {`
+    why: If an attacker sends a payload larger than 2000 bytes, it will cause a buffer overflow, potentially leading to arbitrary code execution, application crashes, or vulnerability to other attacks.
+    how: An attacker may exploit this vulnerability by sending a specially crafted, oversized payload to the server, causing the `recv` function to overwrite adjacent memory.
+    code-sources: 
+      - Line: `recv(sock, message_buffer, 2000, 0) > 0`
+      - Line: `recv(sock, message_buffer, 2000, 0) < 0`
+    code-sinks: 
+      - Handling incoming data in the buffer `message_buffer` without validating its size.
+    suggested-fix: 
+    ```
+    diff --git a/gpt35-30163 b/gpt35-30163
+    index abcdef1..1234567 100644
+    --- a/gpt35-30163
+    +++ b/gpt35-30163
+    @@ -55,7 +55,11 @@ void *connection_handler(void *socket_desc) {
+    
+         if (send(sock, server_message, strlen(server_message), 0) != strlen(server_message)) {
+             perror("Send failed");
+    -    }
+    +    }
+    
+    +    // Set a fixed size for the buffer content to be received, ensuring it does not exceed buffer size
+         while (recv(sock, message_buffer, sizeof(message_buffer) - 1, 0) > 0) {
+    
+             printf("Client: %s\n", message_buffer);
+             memset(message_buffer, 0, 2000);
+             printf("Server: ");
+    -        fgets(message_buffer, 2000, stdin);
+    +        fgets(message_buffer, sizeof(message_buffer), stdin);
+    +        message_buffer[strlen(message_buffer)-1] = '\0';
+    
+             if (send(sock, message_buffer, strlen(message_buffer), 0) < 0) {
+                 perror("Send failed");
+    @@ -64,7 +68,7 @@ void *connection_handler(void *socket_desc) {
+             }
+    
+             memset(message_buffer, 0, 2000);
+    -    }
+    
+    -    if (recv(sock, message_buffer, 2000, 0) < 0) {
+    +    }
+    
+    +    if (recv(sock, message_buffer, sizeof(message_buffer) - 1, 0) < 0) {
+             puts("Receive failed");
+         }
+    
+    +    // Properly terminate the received string to prevent buffer overflow and proper memory management
+         message_buffer[2000 - 1] = '\0';
+
+         close(sock);
+         pthread_exit(NULL);
+    }
+    ```
+    explanation-suggested-fix: The code diff ensures that the `recv` function call limits the number of bytes received to the size of the `message_buffer` minus one, reserving space for the null terminator. This change prevents buffer overflow by ensuring that no more data is received than the buffer can handle. Additionally, the `fgets` function has been updated to limit input to the size of the buffer, further mitigating the risk of buffer overflow.
+    method: UNKNOWN

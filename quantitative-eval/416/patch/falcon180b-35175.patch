@@ -1,0 +1,26 @@
+ 
+    
+    diff --git a/falcon180b-35175.c b/falcon180b-35175.c
+    index 1234abcd..5678efgh 100644
+    --- a/falcon180b-35175.c
+    +++ b/falcon180b-35175.c
+    @@ -38,6 +38,8 @@ int main() {
+    
+         if (num_clients >= MAX_CLIENTS) {
+             close(client_socket);
+    +        printf("Server is full\n");
+    +        continue;
+         }
+    
+         clients[num_clients] = client_socket;
+    @@ -51,6 +53,10 @@ int main() {
+     }
+    
+     + if (num_clients >= MAX_CLIENTS) { 
+     +     num_clients = MAX_CLIENTS; // Prevent overflow
+     + }
+     +
+     return 0;
+     }
+    
+    

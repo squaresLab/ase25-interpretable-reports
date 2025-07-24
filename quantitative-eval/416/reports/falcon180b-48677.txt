@@ -1,0 +1,102 @@
+    
+vuln-fix: CWE-787: Out-of-bounds Write in falcon180b-48677 (severity: High)
+
+what: The vulnerable code allows for potential out-of-bounds writes to the clients array. When the num_clients variable reaches or exceeds MAX_CLIENTS, new client sockets can still be added, as there is no bounds check in the loop adding new clients to the clients array.
+
+where: The vulnerability is found in the main function starting at line 39 and the array manipulation found around line 53.
+
+why: If this weakness is not resolved, an attacker could potentially cause the program to write outside the bounds of the clients array. This could lead to the corruption of the program’s memory, causing crashes, unexpected behavior, or even arbitrary code execution.
+
+how: An attacker could exploit this vulnerability by connecting more clients than the maximum limit (MAX_CLIENTS). As the application fails to properly enforce this limit, the attacker could cause memory corruption, leading to a crash or even allowing the attacker to execute malicious code on the server.
+
+code-sources: The code source where user input enters the application is the `accept()` function call on line 41, which accepts incoming client connections.
+
+code-sinks: The code sink is the array assignment at line 46 and the `pthread_create` call on line 51, which uses the client_socket received from the client connection to start a new thread.
+
+suggested-fix: 
+```diff
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+#include <sys/socket.h>
+#include <pthread.h>
+
+#define MAX_CLIENTS 50
+#define BUFFER_SIZE 1024
+
+int clients[MAX_CLIENTS];
+int num_clients = 0;
+int max_clients = MAX_CLIENTS;
+
+void *handle_client(void *arg) {
+    int client_socket = *(int *) arg;
+    char buffer[BUFFER_SIZE];
+
+    while (1) {
+        memset(buffer, 0, BUFFER_SIZE);
+        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+
+        if (bytes_received <= 0) {
+            break;
+        }
+
+        for (int i = 0; i < num_clients; i++) {
+            if (clients[i] != client_socket) {
+                send(clients[i], buffer, strlen(buffer), 0);
+            }
+        }
+    }
+
+    close(client_socket);
+    return NULL;
+}
+
+int main() {
+    int server_socket = socket(AF_INET, SOCK_STREAM, 0);
+
+    struct sockaddr_in server_addr;
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(8080);
+    server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+
+    bind(server_socket, (struct sockaddr *) &server_addr, sizeof(server_addr));
+    listen(server_socket, 10);
+
+    printf("Chat server started on port 8080\n");
+
+    while (1) {
+        int client_socket = accept(server_socket, NULL, NULL);
+
+        // Check if we're at the maximum number of clients
+        if (num_clients >= max_clients) {
+            send(client_socket, "Server is full. Please try again later.\n", 46, 0);
+            close(client_socket);
+            continue;
+        }
+
+        clients[num_clients] = client_socket;
+        num_clients++;
+
+        pthread_t thread_id;
+        int *client_sock = malloc(sizeof(int));  // Allocate memory for client socket
+        if (client_sock == NULL) {
+            perror("Failed to allocate memory");
+            close(client_socket);
+            continue;
+        }
+        *client_sock = client_socket;  // Store the accepted client socket
+        pthread_create(&thread_id, NULL, handle_client, (void *) client_sock);
+        pthread_detach(thread_id);  // Detach thread to free resources when done
+    }
+
+    close(server_socket);  // Close server socket before exiting
+    return 0;
+}
+```
+
+explanation-suggested-fix: The proposed code diff resolves the vulnerability by ensuring that a proper check is done to make sure that the number of clients does not exceed the maximum limit (MAX_CLIENTS) before adding a new client to the clients array. It also ensures that each client_socket passed to pthread_create in the main function has its memory properly allocated and cleaned up to prevent using a stack variable that's no longer valid.
+
+method: UNKNOWN

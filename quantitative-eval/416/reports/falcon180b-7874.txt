@@ -1,0 +1,33 @@
+
+vuln-fix: CWE-456 Missing Initialization of a Variable in falcon180b-7874 (severity: Moderate)
+what: The `client_socket` variable that is passed to the `pthread_create()` function is not correctly initialized or managed. As `client_socket` is passed by reference in each iteration of the while loop, race conditions or incorrect references may occur, leading to incorrect client handling or server crashes.
+where: The issue exists in the line: `pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);` in the main function.
+why: Not resolving this weakness can lead to race conditions, inconsistent states of client handling, potentially crashing the server or leading to improper handling of client connections.
+how: An attacker could exploit this vulnerability by initiating multiple connections rapidly, causing the server to mishandle the client_socket pointers, resulting in unintended server behavior.
+code-sources: The entry point for user input is the `recv(client_socket, buffer, BUFFER_SIZE, 0)` function call inside `handle_client()`.
+code-sinks: The actions performed by the application using user input are within the `send(clients[i], buffer, bytes_received, 0);`.
+suggested-fix: 
+```
+diff --git a/falcon180b-7874 b/falcon180b-7874
+index e69de29..b062503 100644
+--- a/falcon180b-7874
++++ b/falcon180b-7874
+@@ -62,7 +62,7 @@ int main() {
+         if (num_clients >= MAX_CLIENTS) {
+             close(client_socket);
+             printf("Maximum number of clients reached\n");
+             continue;
+         }
+
+         int *new_client_socket = malloc(sizeof(int));
+         *new_client_socket = client_socket;
+
+@@ -71,7 +71,7 @@ int main() {
+         pthread_create(&thread_id, NULL, handle_client, (void *) new_client_socket);
+     }
+
+     return 0;
+ }
+ ```
+explanation-suggested-fix: The suggested code change allocates memory for each `client_socket` in the heap and passes a pointer to this memory to the thread function. This ensures that each thread handles a distinct client socket and avoids data race conditions or incorrect references due to the re-use of `client_socket`.
+method: UNKNOWN

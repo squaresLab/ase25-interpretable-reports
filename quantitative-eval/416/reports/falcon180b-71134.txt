@@ -1,0 +1,43 @@
+
+    vuln-fix: Race Condition (CWE-362) in falcon180b-71134 (severity: High)
+    what: The vulnerability is a race condition in the management of shared data among multiple threads. The `light_number` and `sensor_number` variables, passed by reference to each thread, are shared and may be updated concurrently, leading to undefined behavior and potential abnormal program operation.
+    where: The issue occurs in the pthread creation within the `main` function (lines 34-39). This affects the `light_thread` and `sensor_thread` functions (lines 15-31).
+    why: If the race condition occurs, it can lead to incorrect updates to the `light_values` and `sensor_values` arrays, causing logical errors in the system's operation. This can degrade the reliability and correctness of the lighting and sensing system, also making it unpredictable.
+    how: An attacker could exploit this vulnerability by intentionally inducing a race condition, potentially leading to denial of service or erratic device behavior. By manipulating the timing of the thread execution, the attacker can cause inconsistent states.
+    code-sources: Entry points are created when `pthread_create` is called for `light_thread` and `sensor_thread` functions in the `main` function (lines 35, 38).
+    code-sinks: The sinks are the updates to `light_values` and `sensor_values` in `light_thread` and `sensor_thread` functions (lines 17, 26).
+    suggested-fix: 
+    ```diff
+    --- falcon180b-71134.c
+    +++ falcon180b-71134-fixed.c
+    @@ -34,17 +34,20 @@
+     
+     int main() {
+         srand(time(0));
+    +    int light_indices[NUM_LIGHTS];
+    +    int sensor_indices[NUM_SENSORS];
+         for (int i = 0; i < NUM_LIGHTS; i++) {
+    +        light_indices[i] = i;
+             pthread_create(&light_threads[i], NULL, light_thread, &light_indices[i]);
+         }
+         for (int i = 0; i < NUM_SENSORS; i++) {
+    +        sensor_indices[i] = i;
+             pthread_create(&sensor_threads[i], NULL, sensor_thread, &sensor_indices[i]);
+         }
+         while (1) {
+             for (int i = 0; i < NUM_LIGHTS; i++) {
+                 printf("Light %d: %d\n", i+1, light_values[i]);
+             }
+             printf("\n");
+             for (int i = 0; i < NUM_SENSORS; i++) {
+                 printf("Sensor %d: %d\n", i+1, sensor_values[i]);
+             }
+             printf("\n");
+             fflush(stdout);
+             usleep(100000);
+         }
+         return 0;
+     }
+    ```
+    explanation-suggested-fix: By creating separate arrays (`light_indices` and `sensor_indices`) to store the indices of lights and sensors, we can ensure that each thread receives a unique, immutable index as its argument. This removes the race condition on the `i` variable and ensures that each thread operates on the correct index.
+    method: UNKNOWN

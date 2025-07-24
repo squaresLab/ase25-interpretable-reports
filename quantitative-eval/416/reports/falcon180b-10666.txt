@@ -1,0 +1,24 @@
+
+vuln-fix: Double-Free Vulnerability (CWE-415) in falcon180b-10666 at lines 13–32 (severity: High)
+what: The code has a double-free vulnerability in the `handle_client` function, where `client_socket` is freed twice under certain conditions.
+where: In falcon180b-10666:
+- Vulnerable lines: 13–32 (handle_client function)
+why: If the vulnerability is not resolved, an attacker could exploit it to crash the program or potentially execute arbitrary code, causing a denial of service or compromising system security.
+how: An attacker would proceed to exploit this vulnerability by terminating the connection to the server in a way that triggers the `recv` function to return an error or zero bytes, leading to the `client_socket` being closed twice via the `close` function and the `pthread_exit` function.
+code-sources: The entry point for user input is the `recv` function on line 17, which reads input from the client into the `buffer`.
+code-sinks: The application processes the user input via the `printf` function on line 21 and the `send` function on line 22 after receiving the data from the `recv` function.
+suggested-fix: 
+```diff
+--- a/falcon180b-10666
++++ b/falcon180b-10666
+@@ -27,7 +27,8 @@
+    }
+
+    close(client_socket);
+-   pthread_exit(0);
++   // Remove the double-free vulnerability by avoiding closing the socket again in pthread_exit.
++   pthread_exit(NULL);
+}
+```
+explanation-suggested-fix: The suggested code diff prevents the `pthread_exit` from closing the `client_socket` again after it has already been closed by the `close` function. This eliminates the double-free vulnerability by ensuring the `client_socket` is closed only once.
+method: UNKNOWN

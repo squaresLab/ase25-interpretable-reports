@@ -1,0 +1,28 @@
+
+    vuln-fix: cpp/return-stack-allocated-memory ['cwe-825'] in codellama_13b-10984 (severity: high)
+    what: A function returns a pointer to a stack-allocated region of memory. This memory is deallocated at the end of the function, leading the caller to potentially use a dangling pointer, which can cause undefined behavior or crashes.
+    where: Line 57 in file codellama_13b-10984
+    why: If the issue is not resolved, it may cause the program to crash or exhibit other undefined behaviors when it attempts to dereference a pointer to memory that has already been deallocated.
+    how: An attacker could exploit this vulnerability by crafting specific inputs that cause the program to crash or behave unexpectedly, potentially disrupting service or causing a denial of service.
+    code-sources: Line 47: `int* arr`
+    code-sinks: Line 57: `return subarrays;`
+    suggested-fix: 
+    ```
+diff --git a/codellama_13b-10984 b/codellama_13b-10984
+index f7c2e6d..f5bb254 100644
+--- a/codellama_13b-10984
++++ b/codellama_13b-10984
+@@ -54,7 +54,7 @@ Subarray* maxSubarraySum(int* arr, int n, int m) {
+     // Add the final subarray to the subarrays array
+     subarrays[num_subarrays++] = curr_subarray;
+     // Return the subarrays array
+-    return subarrays;
++    Subarray* result = (Subarray*)malloc(num_subarrays * sizeof(Subarray));
++    memcpy(result, subarrays, num_subarrays * sizeof(Subarray));
++    return result;
+ }
+
+ // Function to print the subarrays array
+     ```
+    explanation-suggested-fix: The suggested fix allocates memory for the subarrays array dynamically on the heap, which persists beyond the function scope. The `memcpy` call ensures that the stack-allocated subarrays are copied to the heap-allocated memory, which is safely returned to the caller. To prevent memory leaks, the caller must later free this allocated memory.
+    method: CODEQL

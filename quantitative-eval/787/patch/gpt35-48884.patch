@@ -1,0 +1,19 @@
+ 
+    
+    void addNode(Circuit *circuit, char type, float value, int n1, int n2) {
+        + if (circuit->numNodes >= MAX_NODES) {
+        +     fprintf(stderr, "Error: Attempt to add more nodes than allowed (%d).\n", MAX_NODES);
+        +     return;
+        + }
+
+        Node node;
+        node.type = type;
+        node.value = value;
+        node.nodes[0] = n1;
+        node.nodes[1] = n2;
+
+        circuit->nodes[circuit->numNodes] = node;
+        circuit->numNodes++;
+    }
+    
+    

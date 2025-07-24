@@ -1,0 +1,26 @@
+ 
+
+diff
+--- original/falcon180b-28655.c
++++ fixed/falcon180b-28655.c
+@@ -38,6 +38,10 @@
+         }
+
+         clients[num_clients] = client_socket;
++        if (clients[num_clients] == NULL) {
++            close(client_socket);
++            continue;
++        }
+         num_clients++;
+
+         pthread_t thread_id;
+@@ -49,6 +53,8 @@
+     } 
+
+     close(server_socket);
++    // Termination Condition
++    pthread_exit(NULL);
+ }
+ 
+ int main() {
+

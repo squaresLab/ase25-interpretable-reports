@@ -1,0 +1,22 @@
+ 
+
+diff --git a/falcon180b-50564 b/falcon180b-50564
+index d4c3ef9..5f2df8b 100644
+--- a/falcon180b-50564
++++ b/falcon180b-50564
+@@ -13,6 +13,7 @@
+         if (bytes_received <= 0) {
+             close(client_socket);
+             client_sockets[num_clients - 1] = -1;
++            // Find and remove the client socket correctly
++            for (int i = 0; i < num_clients; ++i) {
++                if (client_sockets[i] == client_socket) {
++                    client_sockets[i] = client_sockets[num_clients - 1];
++                    client_sockets[num_clients - 1] = -1;
++                    break;
++                }
++            }
+             num_clients--;
+             break;
+         }
+

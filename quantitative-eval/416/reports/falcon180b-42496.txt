@@ -1,0 +1,44 @@
+
+    vuln-fix: Buffer Overflow (CWE-120) in falcon180b-42496, handle_client function (lines 15-28) (severity: High)
+    what: The code does not properly validate user input size before copying it into a buffer, leading to a buffer overflow.
+    where: The vulnerability is located in the function `handle_client` at lines 15-28 in the file falcon180b-42496.
+    why: A buffer overflow could lead to arbitrary code execution, allowing an attacker to take control of the server or crash it.
+    how: An attacker could send a large amount of data to overflow the buffer `char buffer[BUFFER_SIZE];`, which might overwrite adjacent memory, containing pointers, control data, or other variables leading to arbitrary code execution.
+    code-sources: The entry point for user input is the `recv` function call in the `handle_client` function:  `recv(client_socket, buffer, BUFFER_SIZE, 0);`.
+    code-sinks: The buffer `buffer[BUFFER_SIZE]` that holds data received from the client in the `handle_client` function, and the `send` function that sends this data to other clients.
+    suggested-fix: 
+    ```diff
+    --- falcon180b-42496.c
+    +++ falcon180b-42496-fixed.c
+    @@ -15,6 +15,7 @@
+    
+    void *handle_client(void *arg) {
+        int client_socket = *(int *) arg;
+        char buffer[BUFFER_SIZE];
+    +   int bytes_received;
+        while (1) {
+            memset(buffer, 0, BUFFER_SIZE);
+    -       int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+    +       bytes_received = recv(client_socket, buffer, BUFFER_SIZE - 1, 0);
+            if (bytes_received <= 0) {
+                break;
+            }
+    +       buffer[bytes_received] = '\0'; // Ensure null-termination
+            printf("Client %d sent: %s\n", client_socket, buffer);
+            for (int i = 0; i < num_clients; i++) {
+                if (client_sockets[i] != client_socket) {
+    @@ -95,7 +95,7 @@
+                close(client_socket);
+                printf("Error: Maximum number of clients reached.\n");
+            } else {
+                client_sockets[num_clients] = client_socket;
+                num_clients++;
+                pthread_t thread_id;
+                if (pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket) != 0) {
+                    printf("Error: Failed to create thread.\n");
+                }
+            }
+        }
+    ```
+    explanation-suggested-fix: The suggested fix ensures that `recv` receives a maximum of `BUFFER_SIZE - 1` bytes to leave space for a null-terminator. Furthermore, by explicitly setting `buffer[bytes_received]` to `'\0'`, we ensure the buffer is always null-terminated, which helps prevent buffer overflow and possible string-related vulnerabilities.
+    method: UNKNOWN

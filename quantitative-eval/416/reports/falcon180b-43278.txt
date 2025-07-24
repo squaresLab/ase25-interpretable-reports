@@ -1,0 +1,26 @@
+ 
+vuln-fix: CWE-120: Buffer Overflow in falcon180b-43278 at line 29 (severity: high)
+what: The vulnerability is caused by a usage of `sprintf` where user input size is not properly checked, which can lead to buffer overflow.
+where: The code is located in the function `monitor_thread` at line 29 in the file `falcon180b-43278`.
+why: If this vulnerability is not resolved, an attacker can exploit it to execute arbitrary code on the server, potentially taking full control of the system.
+how: An attacker would need to send a specially crafted request to the server that exceeds the buffer size, causing a buffer overflow when `sprintf` is called to format the response.
+code-sources: `recv(connections[i].socket, request, MAX_REQUEST_SIZE, 0)` in `monitor_thread`.
+code-sinks: `sprintf(response, "HTTP/1.1 200 OK\r\nContent-Length: %d\r\n\r\n", bytes_received)` in `monitor_thread`.
+suggested-fix: 
+```diff
+diff --git a/falcon180b-43278 b/falcon180b-43278
+index a57f1ef..4c3bd73 100644
+--- a/falcon180b-43278
++++ b/falcon180b-43278
+@@ -29,7 +29,7 @@ void *monitor_thread(void *arg) {
+             char response[MAX_RESPONSE_SIZE];
+             memset(response, 0, MAX_RESPONSE_SIZE);
+
+-            sprintf(response, "HTTP/1.1 200 OK\r\nContent-Length: %d\r\n\r\n", bytes_received);
++            snprintf(response, MAX_RESPONSE_SIZE, "HTTP/1.1 200 OK\r\nContent-Length: %d\r\n\r\n", bytes_received);
+
+             send(connections[i].socket, response, strlen(response), 0);
+         }
+```
+explanation-suggested-fix: Changing `sprintf` to `snprintf` and specifying the buffer size ensures that the formatted string will not exceed the allocated buffer, preventing a potential buffer overflow.
+method: UNKNOWN

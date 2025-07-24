@@ -1,0 +1,16 @@
+ 
+
+--- falcon180b-4508
++++ falcon180b-4508
+@@ -21,8 +21,10 @@
+         if (bytes_received <= 0) {
+             close(client_socket);
+             clients[num_clients] = -1;
+-            num_clients--;
++            if(num_clients > 0) {
++                num_clients--;
++            }
+             break;
+         }
+ 
+

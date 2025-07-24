@@ -1,0 +1,28 @@
+
+    vuln-fix: Command Injection (CWE-77) in falcon180b-2543 (severity: high)
+    what: The code directly uses user input in a call to the `system` function without proper validation or sanitization, allowing attackers to execute arbitrary commands.
+    where: Lines involving the `system` function calls within the `handle_client` function in falcon180b-2543.
+    why: If this vulnerability is not resolved, an attacker can execute arbitrary commands on the server, potentially taking over the system or causing significant disruption.
+    how: An attacker would send carefully crafted input containing shell metacharacters or command sequences to the server. Since the input is passed directly to the `system` function, it would be executed by the shell.
+    code-sources: The input is received via the `recv` function in the `handle_client` function.
+    code-sinks: The vulnerable lines are the calls to `system` in the `handle_client` function.
+    suggested-fix: 
+    ```diff
+    11,13c11,13
+    < system("echo 1 > /sys/class/leds/light/brightness");
+    < } else if (strncmp(buffer, "off", 4) == 0) {
+    < system("echo 0 > /sys/class/leds/light/brightness");
+    < } else if (strncmp(buffer, "dim", 4) == 0) {
+    < system("echo 50 > /sys/class/leds/light/brightness");
+    ---
+    > if (strcmp(buffer, "on") == 0) {
+    >     system("echo 1 > /sys/class/leds/light/brightness");
+    > } else if (strcmp(buffer, "off") == 0) {
+    >     system("echo 0 > /sys/class/leds/light/brightness");
+    > } else if (strncmp(buffer, "dim", 4) == 0) {
+    >     system("echo 0 > /sys/class/leds/light/brightness");
+    17c17
+    < }
+    ```
+    explanation-suggested-fix: The suggested code diff changes the `strncmp` function to `strcmp`, ensuring that an exact match is required for the command to be executed. This prevents partial matches and unintended command executions that could potentially be exploited.
+    method: CODEQL

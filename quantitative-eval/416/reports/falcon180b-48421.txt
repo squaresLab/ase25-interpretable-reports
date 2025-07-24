@@ -1,0 +1,38 @@
+
+    vuln-fix: CWE-362: Race Condition in falcon180b-48421 at lines 64-70 (severity: High)
+    what: The code contains a race condition on the `client_socket` variable. When creating a new thread to handle a client connection using pthread_create, the `client_socket` is passed by reference which can lead to race conditions if a new client connection is accepted before the old client finishes processing.
+    where: The vulnerability is located in the `main` function between lines 64 to 70 in `falcon180b-48421`.
+    why: If the race condition is exploited, it could lead to unexpected behavior, such as crashes or security breaches where an attacker may hijack the session intended for another client.
+    how: An attacker could exploit this race condition by making multiple connection attempts in a short period, potentially causing one thread to read or write data intended for another client.
+    code-sources: `recv` call on line 25 inside `handle_client` function receives data from the client.
+    code-sinks: `printf` call on line 28 in `handle_client` function outputs the received data.
+    suggested-fix:
+    ```diff
+    --- falcon180b-48421.c    2023-10-07 10:00:00
+    +++ falcon180b-48421-fixed.c   2023-10-07 10:05:00
+    @@ -64,11 +64,14 @@
+             }
+
+             if (num_clients >= MAX_CLIENTS) {
+                 close(client_socket);
+                 continue;
+             }
+
+    -        clients[num_clients] = client_socket;
+    +        int *client_sock_ptr = malloc(sizeof(int));
+    +        if (client_sock_ptr == NULL) {
+    +            perror("malloc");
+    +            close(client_socket);
+    +            continue;
+    +        }
+    +        *client_sock_ptr = client_socket;
+             num_clients++;
+    -        pthread_create(&thread_id, NULL, handle_client, (void *)&client_socket);
+    +        pthread_create(&thread_id, NULL, handle_client, (void *)client_sock_ptr);
+         }
+
+         return 0;
+     }
+    ```
+    explanation-suggested-fix: The suggested code diff resolves the race condition by dynamically allocating memory for each client socket, ensuring that each thread receives a unique pointer and preventing multiple threads from referencing the same `client_socket` variable.
+    method: UNKNOWN

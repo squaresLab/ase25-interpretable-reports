@@ -1,0 +1,16 @@
+ 
+
+diff --git a/falcon180b-26420 b/falcon180b-26420
+index e69de29..b123abc 100644
+--- a/falcon180b-26420
++++ b/falcon180b-26420
+@@ -24,6 +24,7 @@
+
+ int main() {
+     int opt = 1;
++    sockfd = socket(AF_INET, SOCK_STREAM, 0); // Add this line to initialize sockfd
+     setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+
+     server_addr.sin_family = AF_INET;
+
+    

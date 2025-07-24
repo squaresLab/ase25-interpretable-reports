@@ -1,0 +1,61 @@
+
+    
+    --- gemma7b-16958.c	<timestamp>
+    +++ gemma7b-16958-fixed.c	<timestamp>
+    @@ -10,16 +10,21 @@
+     };
+
+     struct DecentralizedList {
+    -    struct Node** head;
+    +    struct Node* head[MAX];
+         int size;
+     };
+
+     void insertAtTail(struct DecentralizedList* list, int data)
+     {
+         struct Node* newNode = (struct Node*)malloc(sizeof(struct Node));
+         newNode->data = data;
+         newNode->next = NULL;
+
+    -    if (list->head == NULL)
+    +    if (list->size >= MAX)
+    +    {
+    +        printf("List is full\n");
+    +        free(newNode);
+    +        return;
+    +    }
+    +    if (list->size == 0)
+         {
+             list->head[0] = newNode;
+         }
+    @@ -29,12 +34,13 @@
+             list->head[list->size - 1]->next = newNode;
+         }
+         list->size++;
+     }
+
+     void traverse(struct DecentralizedList* list)
+     {
+    -    struct Node* current = list->head[0];
+    +    if (list->size == 0)
+    +        return;
+    +    struct Node* current = list->head[0];
+         while (current)
+         {
+             printf("%d ", current->data);
+             current = current->next;
+         }
+         printf("\n");
+    @@ -46,8 +52,8 @@
+     {
+         struct DecentralizedList* list = (struct DecentralizedList*)malloc(sizeof(struct DecentralizedList));
+    -    list->head = NULL;
+    +    list->head[0] = NULL;
+         list->size = 0;
+
+         insertAtTail(list, 10);
+         insertAtTail(list, 20);
+         insertAtTail(list, 30);
+         insertAtTail(list, 40);
+    
+    

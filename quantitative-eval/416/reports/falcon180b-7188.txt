@@ -1,0 +1,31 @@
+
+vuln-fix: OS Command Injection (CWE-78) in falcon180b-7188 at line 30-36 (severity: High)
+what: The code constructs a command string to be executed by the system shell using user input without proper sanitization.
+where: This vulnerability is located in the `handle_client` function, specifically at the lines where `system("echo 'Turning on lights'")` and `system("echo 'Turning off lights'")` are called (lines 30-36).
+why: An attacker could supply crafted input that executes arbitrary system commands, potentially compromising system integrity and confidentiality.
+how: To exploit this vulnerability, an attacker could send a specially crafted request such as "turn on; rm -rf /" which would result in the harmful command being executed by the system.
+code-sources: The entry point for user input is the `recv` function call in the `handle_client` function where it receives data into the `buffer`.
+code-sinks: The sink is the `system` function call, which executes commands passed to the system shell directly using user input from `buffer`.
+suggested-fix: 
+```diff
+diff --git a/falcon180b-7188 b/falcon180b-7188
+index 7d947de..b989cbe 100644
+--- a/falcon180b-7188
++++ b/falcon180b-7188
+@@ -30,8 +30,10 @@ void *handle_client(void *arg) {
+         printf("Request received from client %d: %s\n", client_socket, buffer);
+ 
+         if (strcmp(buffer, "turn on") == 0) {
+-            system("echo 'Turning on lights'");
++            // system("echo 'Turning on lights'");
++            send(client_socket, "Turning on lights", strlen("Turning on lights"), 0);
+         } else if (strcmp(buffer, "turn off") == 0) {
+-            system("echo 'Turning off lights'");
++            // system("echo 'Turning off lights'");
++            send(client_socket, "Turning off lights", strlen("Turning off lights"), 0);
+         } else {
+             send(client_socket, "Invalid request", strlen("Invalid request"), 0);
+         }
+```
+explanation-suggested-fix: The suggested code change replaces the calls to `system` with `send`, which eliminates the possibility of executing arbitrary commands by properly handling client requests within the application's scope without invoking the shell.
+method: UNKNOWN

@@ -1,0 +1,18 @@
+ 
+
+--- gpt35-29447    2023-10-10 12:00:00.000000000 +0000
++++ gpt35-29447    2023-10-10 12:05:00.000000000 +0000
+@@ -47,7 +47,12 @@
+ 
+     send(client_fd, welcome_message, strlen(welcome_message), 0);
+ 
++    // Adding input validation/sanitization here
+     while((valread = read(client_fd, buffer, 1024)) > 0) {
++        // Example: simple validation to remove non-printable characters
++        for(int i = 0; i < valread; i++) {
++            if(!isprint(buffer[i])) buffer[i] = '?';
++        }
+         send(client_fd, buffer, strlen(buffer), 0);
+         memset(buffer, 0, sizeof(buffer));
+     }
+

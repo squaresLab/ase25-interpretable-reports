@@ -1,0 +1,22 @@
+ 
+    
+    --- gemini_pro-3793.c
+    +++ gemini_pro-3793_fixed.c
+    @@ -81,11 +81,6 @@
+         print_toc(book);
+     
+         // Print the first page of the book
+    -    print_page(&book->pages[0]);
+    -
+    -    // Free the memory allocated for the book
+    -    free_book(book);
+    -
+         // Free the memory allocated for the book
+         free_book(book);
+    +     
+    +    // Free the memory allocated for the book
+    +    free_book(book);
+    +}
+    +    return 0;
+     
+    

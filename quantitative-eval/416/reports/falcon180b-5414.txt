@@ -1,0 +1,50 @@
+yaml
+vuln-fix: CWE-120: Buffer Overflow in falcon180b-5414 (severity: High)
+what: The vulnerability is a buffer overflow in the `handle_client` function when receiving data from a client.
+where: The vulnerability is located in the `handle_client` function, specifically in the lines involving `recv(client_socket, buffer, sizeof(buffer), 0);` and subsequent use of `buffer` in falcon180b-5414.
+why: An attacker could exploit this to execute arbitrary code or cause the program to crash, leading to a denial of service (DoS).
+how: An attacker would send data exceeding the buffer size (`1024` bytes) to overflow the buffer, potentially overwriting adjacent memory regions, leading to code execution or program crash.
+code-sources: The entry point for user input is the `recv` function call in the `handle_client` function.
+code-sinks: The application then proceeds to print the buffer content with `printf`, and handle the next client requests.
+suggested-fix: 
+```diff
+--- falcon180b-5414.c
++++ falcon180b-5414.fixed.c
+@@ -13,6 +13,7 @@
+ void *handle_client(void *arg) {
+     int client_socket = *(int *) arg;
+     char buffer[1024];
++    int bytes_received;
+
+     while (1) {
+         memset(buffer, 0, sizeof(buffer));
+-        int bytes_received = recv(client_socket, buffer, sizeof(buffer), 0);
++        bytes_received = recv(client_socket, buffer, sizeof(buffer) - 1, 0);
+
+         if (bytes_received <= 0) {
+             break;
+@@ -16,16 +17,17 @@
+void *handle_client(void *arg) {
+    int client_socket = *(int *) arg;
+    char buffer[1024];
++    int bytes_received;
+
+    while (1) {
+        memset(buffer, 0, sizeof(buffer));
+-        int bytes_received = recv(client_socket, buffer, sizeof(buffer), 0);
++        bytes_received = recv(client_socket, buffer, sizeof(buffer) - 1, 0);
+
+        if (bytes_received <= 0) {
+            break;
+        }
+
++        buffer[bytes_received] = '\0'; // Ensure null-termination
+        printf("Client %d sent: %s\n", client_socket, buffer);
+    }
+
+    close(client_socket);
+    return NULL;
+}
+```
+explanation-suggested-fix: The suggested code diff adds a step to ensure the received data is within bounds by limiting the `recv` call to `sizeof(buffer) - 1`, leaving space for a null-terminator. This prevents buffer overflow. Furthermore, the received data is explicitly null-terminated to avoid printing or processing memory content beyond the intended buffer size.
+method: UNKNOWN

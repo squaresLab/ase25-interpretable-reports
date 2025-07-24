@@ -1,0 +1,18 @@
+
+vuln-fix: CWE-362: Race Condition in falcon180b-48591 (severity: High)
+what: The code is vulnerable to a race condition because each thread references a shared variable 'i' which gets incremented in the parent loop without proper synchronization.
+where: Lines 43-46 in file falcon180b-48591
+why: The race condition can lead to undefined behavior, where multiple threads might overwrite the value of 'i', resulting in incorrect light_num being processed, potentially causing traffic light mismanagement.
+how: An attacker could exploit this race condition by causing threads to read and write stale or incorrect values from the shared variable 'i', leading to unpredictable traffic light states. This can cause safety issues if traffic lights show incorrect states.
+code-sources: The source of the potentially hazardous behavior is the variable 'i' in the main function, which is used to spawn threads and pass the light number.
+code-sinks: The action taken using the source is in the change_light function, where the light state is changed based on the value of light_num determined by 'i'.
+suggested-fix: 
+```diff
+52c52
+<         int *light_num = &i;
+---
+>         int *light_num = malloc(sizeof(int));
+>         *light_num = i;
+```
+explanation-suggested-fix: This fix creates a unique memory location for each 'light_num' by allocating it on the heap. This avoids the race condition by ensuring each thread gets a distinct copy of 'light_num'.
+method: UNKNOWN

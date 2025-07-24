@@ -1,0 +1,41 @@
+
+vuln-fix: CWE-362: Race Condition in falcon180b-20909 (severity: high)
+what: The vulnerability is a race condition resulting from shared access to the `client_socket` variable in `main` and `handle_client` without proper synchronization.
+where: Lines involving `client_socket`, specifically its use in `main` when passed to `pthread_create` and its handling in `handle_client`.
+why: This weakness can cause undefined behavior, including data corruption or crashes if multiple threads access and modify `client_socket` concurrently.
+how: An attacker could exploit this vulnerability by rapidly establishing multiple connections, causing the shared `client_socket` variable to be overwritten. This could lead to improper handling of client connections, including potential crashes or security breaches.
+code-sources: The entry point for user input is the `accept` call in the `main` function that accepts client connections.
+code-sinks: The `recv` function in `handle_client` which processes incoming data from the client sockets.
+suggested-fix: 
+```diff
+29c29
+< void *handle_client(void *arg) {
+---
+> void *handle_client(void *arg) {
+>     int client_socket = *(int *) arg;
+45c46,48
+<     close(client_socket);
+---
+>     int actual_client_socket = *(int *) arg;
+>     free(arg);
+>     close(actual_client_socket);
+55c58,59
+< while (1) {
+---
+> while (1) {
+>     int *client_socket_ptr = malloc(sizeof(int));
+56a61,67
+>     *client_socket_ptr = accept(server_socket, NULL, NULL);
+> 
+>     if (*client_socket_ptr == -1) {
+>         printf("Error accepting connection\n");
+>         free(client_socket_ptr);
+>         continue;
+>     }
+64c75
+<     pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+---
+>     pthread_create(&thread_id, NULL, handle_client, (void *) client_socket_ptr);
+```
+explanation-suggested-fix: The suggested code diff eliminates the race condition by dynamically allocating memory for each `client_socket` before passing it to the `pthread_create` function. Each thread will then free this memory after closing its respective `client_socket`, ensuring that each thread operates on a distinct socket descriptor.
+method: UNKNOWN

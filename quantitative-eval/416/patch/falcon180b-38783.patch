@@ -1,0 +1,19 @@
+ 
+
+--- falcon180b-38783.c
++++ falcon180b-38783.c
+@@ -11,6 +11,7 @@
+     while (1) {
+         memset(buffer, 0, MAX_MESSAGE_SIZE);
+         int bytes_received = recv(client_socket, buffer, MAX_MESSAGE_SIZE, 0);
++
+         if (bytes_received <= 0) {
+             break;
+         }
++
++        buffer[bytes_received] = '\0'; // Ensure null-termination of the buffer
++ 
+         printf("Client %d sent message: %s\n", client_socket, buffer);
+         send(client_socket, buffer, strlen(buffer), 0);
+     }
+

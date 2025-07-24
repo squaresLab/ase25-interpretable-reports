@@ -1,0 +1,27 @@
+
+vuln-fix: CWE-362: Race Condition in falcon180b-49080 (severity: High)
+what: The code has a potential race condition due to sharing a single variable `room_id` across multiple threads without synchronization, leading to unpredictable behavior.
+where: Lines 48-52 in file falcon180b-49080
+why: If not resolved, this vulnerability can lead to inconsistent behavior, crashes, or unexpected results due to threads reading and writing the shared variable concurrently.
+how: An attacker could exploit this by triggering multiple threads to use the shared variable at the same time, causing race conditions that can lead to denial of service or unpredictable behavior.
+code-sources: The entry point is where `pthread_create` is called with `room_id` as the argument in the `main` function.
+code-sinks: The sink involves the use of `room_id` within the `haunt_room` function where the room information is printed based on `room_id`.
+suggested-fix:
+```diff
+    for (int i = 0; i < num_threads; i++) {
+-        int room_id = rand() % NUM_ROOMS;
+-        pthread_create(&threads[i], NULL, haunt_room, &room_id);
++        int *room_id = malloc(sizeof(int));
++        *room_id = rand() % NUM_ROOMS;
++        pthread_create(&threads[i], NULL, haunt_room, room_id);
+         sleep(1);
+     }
+
+     for (int i = 0; i < num_threads; i++) {
+         pthread_join(threads[i], NULL);
++        free(room_id);
+         sleep(1);
+     }
+```
+explanation-suggested-fix: The suggested code diff allocates memory for `room_id` dynamically and passes a unique pointer for each thread, ensuring that each thread has its own copy of `room_id`. This eliminates the race condition as each thread operates on separate memory.
+method: UNKNOWN

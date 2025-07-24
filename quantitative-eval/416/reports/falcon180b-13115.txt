@@ -1,0 +1,88 @@
+
+vuln-fix: Buffer Overflow (CWE-120) in falcon180b-13115 (severity: High)
+what: A buffer overflow vulnerability occurs because the code does not properly validate the length of the data being received and then sent back to the client. Specifically, the length parameter passed to `send` is determined by the return value of `strlen(buffer)`, which assumes `buffer` contains a null-terminated string. If `recv` receives non-null-terminated data of large size, subsequent code using `strlen(buffer)` can result in reading beyond the bounds of the allocated `buffer`, leading to potential buffer overflow.
+where: In the handle_client function in falcon180b-13115
+why: If this vulnerability is exploited, an attacker may be able to overwrite memory, causing the application to crash, or potentially execute arbitrary code.
+how: An attacker would connect to the server and send large, carefully crafted payloads that do not include null terminators within the size limit of `BUF_SIZE`. This can cause the server to read and send back memory outside the intended buffer, potentially leading to memory corruption.
+code-sources: Entry points where user input enters the application:
+- `accept` in `main`, line 42
+- `recv` in `handle_client`, line 18
+
+code-sinks: Actions performed by the application, using user input from a source:
+- `send` in `handle_client`, line 22
+
+suggested-fix: 
+```diff
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <pthread.h>
+
+#define PORT 8080
+#define BACKLOG 10
+#define BUF_SIZE 1024
+#define MAX_CLIENTS 10
+
+int client_sockets[MAX_CLIENTS];
+int num_clients = 0;
+
+void *handle_client(void *arg) {
+    int client_socket = *(int *) arg;
+    char buffer[BUF_SIZE];
+    while (1) {
+        memset(buffer, 0, BUF_SIZE);
+        int bytes_received = recv(client_socket, buffer, BUF_SIZE, 0);
+        if (bytes_received <= 0) {
+            break;
+        }
+-       send(client_socket, buffer, strlen(buffer), 0);
++       send(client_socket, buffer, bytes_received, 0);
+    }
+    close(client_socket);
+    return NULL;
+}
+
+int main() {
+    int server_socket = socket(AF_INET, SOCK_STREAM, 0);
+
+    struct sockaddr_in server_addr;
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(PORT);
+    server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+
+    bind(server_socket, (struct sockaddr *) &server_addr, sizeof(server_addr));
+
+    listen(server_socket, BACKLOG);
+
+    printf("Chat server started on port %d\n", PORT);
+
+    while (1) {
+        int client_socket = accept(server_socket, NULL, NULL);
+        if (client_socket == -1) {
+            perror("accept");
+            continue;
+        }
+
+        if (num_clients >= MAX_CLIENTS) {
+            close(client_socket);
+            continue;
+        }
+
+        client_sockets[num_clients] = client_socket;
+        num_clients++;
+
+        pthread_t thread_id;
+        pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+    }
+
+    return 0;
+}
+```
+explanation-suggested-fix: The suggested code diff changes the length parameter in the `send` function from `strlen(buffer)` to `bytes_received`. This ensures that the length of the data being sent back is always equal to the number of bytes received, preventing any potential buffer overflow by ensuring we do not read outside the bounds of the buffer.
+method: UNKNOWN

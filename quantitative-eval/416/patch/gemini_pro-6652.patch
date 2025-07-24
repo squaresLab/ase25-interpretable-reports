@@ -1,0 +1,20 @@
+ 
+    
+    --- gemini_pro-6652.c    2023-10-09 10:00:00.000000000 +0000
+    +++ gemini_pro-6652-fixed.c    2023-10-09 10:15:00.000000000 +0000
+    @@ -13,12 +13,17 @@
+         // Receive data from client
+         char buffer[1024];
+    -    int bytes_received = recv(client_socket, buffer, sizeof(buffer), 0);
+    +    int bytes_received = recv(client_socket, buffer, sizeof(buffer) - 1, 0);
+         if (bytes_received < 0) {
+             perror("recv");
+             close(client_socket);
+             return NULL;
+         }
+    +    buffer[bytes_received] = '\0'; // Null-terminate the buffer
+     
+         // Process received data
+         // ...
+    
+    

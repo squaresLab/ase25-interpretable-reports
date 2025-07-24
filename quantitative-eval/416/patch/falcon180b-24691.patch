@@ -1,0 +1,31 @@
+ 
+
+diff --git a/falcon180b-24691 b/falcon180b-24691
+index abcdefg..hijklmn 100644
+--- a/falcon180b-24691
++++ b/falcon180b-24691
+@@ -44,14 +44,15 @@ int main() {
+         int client_socket = accept(server_socket, NULL, NULL);
+         if (client_socket == -1) {
+             printf("Error accepting connection\n");
+-            continue;
++            close(client_socket);
++            continue;
+         }
+         int *client_sock_ptr = malloc(sizeof(*client_sock_ptr));
+         *client_sock_ptr = client_socket;
+         num_clients++;
+         if (num_clients >= MAX_CLIENTS) {
+-            close(client_socket);
++            close(*client_sock_ptr);
++            free(client_sock_ptr);
+             printf("Server is full\n");
+             continue;
+         }
+-        clients[num_clients - 1] = client_socket;
+         pthread_t thread_id;
+-        pthread_create(&thread_id, NULL, handle_client, (void *)&client_socket);
++        pthread_create(&thread_id, NULL, handle_client, client_sock_ptr);
+     }
+
+    

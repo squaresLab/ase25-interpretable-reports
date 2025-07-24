@@ -1,0 +1,24 @@
+ 
+
+--- falcon180b-22096.c   2023-09-17 12:45:56.000000000 -0700
++++ falcon180b-22096-fixed.c   2023-09-17 12:55:02.000000000 -0700
+@@ -14,6 +14,9 @@
+     while (1) {
+         memset(buffer, 0, BUFFER_SIZE);
+         int bytes_received = recv(client_socket, buffer, BUFFER_SIZE - 1, 0);
++        if (bytes_received < 0) {
++            break;
++        }
+         buffer[bytes_received] = '\0'; // Null-terminate the received data
+         if (bytes_received <= 0) {
+             break;
+@@ -19,7 +22,7 @@
+         printf("Client %d: %s\n", client_socket, buffer);
+         int i;
+         for (i = 0; i < num_clients; i++) {
+-            if (i!= client_socket) {
++            if (clients[i] != client_socket) {
+                 send(clients[i], buffer, strlen(buffer), 0);
+             }
+         }
+

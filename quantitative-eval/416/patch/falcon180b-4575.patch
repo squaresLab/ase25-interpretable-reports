@@ -1,0 +1,13 @@
+ 
+
+34a35,36
+>     memset(response, 0, MAX_REQUEST_SIZE); // Clear the buffer to avoid unintended data
+36a39,44
+>     if (bytes_received <= 0) {
+>         break;
+>     }
+>     response[0] = '\0'; // Initialize response to an empty string
+>     int response_length = snprintf(response, MAX_REQUEST_SIZE, "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nConnection: close\r\n\r\n<html><body><h1>Hello, World!</h1></body></html>");
+>     if (response_length >= MAX_REQUEST_SIZE) {
+>         // Handle error: response size exceeded buffer size
+

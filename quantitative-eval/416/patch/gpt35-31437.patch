@@ -1,0 +1,47 @@
+ 
+
+--- gpt35-31437.c	2023-08-12 16:32:54.000000000 +0000
++++ gpt35-31437-fixed.c	2023-08-12 16:38:12.000000000 +0000
+@@ -45,7 +45,14 @@
+     pthread_exit(NULL);
+ }
+ 
++// Safe scanning of user input
++int safeSscanf(const char *buffer, char *sourceIP, size_t sourceIPSize, int *sourcePort,
++    char *destIP, size_t destIPSize, int *destPort, char *protocol, size_t protocolSize) {
++    char sourceIPBuf[20], destIPBuf[20], protocolBuf[10];
++    int res = sscanf(buffer, "%19[^,],%d,%19[^,],%d,%9[^,]", sourceIPBuf, sourcePort, destIPBuf, destPort, protocolBuf);
++    if(res == 5) {
++        strncpy(sourceIP, sourceIPBuf, sourceIPSize - 1);
++        sourceIP[sourceIPSize - 1] = '\0';
++        strncpy(destIP, destIPBuf, destIPSize - 1);
++        destIP[destIPSize - 1] = '\0';
++        strncpy(protocol, protocolBuf, protocolSize - 1);
++        protocol[protocolSize - 1] = '\0';
++    }
++    return res;
++}
++
+ void *handleClient(void *args) {
+     struct Client client = *((struct Client*)args); // Client details
+     int socket = client.socket;
+ 
+@@ -43,10 +45,12 @@
+     read(socket, buffer, MAX_BUFFER);
+ 
+     // Parse packet data
+-    char sourceIP[20], destinationIP[20], protocol[10];
++    char sourceIP[20] = {0}, destinationIP[20] = {0}, protocol[10] = {0};
+     int sourcePort, destinationPort;
+-    sscanf(buffer, "%[^,],%d,%[^,],%d,%[^,]", sourceIP, &sourcePort, destinationIP, &destinationPort, protocol);
++    if (safeSscanf(buffer, sourceIP, sizeof(sourceIP), &sourcePort, destinationIP, sizeof(destinationIP), &destinationPort, protocol, sizeof(protocol)) != 5) {
++        char *responseMessage = "Invalid packet format!";
++        send(socket, responseMessage, strlen(responseMessage), 0);
++        close(socket);
++        pthread_exit(NULL);
++    }
+ 
+     // Check if packet data matches firewall rule
+     if(!isMatch(sourceIP, destinationIP, sourcePort, destinationPort, protocol)) {
+         // Send rejection message to client
+

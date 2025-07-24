@@ -1,0 +1,23 @@
+ 
+
+46,52c46,53
+<     // Free the memory allocated for the candidates
+<     for (int i = 0; i < MAX_CANDIDATES; i++) {
+<         free(election->candidates[i].name);
+<     }
+< 
+<     // Free the memory allocated for the voters
+<     for (int i = 0; i < MAX_VOTERS; i++) {
+<         free(election->voters[i].name);
+---
+>     // Free the memory allocated for the candidates and set pointers to NULL
+>     for (int i = 0; i < MAX_CANDIDATES; i++) {
+>         free(election->candidates[i].name);
+>         election->candidates[i].name = NULL;
+>     }
+>
+>     // Free the memory allocated for the voters and set pointers to NULL
+>     for (int i = 0; i < MAX_VOTERS; i++) {
+>         free(election->voters[i].name);
+>         election->voters[i].name = NULL;
+

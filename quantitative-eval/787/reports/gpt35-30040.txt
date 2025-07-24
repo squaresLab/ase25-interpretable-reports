@@ -1,0 +1,18 @@
+
+vuln-fix: Buffer Overflow (CWE-120) in gpt35-30040 (severity: high)
+what: The vulnerability is a buffer overflow that occurs in the `add_entry` function when copying a `name` larger than the destination buffer `name` in the `struct entry`.
+where: gpt35-30040, lines 36-39
+why: Not resolving this weakness could allow an attacker to overwrite critical data structures, leading to application crashes, injection of malicious code, or unauthorized access to sensitive information.
+how: An attacker could exploit this vulnerability by providing a name input longer than 49 characters (the buffer size is 50 characters, including the null terminator), causing the buffer to overflow and potentially overwriting adjacent memory.
+code-sources: `add_entry` method, parameters `name`, `id`, and `age`
+code-sinks: `sprintf(e->name, "%s", name)` (line 38) in `add_entry`
+suggested-fix: 
+```diff
+36c36
+<         sprintf(e->name, "%s", name);
+---
+>         strncpy(e->name, name, sizeof(e->name) - 1);
+>         e->name[sizeof(e->name) - 1] = '\0';
+```
+explanation-suggested-fix: The suggested fix changes the code to use `strncpy` instead of `sprintf` to ensure that no more than `sizeof(e->name) - 1` characters are copied into the `name` buffer, thus preventing buffer overflow. It also explicitly sets the last character to a null terminator to ensure the string is properly terminated.
+method: UNKNOWN

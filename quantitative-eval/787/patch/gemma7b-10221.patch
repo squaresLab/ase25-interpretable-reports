@@ -1,0 +1,46 @@
+ 
+    
+    --- gemma7b-10221-Orig.c
+    +++ gemma7b-10221-Fixed.c
+    @@ -16,7 +16,8 @@
+     void csv_reader_read(CSVReader* reader)
+     {
+         char* line = NULL;
+    -    size_t line_size = 0;
+    +    size_t line_size = 0;
+    +    size_t current_buffer_size = 0;
+         int i = 0;
+ 
+         while (getline(&line, &line_size, reader->file) != -1)
+         {
+    -        reader->rows++;
+    +        if (reader->rows >= current_buffer_size) {
+    +            current_buffer_size = (current_buffer_size + 1) * 2;
+    +            reader->buffer = realloc(reader->buffer, current_buffer_size * MAX_BUFFER_SIZE);
+    +        }
+             reader->rows++;
+    -        reader->buffer = realloc(reader->buffer, reader->rows * MAX_BUFFER_SIZE);
+             reader->buffer[reader->rows - 1] = strdup(line);
+
+             for (i = 0; i < line_size; i++)
+             {
+                 if (line[i] == ',')
+                 {
+                     reader->cols++;
+                 }
+    @@ -30,7 +30,7 @@
+ 
+        free(line);
+    }
+    void csv_reader_destroy(CSVReader* reader)
+    {
+        fclose(reader->file);
+    +    for (int i = 0; i < reader->rows; i++) {
+    +        free(reader->buffer[i]);
+    +    }
+        free(reader->buffer);
+        free(reader);
+    }
+    
+
+    

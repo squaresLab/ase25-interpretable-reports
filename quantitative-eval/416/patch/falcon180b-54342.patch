@@ -1,0 +1,43 @@
+
+
+#include <pthread.h>
+
+
++ pthread_mutex_t clients_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+
+    while (1) {
+        int client_socket = accept(server_socket, NULL, NULL);
+
+        pthread_mutex_lock(&clients_mutex);
+        if (num_clients == MAX_CLIENTS) {
+            pthread_mutex_unlock(&clients_mutex);
+            close(client_socket);
+            continue;
+        }
+
+        clients[num_clients++] = client_socket;
+        pthread_mutex_unlock(&clients_mutex);
+
+        pthread_t thread_id;
+        pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+    }
+
+
+    while (1) {
+        memset(buffer, 0, BUFFER_SIZE);
+        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+
+        if (bytes_received <= 0) {
+            break;
+        }
+
+        pthread_mutex_lock(&clients_mutex);
+        for (int i = 0; i < num_clients; i++) {
+            if (clients[i] != client_socket) {
+                send(clients[i], buffer, strlen(buffer), 0);
+            }
+        }
+        pthread_mutex_unlock(&clients_mutex);
+    }
+

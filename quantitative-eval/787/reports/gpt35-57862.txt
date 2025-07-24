@@ -1,0 +1,87 @@
+
+vuln-fix: CWE-367: Time-of-check Time-of-use (TOCTOU) Race Condition in gpt35-57862 (severity: High)
+what: The vulnerable code has a race condition due to non-atomic checks and state changes on shared resources `visited`, `path`, and `path_len`. Multiple threads check and modify these shared variables without proper synchronization.
+where: The vulnerability is located in the `dfs` function and occurs around the lines manipulating `visited`, `path`, and `path_len` in the file `gpt35-57862`. Specifically:
+```
+    for (int i = start; i < end; i++) {
+        for (int j = 0; j < m; j++) {
+            if (maze[i][j] == 0 && !visited[i][j]) {
+                visited[i][j] = true;
+                path[path_len++] = data->nodes[i * m + j];
+
+                if (i == n - 1 && j == m - 1) {
+                    return NULL;
+                }
+
+                dfs(arg);
+
+                if (path_len > 0) {
+                    path_len--;
+                }
+                visited[i][j] = false;
+            }
+        }
+    }
+```
+why: If this weakness is not resolved, multiple threads can lead to inconsistent and incorrect state in the `visited`, `path`, and `path_len` variables, possibly causing incorrect pathfinding results or a crash.
+how: An attacker could exploit this vulnerability by inducing timing conditions that make multiple threads access and modify shared resources simultaneously, leading to race conditions and undefined behavior.
+code-sources: The code source where user input is provided is in the `inputMaze` function:
+```
+void inputMaze() {
+    scanf("%i %i", &n, &m);
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < m; j++) {
+            int val;
+            scanf("%i", &val);
+            maze[i][j] = val;
+        }
+    }
+}
+```
+code-sinks: The sink in this code is the `dfs` function, which uses the user input to navigate the maze:
+```
+void *dfs(void *arg)
+```
+suggested-fix: 
+```diff
+void *dfs(void *arg) {
+    ThreadData *data = (ThreadData *) arg;
+
+    int idx = data->idx;
+    int start = idx * (data->n / MAX_THREADS);
+    int end = (idx + 1) * (data->n / MAX_THREADS);
+
+    if (idx == MAX_THREADS - 1) {
+        end = data->n;
+    }
+
+    for (int i = start; i < end; i++) {
+        for (int j = 0; j < m; j++) {
+            pthread_mutex_lock(&mutex);
+            if (maze[i][j] == 0 && !visited[i][j]) {
+                visited[i][j] = true;
+                path[path_len++] = data->nodes[i * m + j];
+
+                if (i == n - 1 && j == m - 1) {
+                    pthread_mutex_unlock(&mutex); // Unlock before returning
+                    return NULL;
+                }
+
+                pthread_mutex_unlock(&mutex); // Unlock before recursive call
+                dfs(arg);
+                pthread_mutex_lock(&mutex);
+
+                if (path_len > 0) {
+                    path_len--;
+                }
+                visited[i][j] = false;
+            }
+            pthread_mutex_unlock(&mutex);
+        }
+    }
+
+    return NULL;
+}
+```
+explanation-suggested-fix: The modifications involve adding a mutex lock around the critical sections of the code where the `visited`, `path`, and `path_len` variables are checked and modified. This ensures that only one thread can access these critical sections at a time, preventing race conditions.
+method: UNKNOWN

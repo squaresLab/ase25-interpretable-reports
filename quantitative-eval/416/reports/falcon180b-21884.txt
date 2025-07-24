@@ -1,0 +1,43 @@
+
+    vuln-fix: CWE-362: Race Condition in falcon180b-21884 (severity: High)
+    what: There is a race condition vulnerability in the multi-threaded server code. When a new client connection is accepted, the worker thread is given the same `client_socket` memory address as an argument, which can lead to inconsistent states and potentially handle the wrong sockets.
+    where: 
+        - accept connection and spawn thread: Line 48-56 in `accept_connections()`
+        - thread handles socket: Line 20-31 in `handle_client()`
+    why: An attacker exploiting this race condition could cause valid client communications to be mishandled, leading to data corruption, loss of communication, and potential denial of service (DoS).
+    how: An attacker can initiate multiple connections simultaneously, causing the same `client_socket` value to be accessed or modified by multiple threads, causing unexpected behavior and potentially gaining unauthorized access.
+    code-sources: `recv` call at Line 25 in `handle_client()`
+    code-sinks: `printf` call at Line 29 in `handle_client()`
+    suggested-fix:
+    ```diff
+    diff --git a/falcon180b-21884 b/falcon180b-21884
+    index abcdefg..hijklmn 100644
+    --- a/falcon180b-21884
+    +++ b/falcon180b-21884
+    @@ -48,14 +48,23 @@ void accept_connections() {
+             send(client_socket, "Server is full. Please try again later.\n", 45, 0);
+             close(client_socket);
+             continue;
+         }
+    
+         client_sockets[num_clients] = client_socket;
+         num_clients++;
+    
+         pthread_t thread_id;
+    +    int* new_client_socket = malloc(sizeof(int));
+    +    if (new_client_socket == NULL) {
+    +        perror("Failed to allocate memory for client socket");
+    +        close(client_socket);
+    +        continue;
+    +    }
+    +    *new_client_socket = client_socket;
+    +    pthread_create(&thread_id, NULL, handle_client, (void*)new_client_socket);
+    +    pthread_detach(thread_id);
+         pthread_create(&thread_id, NULL, handle_client, (void *)&client_socket);
+     }
+    }
+    
+    int main() {
+    ```
+    explanation-suggested-fix: The suggested fix involves dynamically allocating memory for each client socket and passing the allocated memory to the newly created thread. This ensures that each thread handles a distinct copy of the `client_socket` value, preventing race conditions associated with modifying a shared socket descriptor.
+    method: UNKNOWN

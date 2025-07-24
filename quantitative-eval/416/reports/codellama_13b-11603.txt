@@ -1,0 +1,121 @@
+
+vuln-fix: Return of stack-allocated memory (CWE-825) and buffer overflow (CWE-120, CWE-787, CWE-805) in codellama_13b-11603, lines 15, 37, and 51 (severity: high)
+what: There are multiple vulnerabilities in the provided code:
+- `cpp/return-stack-allocated-memory` on line 37 and line 15 is an issue where functions `get_sentence` and `get_important_sentences` return pointers to stack-allocated memory, which becomes invalid after the function exits.
+- `cpp/unbounded-write` on line 51 is a buffer overflow vulnerability where the `strcat` function performs unchecked concatenation, potentially causing a buffer overflow.
+
+where: 
+- Line 15: Function `get_sentence`.
+- Line 37: Function `get_important_sentences`.
+- Line 51: Inside the `summarize` function.
+
+why: Failing to resolve these vulnerabilities can lead to severe consequences:
+- Dereferencing dangling pointers from the improperly returning stack-allocated memory could cause undefined behavior or program crashes.
+- The buffer overflow can lead to overwriting adjacent memory, which can result in security vulnerabilities such as corruption of critical data, application crashes, or code execution by an attacker.
+
+how: 
+- For the dangling pointer issue, an attacker might invoke the vulnerable functions and subsequently use the returned pointer that points to a deallocated stack memory, leading to unpredictable program behavior or crashes.
+- For the buffer overflow, an attacker can exploit this by providing input that exceeds the buffer size, leading to overwriting adjacent memory structures which could be utilized to alter program execution flow, possibly injecting malicious code.
+
+code-sources:
+- Line 15: User input from `stdin` in the function `get_sentence`.
+
+code-sinks:
+- Line 51: Usage of `strcat` in the `summarize` function performing unchecked write operations.
+
+suggested-fix:
+```diff
+--- codellama_13b-11603.c
++++ codellama_13b-11603-fixed.c
+@@ -6,6 +6,7 @@
+ #include <stdlib.h>
+ #include <string.h>
+ 
++#define MAX_SENTENCE_LENGTH 1000
+ #define MAX_SENTENCES 100
+ #define MAX_LENGTH 1000
+ 
+@@ -14,13 +15,16 @@
+ char* get_sentence() {
+   char sentence[MAX_LENGTH];
+   fgets(sentence, MAX_LENGTH, stdin);
+-  return sentence;
++  char* result = malloc(MAX_LENGTH);
++  if (result != NULL) {
++    strncpy(result, sentence, MAX_LENGTH);
++  }
++  return result;
+ }
+ 
+ // Function to count the number of sentences in a given string
+ int count_sentences(char* str) {
+   int count = 0;
+-  for (int i = 0; i < strlen(str); i++) {
++  for (size_t i = 0; i < strlen(str); i++) {
+     if (str[i] == '.') {
+       count++;
+     }
+@@ -34,9 +38,14 @@
+ char* get_important_sentences(char* str) {
+   int count = count_sentences(str);
+   char* sentences[MAX_SENTENCES];
++  char* copy_str = strdup(str);
++  if (copy_str == NULL) return NULL;
+   for (int i = 0; i < count; i++) {
+-    sentences[i] = strtok(str, ".");
+-    str = strtok(NULL, ".");
++    sentences[i] = strtok(copy_str, ".");
++    copy_str = strtok(NULL, ".");
+   }
+-  return sentences;
++  free(copy_str);
++  // Combine sentences into a single string to return
++  char* result = malloc(MAX_SENTENCES * MAX_SENTENCE_LENGTH);
++  if (result != NULL) {
++    strcpy(result, sentences[0]);
++  }
++  return result;
+ }
+ 
+ // Function to summarize a given string
+@@ -45,17 +54,21 @@
+ char* summarize(char* str) {
+   char* summary = malloc(MAX_LENGTH);
+   strcpy(summary, "");
+   int count = count_sentences(str);
+   char* sentences[MAX_SENTENCES];
++  char* copy_str = strdup(str);
++  if (copy_str == NULL) return NULL;
+   for (int i = 0; i < count; i++) {
+-    sentences[i] = strtok(str, ".");
+-    str = strtok(NULL, ".");
++    sentences[i] = strtok(copy_str, ".");
++    copy_str = strtok(NULL, ".");
+   }
++  free(copy_str);
+   for (int i = 0; i < count; i++) {
+-    strcat(summary, sentences[i]);
+-    strcat(summary, ".");
++    strncat(summary, sentences[i], MAX_LENGTH - strlen(summary) - 1);
++    strncat(summary, ".", MAX_LENGTH - strlen(summary) - 1);
+   }
+   return summary;
+ }
+ 
+ // Main function
+ int main() {
+   char* str = get_sentence();
+   char* summary = summarize(str);
+   printf("Summary: %s\n", summary);
++  free(str);
++  free(summary);
+   return 0;
+ }
+```
+
+explanation-suggested-fix:
+- For the `get_sentence` function, allocate memory on the heap and copy the input string into this heap-allocated memory. This avoids returning a pointer to stack-allocated memory.
+- Similarly, in the `get_important_sentences` function, use `strdup` to copy the input string for tokenization and ensure the returned sentences are managed correctly. Allocate the result on the heap.
+- For the `summarize` function, use `strncpy` and `strncat` to manage the string concatenation safely. Additionally, free any dynamically allocated memory to prevent memory leaks.
+
+method: CODEQL

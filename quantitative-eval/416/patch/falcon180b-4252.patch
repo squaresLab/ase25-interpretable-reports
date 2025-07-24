@@ -1,0 +1,32 @@
+ 
+    
+    diff --git a/falcon180b-4252 b/falcon180b-4252
+    index abcdef1..1234567 100644
+    --- a/falcon180b-4252
+    +++ b/falcon180b-4252
+    @@ -5,7 +5,7 @@
+     #include <arpa/inet.h>
+     #include <pthread.h>
+    
+    -int server_socket;
+    +int server_socket = 0; // Initialize server_socket to avoid undefined behavior
+     int client_sockets[MAX_CLIENTS];
+     int num_clients;
+    
+    @@ -20,7 +20,7 @@ void *handle_client(void *arg) {
+             close(client_socket);
+             pthread_exit(NULL);
+         }
+    
+    -    printf("Client %d sent: %s\n", client_socket, buffer);
+    +    printf("Client %d sent: %.1024s\n", client_socket, buffer); // Bound the format string to prevent overflow
+    
+         for(int i = 0; i < num_clients; i++) {
+             if(i!= client_socket) {
+    -            send(client_sockets[i], buffer, strlen(buffer), 0);
+    +            send(client_sockets[i], buffer, bytes_received, 0); // Use bytes_received to control the length of data sent
+             }
+         }
+     }
+    
+    

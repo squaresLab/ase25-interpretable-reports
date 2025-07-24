@@ -1,0 +1,93 @@
+
+vuln-fix: CWE-362: Race Condition in falcon180b-60811 (severity: High)
+what: The vulnerability in the code arises from a race condition that occurs when multiple threads attempt to access and modify the shared resource `num_clients` and `client_sockets` array simultaneously without proper synchronization. The code in `handle_client` and `main` uses these shared resources in an unsynchronized manner.
+where: The race condition vulnerability exists in the `handle_client` function and the `main` function within the `falcon180b-60811` file.
+why: If not resolved, this race condition could lead to inconsistent state of the `client_sockets` array and `num_clients` variable, which can cause the program to crash, behave unpredictably, or allow an attacker to hijack or interfere with the communication channels.
+how: An attacker could exploit this vulnerability by rapidly connecting and disconnecting multiple clients to the server, potentially corrupting the array or causing client mismanagement, leading to a denial of service or unintended behavior.
+code-sources: The `accept` function in the `main` function (line with `client_socket = accept(...)`).
+code-sinks: The usage of `client_socket` in `handle_client` function, particularly lines with `recv(client_socket, buffer, BUFFER_SIZE, 0)` and `send(client_sockets[i], buffer, strlen(buffer), 0)`.
+suggested-fix:
+```diff
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <pthread.h>
+
+#define MAX_CLIENTS 10
+#define BUFFER_SIZE 1024
+
+int server_socket;
+int client_sockets[MAX_CLIENTS];
+int num_clients = 0;
+pthread_mutex_t clients_lock = PTHREAD_MUTEX_INITIALIZER;
+
+void *handle_client(void *arg) {
+    int client_socket = *(int *)arg;
+    char buffer[BUFFER_SIZE];
+
+    while (1) {
+        memset(buffer, 0, BUFFER_SIZE);
+        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+
+        if (bytes_received <= 0) {
+            break;
+        }
+
+        printf("Client %d sent: %s", client_socket, buffer);
+
+        pthread_mutex_lock(&clients_lock);
+        for (int i = 0; i < num_clients; i++) {
+            if (client_sockets[i] != client_socket) {
+                send(client_sockets[i], buffer, strlen(buffer), 0);
+            }
+        }
+        pthread_mutex_unlock(&clients_lock);
+    }
+
+    close(client_socket);
+
+    pthread_mutex_lock(&clients_lock);
+    for (int i = 0; i < num_clients; i++) {
+        if (client_sockets[i] == client_socket) {
+            client_sockets[i] = client_sockets[num_clients-1];
+            break;
+        }
+    }
+    num_clients--;
+    pthread_mutex_unlock(&clients_lock);
+}
+
+int main() {
+    int opt = 1;
+    setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+
+    while (1) {
+        struct sockaddr_in client_addr;
+        socklen_t addr_size = sizeof(client_addr);
+        int client_socket = accept(server_socket, (struct sockaddr *)&client_addr, &addr_size);
+
+        pthread_mutex_lock(&clients_lock);
+        if (num_clients >= MAX_CLIENTS) {
+            pthread_mutex_unlock(&clients_lock);
+            close(client_socket);
+            continue;
+        }
+
+        client_sockets[num_clients] = client_socket;
+        num_clients++;
+        pthread_mutex_unlock(&clients_lock);
+
+        pthread_t thread_id;
+        int *socket_ptr = malloc(sizeof(int));
+        *socket_ptr = client_socket;
+        pthread_create(&thread_id, NULL, handle_client, (void *)socket_ptr);
+    }
+
+    return 0;
+}
+```
+explanation-suggested-fix: The suggested code diff resolves the race condition by introducing a mutex `clients_lock` to synchronize access to the shared resources `client_sockets` array and `num_clients` variable. The mutex is locked before any modifications to these shared resources and unlocked after the modifications are complete. This ensures that only one thread can modify the shared resources at a time, thus preventing inconsistent states.
+method: UNKNOWN

@@ -1,0 +1,30 @@
+ 
+
+--- gpt35-16516.c
++++ gpt35-16516-fixed.c
+@@ -90,7 +90,7 @@
+        printf("Accepted new connection...\n");
+        if (client_count == MAX_CLIENTS) {
+            printf("Too many clients\n");
+            close(client_socket);
+            continue;
+        }
+        // Add client to client list
+-        add_client(client_socket);
++        int *new_sock = malloc(sizeof(int));
++        *new_sock = client_socket;
++        pthread_mutex_lock(&client_mutex);
++        add_client(*new_sock);
++        int index = client_count - 1;
++        pthread_mutex_unlock(&client_mutex);
+        // Create thread for handling client
+-        if (pthread_create(&thread_id[index], NULL, handle_client, (void *)&index) == -1) {
++        if (pthread_create(&thread_id[index], NULL, handle_client, (void *)new_sock) == -1) {
+            perror("pthread_create");
+            pthread_mutex_lock(&client_mutex);
+            remove_client(index);
+            pthread_mutex_unlock(&client_mutex);
+            close(client_socket);
+            continue;
+        }
+

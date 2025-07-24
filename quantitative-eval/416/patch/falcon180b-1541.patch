@@ -1,0 +1,35 @@
+ 
+
+#include <pthread.h>
+
+// ... [rest of your code]
+
+pthread_mutex_t client_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+void accept_connections() {
+    while (g_num_clients < MAX_CLIENTS) {
+        int client_socket = accept(g_socket, NULL, NULL);
+
+        if (client_socket == -1) {
+            printf("Error accepting connection\n");
+            continue;
+        }
+
+        pthread_mutex_lock(&client_mutex);
+        
+        if (g_num_clients >= MAX_CLIENTS) {
+            pthread_mutex_unlock(&client_mutex);
+            close(client_socket);
+            continue;
+        }
+
+        g_client_sockets[g_num_clients] = client_socket;
+        g_num_clients++;
+        
+        pthread_mutex_unlock(&client_mutex);
+
+        pthread_t thread_id;
+        pthread_create(&thread_id, NULL, thread_func, (void*)&client_socket);
+    }
+}
+

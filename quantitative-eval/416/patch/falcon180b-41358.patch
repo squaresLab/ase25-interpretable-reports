@@ -1,0 +1,41 @@
+ 
+
+--- original/falcon180b-41358.c
++++ fixed/falcon180b-41358.c
+@@ -31,9 +31,10 @@
+     return 1;
+ }
+
+-char *get_input(char *prompt) {
++void get_input(char *prompt, char *input) {
+     char input[MAX_INPUT_LENGTH];
+     printf("%s", prompt);
+     fgets(input, MAX_INPUT_LENGTH, stdin);
+     input[strcspn(input, "\n")] = '\0';
+     sanitize_input(input);
+-    return input;
++    strcpy(dest, input);
+ }
+ 
+ int main() {
+@@ -41,11 +42,11 @@
+ 
+     // Get user input for name
+     printf("Enter your name: ");
+-    strcpy(name, get_input(""));
++    get_input("", name);
+     printf("Your name is: %s\n", name);
+ 
+     // Get user input for address
+     printf("Enter your address: ");
+-    strcpy(address, get_input(""));
++    get_input("", address);
+     printf("Your address is: %s\n", address);
+ 
+     // Get user input for phone number
+     printf("Enter your phone number: ");
+-    strcpy(phone_number, get_input(""));
++    get_input("", phone_number);
+     printf("Your phone number is: %s\n", phone_number);
+ }
+

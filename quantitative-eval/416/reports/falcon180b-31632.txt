@@ -1,0 +1,39 @@
+
+vuln-fix: CWE-617: Reachable Assertion in falcon180b-31632 (severity: High)
+what: The vulnerability is due to reachable assertions which can terminate the program if the assertions are triggered.
+where: handle_client function in falcon180b-31632
+why: One possible consequence of not resolving this weakness is that the server could be terminated prematurely by triggering the assertions, leading to denial of service.
+how: An attacker can send input that violates the conditions assumed by the assertions, causing them to fail and the program to terminate.
+code-sources: recv(client_socket, buffer, sizeof(buffer), 0) in handle_client function
+code-sinks: send(client_socket, message, strlen(message), 0) in handle_client function
+suggested-fix: 
+```diff
+--- old_falcon180b-31632.c
++++ new_falcon180b-31632.c
+@@ -9,13 +9,14 @@
+ #define MAX_CLIENTS 10
+ #define PORT 8080
+ 
+-void *handle_client(void *arg) {
++void *handle_client(void *arg) {
+     int client_socket = *(int *)arg;
+     char buffer[1024];
+     while(1) {
+         memset(buffer, 0, sizeof(buffer));
+         int bytes_received = recv(client_socket, buffer, sizeof(buffer), 0);
+-        if(bytes_received <= 0) {
++        if(bytes_received <= 0) {
+             break;
+         }
+         char *message = strtok(buffer, " ");
+         while(message != NULL) {
++            if (strlen(message) > 1024 - 1) {
++                printf("Received message too long\n");
++                break;
++            }
+             send(client_socket, message, strlen(message), 0);
+             message = strtok(NULL, " ");
+         }
+```
+explanation-suggested-fix: The suggested code diff introduces a check to ensure that the message length does not exceed the buffer size, which will prevent buffer overflows and assertion failures.
+method: UNKNOWN

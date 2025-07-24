@@ -1,0 +1,59 @@
+ 
+    
+    --- falcon180b-57664.c
+    +++ falcon180b-57664_fixed.c
+    @@ -9,14 +9,18 @@
+ 
+     void *scan_ports(void *arg) {
+         int thread_num = *(int *) arg;
+    -    int start_port = thread_num * (MAX_PORTS / MAX_THREADS) + 1;
+    -    int end_port = (thread_num == MAX_THREADS - 1)? MAX_PORTS : start_port + (MAX_PORTS / MAX_THREADS) - 1;
+    +    int start_port = thread_num * (MAX_PORTS / MAX_THREADS);
+    +    int end_port = (thread_num == MAX_THREADS - 1)? MAX_PORTS : start_port + (MAX_PORTS / MAX_THREADS);
+     
+         for (int i = start_port; i < end_port; i++) {
+    +        pthread_mutex_lock(&mutex);
+    +        if (num_ports >= MAX_PORTS) {
+    +            pthread_mutex_unlock(&mutex);
+    +            break;
+    +        }
+             ports[num_ports++] = i;
+    +        pthread_mutex_unlock(&mutex);
+         }
+     
+    -    for (int i = start_port; i <= end_port; i++) {
+    -        pthread_mutex_lock(&mutex);
+    -        if (num_ports >= MAX_PORTS) {
+    -            pthread_mutex_unlock(&mutex);
+    -            break;
+    -        }
+    -        ports[num_ports++] = i;
+    -        pthread_mutex_unlock(&mutex);
+    -    }
+    -
+         return NULL;
+     }
+     
+    @@ -25,6 +29,7 @@
+         int num_threads = 4;
+         pthread_t threads[num_threads];
+     
+    +    pthread_mutex_init(&mutex, NULL);
+         for (int i = 0; i < num_threads; i++) {
+             int *thread_id = malloc(sizeof(int));
+             *thread_id = i;
+    @@ -33,20 +38,20 @@
+         for (int i = 0; i < num_threads; i++) {
+             pthread_join(threads[i], NULL);
+         }
+    +    pthread_mutex_destroy(&mutex);
+     
+         printf("Found %d open ports:\n", num_ports);
+         for (int i = 0; i < num_ports; i++) {
+             printf("%d\n", ports[i]);
+         }
+     
+         return 0;
+     }
+    
+    

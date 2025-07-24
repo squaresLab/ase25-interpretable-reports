@@ -1,0 +1,15 @@
+ 
+    
+    diff --git a/falcon180b-68315 b/falcon180b-68315
+    index abcdefg..hijklmn 100644
+    --- a/falcon180b-68315
+    +++ b/falcon180b-68315
+    @@ -19,7 +19,7 @@ void *handle_client(void *arg) {
+        for(int i=0; i<num_clients; i++) {
+            if(clients[i]!= client_socket) {
+                send(clients[i], buffer, strlen(buffer), 0);
+    +           send(clients[i], buffer, bytes_received, 0);
+            }
+        }
+    
+    

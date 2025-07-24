@@ -1,0 +1,60 @@
+ 
+
+#include <pthread.h>
+
++ pthread_mutex_t clients_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+void *handle_client(void *arg) {
+    int client_socket = *(int *) arg;
+    char buffer[MAX_MSG_SIZE];
+    while (1) {
+        memset(buffer, 0, MAX_MSG_SIZE);
+        if (recv(client_socket, buffer, MAX_MSG_SIZE, 0) <= 0) {
+            pthread_mutex_lock(&clients_mutex);
+            close(client_socket);
+            for (int i = 0; i < num_clients; i++) {
+                if (clients[i] == client_socket) {
+                    clients[i] = clients[num_clients - 1];
+                    clients[num_clients - 1] = 0;
+                    num_clients--;
+                    break;
+                }
+            }
+            pthread_mutex_unlock(&clients_mutex);
+            break;
+        }
+        pthread_mutex_lock(&clients_mutex);
+        for (int i = 0; i < num_clients; i++) {
+            if (clients[i] != client_socket) {
+                send(clients[i], buffer, strlen(buffer), 0);
+            }
+        }
+        pthread_mutex_unlock(&clients_mutex);
+    }
+    pthread_exit(NULL);
+}
+
+int main() {
+    ...
+    while (1) {
+        int client_socket = accept(server_socket, NULL, NULL);
+        if (client_socket == -1) {
+            perror("accept");
+            continue;
+        }
+        pthread_mutex_lock(&clients_mutex);
+        if (num_clients == MAX_CLIENTS) {
+            pthread_mutex_unlock(&clients_mutex);
+            close(client_socket);
+            printf("Server is full\n");
+        } else {
+            clients[num_clients] = client_socket;
+            num_clients++;
+            pthread_mutex_unlock(&clients_mutex);
+            pthread_t thread_id;
+            pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+        }
+    }
+    ...
+}
+

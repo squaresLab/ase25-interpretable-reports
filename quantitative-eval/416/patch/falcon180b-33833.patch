@@ -1,0 +1,30 @@
+
+
+--- falcon180b-33833.c
++++ falcon180b-33833_fixed.c
+@@ -18,11 +18,13 @@
+        memset(request, 0, MAX_REQUEST_SIZE);
+        bytes_received = recv(client_socket, request, MAX_REQUEST_SIZE, 0);
+
+        if (bytes_received <= 0) {
+            break;
+        }
+
+        response[0] = '\0';
+-       strcat(response, "HTTP/1.1 ");
+-       sprintf(response + strlen(response), "%d ", response_code);
+-       strcat(response, "OK");
+-       strcat(response, "\r\n");
+-       strcat(response, "Content-Type: text/html\r\n");
+-       strcat(response, "Connection: close\r\n");
+-       strcat(response, "\r\n");
+-       strcat(response, "<html><body><h1>Hello, World!</h1></body></html>");
++       snprintf(response, MAX_REQUEST_SIZE, "HTTP/1.1 %d OK\r\n", response_code);
++       strncat(response, "Content-Type: text/html\r\n", MAX_REQUEST_SIZE - strlen(response) - 1);
++       strncat(response, "Connection: close\r\n", MAX_REQUEST_SIZE - strlen(response) - 1);
++       strncat(response, "\r\n", MAX_REQUEST_SIZE - strlen(response) - 1);
++       strncat(response, "<html><body><h1>Hello, World!</h1></body></html>", MAX_REQUEST_SIZE - strlen(response) - 1);
+
+        send(client_socket, response, strlen(response), 0);
+    }
+

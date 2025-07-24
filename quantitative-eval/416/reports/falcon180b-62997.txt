@@ -1,0 +1,42 @@
+
+    vuln-fix: Buffer Overflow (CWE-120) in falcon180b-62997 (severity: High)
+    what: The vulnerability arises from not restricting the size of data read into the buffer in the function `handle_client`. This can lead to buffer overflow because `recv` does not ensure the data fits within the 1024-byte `buffer`.
+    where: The code lines for vulnerability are in the `handle_client` function:
+    ```c
+    char buffer[1024];
+    ...
+    int bytes_received = recv(client_socket, buffer, sizeof(buffer), 0);
+    ```
+    why: An attacker could exploit this vulnerability to perform a buffer overflow, which may lead to arbitrary code execution, crashing the server, or leaking sensitive information.
+    how: An attacker would send a message longer than 1024 bytes to the server. Since `recv` does not limit the incoming data to the bounds of `buffer`, it will overflow and overwrite adjacent memory.
+    code-sources: The source of user input is the `recv` call:
+    ```c
+    int bytes_received = recv(client_socket, buffer, sizeof(buffer), 0);
+    ```
+    code-sinks: The vulnerable use of `buffer` can be at:
+    ```c
+    printf("Client %d sent message: %s\n", client_socket, buffer);
+    send(clients[i], buffer, strlen(buffer), 0);
+    ```
+    suggested-fix: 
+    ```diff
+    --- falcon180b-62997    2023-10-12 10:00:00.000000000 +0000
+    +++ falcon180b-62997    2023-10-12 11:00:00.000000000 +0000
+    @@ -12,6 +12,9 @@
+     
+     void *handle_client(void *arg) {
+         int client_socket = *(int *) arg;
+    +    char buffer[1024];
+    +    size_t buffer_size = sizeof(buffer) - 1; // Leave space for null terminator
+    +    buffer[buffer_size] = '\0';
+     
+         while(1) {
+             memset(buffer, 0, sizeof(buffer));
+    -        int bytes_received = recv(client_socket, buffer, sizeof(buffer), 0);
+    +        int bytes_received = recv(client_socket, buffer, buffer_size, 0);
+     
+             if(bytes_received <= 0) {
+                 break;
+    ```
+    explanation-suggested-fix: The suggested code diff resolves the vulnerability by ensuring that at most `1023` bytes are read into the buffer, leaving space for the null terminator (`'\0'`). The buffer's last position is explicitly set to `'\0'` which prevents buffer overflow and ensures the string is null-terminated.
+    method: UNKNOWN

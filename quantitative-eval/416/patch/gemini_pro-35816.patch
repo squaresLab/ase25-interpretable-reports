@@ -1,0 +1,27 @@
+ 
+
+#include <stdio.h>
++ #include <limits.h>
+
+// ... [rest of the code]
+
+void edit_entry(int index) {
++   if (index < 0 || index >= num_entries) {
++       printf("Invalid index.\n");
++       return;
++   }
+    printf("Enter your diary entry: ");
+    fgets(entries[index].entry, sizeof(entries[index].entry), stdin);
+}
+
+void delete_entry(int index) {
++   if (index < 0 || index >= num_entries) {
++       printf("Invalid index.\n");
++       return;
++   }
+    for (int i = index + 1; i < num_entries; i++) {
+        entries[i - 1] = entries[i];
+    }
+    num_entries--;
+}
+

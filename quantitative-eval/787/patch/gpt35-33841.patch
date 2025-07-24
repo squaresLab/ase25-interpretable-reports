@@ -1,0 +1,23 @@
+ 
+
+--- a/gpt35-33841
++++ b/gpt35-33841
+@@ -165,7 +165,7 @@
+             case 1:
+                 {
+                     char name[20];
+-                    printf("Enter file name: ");
++                    printf("Enter file name (maximum 19 characters): ");
+                     scanf("%19s", name);
+                     printf("Enter file size (in bytes): ");
+                     scanf("%d", &size);
+@@ -175,7 +175,7 @@
+             case 2:
+                 {
+                     char name[20];
+-                    printf("Enter file name: ");
++                    printf("Enter file name (maximum 19 characters): ");
+                     scanf("%19s", name);
+                     delete_file(&fs, name);
+                     break;
+

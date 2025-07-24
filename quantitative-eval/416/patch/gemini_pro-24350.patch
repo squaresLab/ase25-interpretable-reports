@@ -1,0 +1,14 @@
+ 
+
+--- gemini_pro-24350.c
++++ gemini_pro-24350.c
+@@ -20,7 +20,7 @@
+         }
+         memset(buf, 0, sizeof(buf));
+         strcpy(buf, "Hello from server");
+-        if (send(clientfd, buf, sizeof(buf), 0) == -1) {
++        if (send(clientfd, buf, strlen(buf), 0) == -1) {
+             perror("send");
+             exit(EXIT_FAILURE);
+         }
+

@@ -1,0 +1,94 @@
+
+vuln-fix: CWE-362: Race Condition in falcon180b-57234 (severity: High)
+what: The current implementation harbors a race condition vulnerability due to the simultaneous modifications and accesses to the global `clients` array and `client_count` variable from multiple threads without proper synchronization.
+where: Lines where `clients` array is accessed or modified and `client_count` is used. Specifically in the while loop in `main` function and within the `handle_client` function.
+why: If not resolved, multiple threads could interleave in such a way that it leads to undefined behavior, causing inconsistent data states, segmentation faults, or denial-of-service conditions.
+how: An attacker could exploit this vulnerability by establishing multiple client connections simultaneously, inducing a race condition that could crash the server or lead to unintended behaviors.
+code-sources: The client connections accepted in the `accept` call in the `main` function.
+code-sinks: The accesses and modifications of `clients` array and `client_count` variable in both `main` and `handle_client` functions.
+suggested-fix:
+```diff
+#include <pthread.h>
+
+pthread_mutex_t clients_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+// In handle_client function
+void *handle_client(void *client_socket) {
+    int client_socket_copy = *((int *) client_socket);
+    while (1) {
+        memset(buffer, 0, BUFFER_SIZE);
+        int bytes_received = recv(client_socket_copy, buffer, BUFFER_SIZE, 0);
+        if (bytes_received <= 0) {
+            pthread_mutex_lock(&clients_mutex);
+            for (int i = 0; i < client_count; i++) {
+                if (clients[i] == client_socket_copy) {
+                    clients[i] = clients[client_count - 1];
+                    client_count--;
+                    break;
+                }
+            }
+            pthread_mutex_unlock(&clients_mutex);
+            close(client_socket_copy);
+            return NULL;
+        }
+        printf("Client %d sent: %s\n", client_socket_copy, buffer);
+        pthread_mutex_lock(&clients_mutex);
+        for (int i = 0; i < client_count; i++) {
+            if (clients[i] != client_socket_copy) {
+                send(clients[i], buffer, strlen(buffer), 0);
+            }
+        }
+        pthread_mutex_unlock(&clients_mutex);
+    }
+}
+
+// In main function
+int main() {
+    int server_socket = socket(AF_INET, SOCK_STREAM, 0);
+    if (server_socket == -1) {
+        printf("Error creating socket\n");
+        return 1;
+    }
+
+    struct sockaddr_in server_addr;
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(12345);
+    server_addr.sin_addr.s_addr = INADDR_ANY;
+
+    if (bind(server_socket, (struct sockaddr *) &server_addr, sizeof(server_addr)) == -1) {
+        printf("Error binding socket\n");
+        return 1;
+    }
+
+    if (listen(server_socket, MAX_CLIENTS) == -1) {
+        printf("Error listening on socket\n");
+        return 1;
+    }
+
+    while (1) {
+        int client_socket = accept(server_socket, NULL, NULL);
+        if (client_socket == -1) {
+            printf("Error accepting connection\n");
+            continue;
+        }
+        pthread_mutex_lock(&clients_mutex);
+        if (client_count >= MAX_CLIENTS) {
+            pthread_mutex_unlock(&clients_mutex);
+            close(client_socket);
+            continue;
+        }
+        clients[client_count] = client_socket;
+        client_count++;
+        pthread_mutex_unlock(&clients_mutex);
+        pthread_t thread_id;
+        int *pclient_socket = malloc(sizeof(int));
+        *pclient_socket = client_socket;
+        pthread_create(&thread_id, NULL, handle_client, (void *) pclient_socket);
+    }
+
+    return 0;
+}
+```
+explanation-suggested-fix: The proposed fix introduces a mutex, `clients_mutex`, to guard the critical sections where the `clients` array and `client_count` variable are accessed or modified. This ensures that these operations are executed atomically, preventing race conditions. The mutex is locked before entering the critical section and unlocked after exiting it, ensuring thread-safe access to shared resources.
+method: UNKNOWN

@@ -1,0 +1,49 @@
+ 
+    
+    diff --git a/falcon180b-41495 b/falcon180b-41495
+    index abcdefg..hijklmn 100644
+    --- a/falcon180b-41495
+    +++ b/falcon180b-41495
+    @@ -56,15 +56,16 @@ void get_process_name(int pid, char *name) {
+         char path[64];
+         FILE *fp;
+         char line[1024];
+         
+         sprintf(path, "/proc/%d/cmdline", pid);
+     
+         fp = fopen(path, "r");
+         if (fp == NULL) {
+             strcpy(name, "Unknown");
+             return;
+         }
+     
+         fgets(line, sizeof(line), fp);
+         strtok(line, "\0");
+         fclose(fp);
+     
+    +    strncpy(name, line, MAX_PROCESS_NAME_LENGTH - 1);
+    +    name[MAX_PROCESS_NAME_LENGTH - 1] = '\0'; // ensure null-termination
+     }
+     
+     int main() {
+         int i, num_processes, ret;
+    @@ -92,7 +93,8 @@ int main() {
+     
+         for (i = 0; i < MAX_PROCESSES; i++) {
+             ret = get_process_info(i, processes[i].name, &processes[i].ram_usage);
+             if (ret == 0) {
+                 num_processes++;
+             }
+         }
+     
+         printf("Number of processes: %d\n", num_processes);
+     
+         for (i = 0; i < num_processes; i++) {
+             printf("Process %d: %s\n", processes[i].pid, processes[i].name);
+             printf("RAM usage: %d KB\n", processes[i].ram_usage);
+             printf("\n");
+         }
+
+         free(processes);
+    
+    

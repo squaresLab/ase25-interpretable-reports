@@ -1,0 +1,102 @@
+
+    
+    #include <stdio.h>
+    #include <string.h>
+    #include <stdlib.h>
+
+    #define MAX_WORD_LENGTH 100
+    #define MAX_LINE_LENGTH 1000
+
+    // Function to translate an alien language to English
+    char* translate(const char* alien_word) {
+        // Check if the alien word is NULL
+        if (alien_word == NULL) {
+            return NULL;
+        }
+
+        // Create a new char array to store the English translation
+        char* english_word = (char*)malloc(MAX_WORD_LENGTH * sizeof(char));
+        if (english_word == NULL) {
+            return NULL; // Memory allocation failed
+        }
+
+        // Loop through each character in the alien word
+        for (int i = 0; i < strlen(alien_word); i++) {
+            // Check if the character is a vowel
+            if (alien_word[i] == 'a' || alien_word[i] == 'e' || alien_word[i] == 'i' || alien_word[i] == 'o' || alien_word[i] == 'u') {
+                // Replace the character with its corresponding English vowel
+                english_word[i] = 'a';
+            } else if (alien_word[i] == 'A' || alien_word[i] == 'E' || alien_word[i] == 'I' || alien_word[i] == 'O' || alien_word[i] == 'U') {
+                // Replace the character with its corresponding uppercase English vowel
+                english_word[i] = 'A';
+            } else {
+                // Replace the character with its corresponding English consonant
+                english_word[i] = 'b';
+            }
+        }
+        english_word[strlen(alien_word)] = '\0'; // Null-terminate the result
+
+        // Return the English translation
+        return english_word;
+    }
+
+    // Function to translate an entire sentence from an alien language to English
+    char* translate_sentence(const char* alien_sentence) {
+        // Check if the alien sentence is NULL
+        if (alien_sentence == NULL) {
+            return NULL;
+        }
+
+        // Create a new char array to store the English translation
+        char* english_sentence = (char*)malloc(MAX_LINE_LENGTH * sizeof(char));
+        if (english_sentence == NULL) {
+            return NULL; // Memory allocation failed
+        }
+        english_sentence[0] = '\0';
+
+        // Loop through each word in the alien sentence
+        for (int i = 0, j = 0; i <= strlen(alien_sentence); i++) {
+            // Check if the character is a space or the end of the sentence
+            if (alien_sentence[i] == ' ' || alien_sentence[i] == '\0') {
+                // Temporarily terminate the current word
+                char temp = alien_sentence[i];
+                alien_sentence[i] = '\0';
+                
+                // Translate the word and add it to the English sentence
+                char* english_word = translate(alien_sentence + j);
+                strcat(english_sentence, english_word);
+                strcat(english_sentence, " ");
+
+                // Restore the original character at the current position
+                alien_sentence[i] = temp;
+
+                // Free the allocated memory for the translated word
+                free(english_word);
+
+                j = i + 1;
+            }
+        }
+        
+        english_sentence[strlen(english_sentence) - 1] = '\0'; // Remove the trailing space
+
+        // Return the English translation
+        return english_sentence;
+    }
+
+    int main() {
+        // Define the alien sentence
+        char alien_sentence[] = "Ghek zghek dghek";
+
+        // Translate the sentence
+        char* english_sentence = translate_sentence(alien_sentence);
+
+        // Print the English translation
+        printf("%s\n", english_sentence);
+
+        // Free the allocated memory for the translated sentence
+        free(english_sentence);
+
+        return 0;
+    }
+    
+    

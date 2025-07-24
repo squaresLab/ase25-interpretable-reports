@@ -1,0 +1,29 @@
+ 
+
+--- falcon180b-64189   2023-06-15 17:24:45.000000000 +0000
++++ falcon180b-64189-fixed 2023-06-15 19:22:30.000000000 +0000
+@@ -15,7 +15,7 @@
+{
+ int client_socket = *(int *) arg;
+ char buffer[BUFFER_SIZE];
+
+ while (1) {
+-    bzero(buffer, BUFFER_SIZE);
++    memset(buffer, 0, BUFFER_SIZE);
+     int bytes_received = recv(client_socket, buffer, BUFFER_SIZE - 1, 0);
+
+     if (bytes_received <= 0) {
+         break;
+     }
+
+@@ -34,7 +34,7 @@
+ printf("Error binding socket\n");
+ exit(1);
+}
+
++ memset(&server_addr, 0, sizeof(server_addr));
+server_addr.sin_family = AF_INET;
+server_addr.sin_port = htons(8080);
+server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+
+ 

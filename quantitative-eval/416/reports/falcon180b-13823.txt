@@ -1,0 +1,86 @@
+
+vuln-fix: CWE-362: Race Condition in falcon180b-13823 (severity: Medium)
+what: This code contains a race condition due to the non-atomic manipulation of the `num_clients` variable.
+where: Located in the `handle_client` function and in the main `while` loop of the file falcon180b-13823.
+why: A possible consequence of not resolving this weakness is that it can cause inconsistent state of the server leading to potential crashes or denial of service.
+how: An attacker could exploit this vulnerability by initiating multiple connections simultaneously, leading to erroneous updates of the `num_clients` variable, which may allow more than the `MAX_CLIENTS` limit to be connected or less, causing inconsistent behavior.
+code-sources: The entry point for user input is in the `recv(client_socket, buffer, MAX_MSG_SIZE, 0)` call within the `handle_client` function.
+code-sinks: The point where the vulnerability triggers is in the assignment and decrement of `num_clients` within the `handle_client` function `num_clients--;` and in the conditional check `if (num_clients >= MAX_CLIENTS)` within the main `while` loop.
+suggested-fix:
+```diff
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <pthread.h>
+
+#define PORT 8080
+#define BACKLOG 10
+#define MAX_CLIENTS 100
+#define MAX_MSG_SIZE 1024
+
+int clients[MAX_CLIENTS];
+int num_clients = 0;
+pthread_mutex_t clients_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+void *handle_client(void *arg) {
+    int client_socket = *((int *) arg);
+    char buffer[MAX_MSG_SIZE];
+
+    while (1) {
+        bzero(buffer, MAX_MSG_SIZE);
+        int bytes_received = recv(client_socket, buffer, MAX_MSG_SIZE, 0);
+        
+        if (bytes_received <= 0) {
+            break;
+        }
+        
+        send(client_socket, buffer, bytes_received, 0);
+    }
+
+    close(client_socket);
+    
+    pthread_mutex_lock(&clients_mutex);
+    num_clients--;
+    pthread_mutex_unlock(&clients_mutex);
+}
+
+int main() {
+    int server_socket = socket(AF_INET, SOCK_STREAM, 0);
+    struct sockaddr_in server_addr;
+
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(PORT);
+    server_addr.sin_addr.s_addr = INADDR_ANY;
+
+    bind(server_socket, (struct sockaddr *) &server_addr, sizeof(server_addr));
+    listen(server_socket, BACKLOG);
+
+    printf("Chat server started on port %d\n", PORT);
+
+    while (1) {
+        int client_socket = accept(server_socket, NULL, NULL);
+
+        pthread_mutex_lock(&clients_mutex);
+        if (num_clients >= MAX_CLIENTS) {
+            pthread_mutex_unlock(&clients_mutex);
+            send(client_socket, "Server is full. Please try again later.\n", 51, 0);
+            close(client_socket);
+            continue;
+        }
+
+        clients[num_clients] = client_socket;
+        num_clients++;
+        pthread_mutex_unlock(&clients_mutex);
+
+        pthread_t thread_id;
+        pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+    }
+
+    return 0;
+}
+```
+explanation-suggested-fix: The suggested code mod includes the initialization of a `pthread_mutex_t` named `clients_mutex`. The mutex is applied using `pthread_mutex_lock` and `pthread_mutex_unlock` to protect the critical sections that modify the `num_clients` variable. This prevents the race condition by ensuring exclusive access control over the variable during increments and decrements.
+method: UNKNOWN

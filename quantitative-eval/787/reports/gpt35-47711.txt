@@ -1,0 +1,35 @@
+
+vuln-fix: Buffer Overflow (CWE-120) in gpt35-47711.c:49-52 (severity: High)
+what: The code for finding the shortest path does not check the number of edges which results in potential buffer overflow in edges array.
+where: In the `void shortest_path(Graph *g, int src, int dest)` function in `gpt35-47711.c`, lines 49-52.
+why: If this vulnerability is not resolved, it can lead to undefined behavior, crashes, or allow an attacker to run arbitrary code.
+how: An attacker can exploit this vulnerability by setting up the `Graph` structure such that `g->num_edges` is larger than the size of the `edges` array (`MAX_NODES * MAX_NODES`). When the loop (lines 49-52) accesses beyond `edges` array, it may cause a buffer overflow.
+code-sources: Entry points in the code where user input is taken are the function parameters `num_nodes` and `num_edges` in `init_graph` function.
+code-sinks: Actions performed using user input from the source include the loop that initializes edges in the `init_graph` function and loops in `shortest_path` that do not validate bounds.
+suggested-fix:
+```diff
+--- gpt35-47711.c   2023-10-07 10:00:00.000000000 +0000
++++ gpt35-47711-fixed.c   2023-10-07 10:05:00.000000000 +0000
+@@ -36,6 +36,10 @@
+     if (num_nodes > MAX_NODES || num_edges > MAX_NODES * MAX_NODES) {
+         fprintf(stderr, "Error: Number of nodes or edges exceed the limits.\n");
+         exit(EXIT_FAILURE);
++    }
++
++    if (num_nodes < 0 || num_edges < 0) {
++        fprintf(stderr, "Error: Number of nodes or edges cannot be negative.\n");
+         exit(EXIT_FAILURE);
+     }
+     g->num_nodes = num_nodes;
+@@ -49,7 +53,7 @@
+         int u = -1;
+         double min_dist = INF;
+         for (int j = 0; j < g->num_nodes; j++) {
+-            if (!visited[j] && dist[j] < min_dist) {
++            if (!visited[j] && dist[j] < min_dist && dist[j] <= INF) {
+                 u = j;
+                 min_dist = dist[j];
+             }
+```
+explanation-suggested-fix: The suggested code diff resolves the buffer overflow vulnerability by adding checks to ensure that the number of nodes does not exceed `MAX_NODES` and the number of edges does not exceed `MAX_NODES * MAX_NODES`. It also checks that the number of nodes and edges are not negative before initializing the graph. This ensures that the loops in the `shortest_path` function do not operate outside the bounds of the arrays.
+method: UNKNOWN

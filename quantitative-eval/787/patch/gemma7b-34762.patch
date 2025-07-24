@@ -1,0 +1,29 @@
+ 
+
+25c25,27
+<   reader->buffer = realloc(reader->buffer, reader->bufferSize * (reader->currentLine + 1) * sizeof(char *));
+---
+>   // Validate realloc success and avoid integer overflow in size calculation
+>   size_t new_size = reader->bufferSize * (reader->currentLine + 1);
+>   reader->buffer = realloc(reader->buffer, new_size * sizeof(char *));
+28a31,39
+>   if (!reader->buffer) {
+>       fprintf(stderr, "Memory allocation failed\n");
+>       fclose(reader->fp);
+>       free(reader);
+>       exit(1);
+>   }
+> 
+>   // Validate buffer allocation success
+29c40,41
+<   reader->buffer[reader->currentLine] = malloc(MAX_BUFFER_SIZE * sizeof(char));
+---
+>   reader->buffer[reader->currentLine] = malloc(MAX_BUFFER_SIZE);
+>   if (!reader->buffer[reader->currentLine]) {
+30a43,45
+>       fprintf(stderr, "Memory allocation failed\n");
+>       fclose(reader->fp);
+>       free(reader->buffer);
+>       free(reader);
+>       exit(1);
+

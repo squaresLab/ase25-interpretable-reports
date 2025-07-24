@@ -1,0 +1,19 @@
+
+vuln-fix: Data Race (CWE-362) in falcon180b-40346 (severity: High)
+what: The code creates multiple threads that access a shared variable (`i` in the `main` function) without sufficient synchronization, leading to a data race.
+where: Lines 33-35 in the file falcon180b-40346
+why: A data race can cause threads to access stale or inconsistent data, leading to unpredictable behavior, crashes, or security vulnerabilities.
+how: An attacker could potentially exploit this vulnerability to manipulate the thread execution order, causing undesirable behavior or a denial of service.
+code-sources: The variable `i` in the `main` function.
+code-sinks: The argument passed to the `runner` function in `pthread_create` at line 34.
+suggested-fix: 
+```diff
+33c33
+<         pthread_create(&threads[i], NULL, runner, (void *) &i);
+---
+>         int *thread_id = malloc(sizeof(int));
+>         *thread_id = i;
+>         pthread_create(&threads[i], NULL, runner, thread_id);
+```
+explanation-suggested-fix: The suggested code change allocates memory for each thread's ID and passes a unique pointer to each thread. This ensures that each thread receives a correct and unique ID value, thus avoiding the data race condition.
+method: UNKNOWN

@@ -1,0 +1,39 @@
+
+vuln-fix: Buffer Overflow (CWE-120) in falcon180b-64189 (severity: High)
+what: In the provided code, there is a potential buffer overflow vulnerability. This occurs because the program reads data from a socket into a fixed-size buffer without checking if the data exceeds the buffer's capacity.
+where: The vulnerability is located in the `handle_client` function, specifically in the `recv` function call at line 15.
+why: If the buffer overflow issue is not resolved, an attacker could exploit this weakness to execute arbitrary code or cause a denial of service by crashing the program.
+how: An attacker can send data that exceeds `BUFFER_SIZE` to the server. This data is then written to the `buffer`, which may overflow and overwrite adjacent memory locations, leading to undefined behavior or a security breach.
+code-sources: `recv` function call at line 15 in the `handle_client` function where user data is read from the socket.
+code-sinks: The unchecked usage of the `buffer` in the `recv` function which can lead to overflow issues.
+suggested-fix: 
+```diff
+--- falcon180b-64189   2023-06-15 17:24:45.000000000 +0000
++++ falcon180b-64189-fixed 2023-06-15 19:22:30.000000000 +0000
+@@ -15,7 +15,7 @@
+{
+ int client_socket = *(int *) arg;
+ char buffer[BUFFER_SIZE];
+
+ while (1) {
+-    bzero(buffer, BUFFER_SIZE);
++    memset(buffer, 0, BUFFER_SIZE);
+     int bytes_received = recv(client_socket, buffer, BUFFER_SIZE - 1, 0);
+
+     if (bytes_received <= 0) {
+         break;
+     }
+
+@@ -34,7 +34,7 @@
+ printf("Error binding socket\n");
+ exit(1);
+}
+
++ memset(&server_addr, 0, sizeof(server_addr));
+server_addr.sin_family = AF_INET;
+server_addr.sin_port = htons(8080);
+server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+
+``` 
+explanation-suggested-fix: The suggested code diff fixes the buffer overflow vulnerability by ensuring that the `recv` function reads at most `BUFFER_SIZE - 1` bytes, and by setting the last byte in the buffer to a null terminator (ensuring a valid C-string). The usage of `memset` clears the buffer more securely than `bzero`, which is deprecated.
+method: UNKNOWN

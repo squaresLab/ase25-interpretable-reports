@@ -1,0 +1,94 @@
+
+vuln-fix: Buffer Overflow (CWE-120) in falcon180b-42239 at lines 9-11, 18-28, 35-37, 43-52 (severity: High)
+what: The code has a buffer overflow vulnerability because the buffer that stores incoming data from clients has a fixed size (MAX_DATA_LEN), and the length of the received data is not properly checked against this limit before using `recv` and `send` functions.
+where: The vulnerability is present in the `handle_client` function, specifically around line 18 where `recv` is called, and within the scope of the `while(1)` loop at lines 19-28. Additionally, it occurs at lines 43-52 where `send` is called without proper length checking.
+why: If this vulnerability is not resolved, an attacker can exploit it to overflow the buffer, potentially leading to arbitrary code execution, denial of service, or data corruption, compromising the server's security and stability.
+how: An attacker would exploit this vulnerability by sending data that exceeds the MAX_DATA_LEN (1024 bytes), causing the buffer to overflow. This could lead to overwriting adjacent memory, resulting in erratic behavior or the execution of malicious code.
+code-sources: The user input enters the application through the `recv` function, specifically at line 18 in the `handle_client` function.
+code-sinks: The user input is then used in the `printf` function call and the `send` function calls at lines 21 and 26.
+suggested-fix:
+```diff
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <pthread.h>
+
+#define MAX_CLIENTS 10
+#define MAX_DATA_LEN 1024
+
+int clients[MAX_CLIENTS];
+int num_clients = 0;
+
+void *handle_client(void *arg) {
+    int client_socket = *(int *) arg;
+    char buffer[MAX_DATA_LEN + 1]; // Add one for null-termination
+
+    while(1) {
+        memset(buffer, 0, MAX_DATA_LEN + 1);
+        int bytes_received = recv(client_socket, buffer, MAX_DATA_LEN, 0);
+
+        if(bytes_received <= 0) {
+            break;
+        }
+        
+        if(bytes_received > MAX_DATA_LEN) {
+            printf("Received data is too large\n");
+            break;
+        }
+
+        buffer[MAX_DATA_LEN] = '\0'; // Ensure null-termination
+
+        printf("Client %d sent: %s\n", client_socket, buffer);
+
+        for(int i = 0; i < num_clients; i++) {
+            if(clients[i] != client_socket) {
+                send(clients[i], buffer, bytes_received, 0);
+            }
+        }
+    }
+
+    close(client_socket);
+    num_clients--;
+
+    pthread_exit(0);
+}
+
+int main() {
+    int server_socket = socket(AF_INET, SOCK_STREAM, 0);
+
+    struct sockaddr_in server_addr;
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(8080);
+    server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+
+    bind(server_socket, (struct sockaddr *)&server_addr, sizeof(server_addr));
+
+    listen(server_socket, 10);
+    
+    printf("Server started on port 8080\n");
+
+    while(1) {
+        int client_socket = accept(server_socket, NULL, NULL);
+
+        if(num_clients >= MAX_CLIENTS) {
+            send(client_socket, "Server is full\n", strlen("Server is full\n"), 0);
+            close(client_socket);
+        } else {
+            clients[num_clients] = client_socket;
+            num_clients++;
+
+            pthread_t thread_id;
+            pthread_create(&thread_id, NULL, handle_client, (void *)&client_socket);
+        }
+    }
+
+    return 0;
+}
+```
+explanation-suggested-fix: The proposed changes ensure that the buffer is properly null-terminated to prevent overflow when dealing with strings. Additionally, a check is added to verify the length of received data before processing it. This prevents the buffer from being overrun by exceeding MAX_DATA_LEN.
+method: CODEQL

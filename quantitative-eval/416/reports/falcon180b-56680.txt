@@ -1,0 +1,41 @@
+
+vuln-fix: CWE-120 Buffer Copy without Checking Size of Input ('Classic Buffer Overflow') in falcon180b-56680: line 13 and line 53 (severity: High)
+what: The application fails to adequately limit the user input size, allowing a buffer to overflow.
+where: Handle the input in the function 'handle_client' and store it in the buffer in line 13; accept and store new clients in line 53.
+why: Buffer overflow can lead to arbitrary code execution, data corruption, or application crashes.
+how: An attacker can send more data than the buffer can hold, causing a buffer overflow and potential control over execution flow.
+code-sources: `recv(client_socket, buffer, sizeof(buffer), 0);` in the handle_client function.
+code-sinks: `send(clients[i], buffer, strlen(buffer), 0);` in the handle_client function.
+suggested-fix: 
+```diff
+--- falcon180b-56680.c
++++ falcon180b-56680.c
+@@ -10,6 +10,7 @@
+
+ void *handle_client(void *arg) {
+     int client_socket = *(int *) arg;
++    const size_t buffer_size = 1024;
+     char buffer[buffer_size];
+     while (1) {
+         memset(buffer, 0, sizeof(buffer));
+@@ -13,6 +14,9 @@
+         int bytes_received = recv(client_socket, buffer, sizeof(buffer), 0);
+         if (bytes_received <= 0) {
+             break;
++        } else if (bytes_received > buffer_size - 1) {
++            printf("Received message too large for buffer\n");
++            continue;
+         }
+         printf("Client %d sent: %s\n", client_socket, buffer);
+         for (int i = 0; i < num_clients; i++) {
+@@ -51,7 +55,8 @@
+         if (num_clients >= MAX_CLIENTS) {
+             printf("Maximum number of clients reached\n");
+             close(client_socket);
++            num_clients--; // Decrement number of clients
+             continue;
+         }
+
+```
+explanation-suggested-fix: The suggested fix introduces a check in the handle_client function that ensures the bytes received do not exceed the buffer size minus one for the null terminator. If the message is too large, it is skipped, and a warning is printed. This ensures the buffer cannot overflow.
+method: UNKNOWN

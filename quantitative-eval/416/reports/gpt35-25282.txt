@@ -1,0 +1,50 @@
+
+    vuln-fix: Buffer Overflow (CWE-120, CWE-787, CWE-805) in gpt35-25282 (severity: High)
+    what: Buffer write operations that do not control the length of data written may overflow.
+    where: Line 30 and Line 70 in the file gpt35-25282.
+    why: An attacker could exploit this vulnerability to cause a buffer overflow, leading to potential data corruption, application crash, or execution of malicious code.
+    how: An attacker can send a specially crafted input message that exceeds the buffer sizes (BUF_SIZE) allocated in the code, causing an overflow when data is copied into the buffers without length checks.
+    code-sources: `recv(client_socket, client_name, BUF_SIZE, 0)` on Line 30 and `recv(client_socket, buf, BUF_SIZE, 0)` on Line 70.
+    code-sinks: `strcpy(client_names[client_id], client_name)` on Line 30 and `send_all(message, client_id)` after Line 102.
+    suggested-fix: 
+    ```diff
+    --- gpt35-25282	2023-10-08 10:29:26.000000000 +0000
+    +++ gpt35-25282-fixed	2023-10-08 10:35:55.000000000 +0000
+    @@ -27,7 +27,10 @@
+       strcpy(buf, "Enter your name: ");
+       send(client_socket, buf, strlen(buf), 0);
+       recv(client_socket, client_name, BUF_SIZE, 0);
+    -  strcpy(client_names[client_id], client_name);
+    +  client_name[BUF_SIZE-1] = '\0'; // Ensure null-termination
+    +  strncpy(client_names[client_id], client_name, BUF_SIZE-1);
+    +  client_names[client_id][BUF_SIZE-1] = '\0'; // Ensure null-termination
+    +
+    
+       while (1) {
+         // Receive message
+    @@ -68,7 +71,10 @@
+     
+         // Handle command message
+         if (strlen(buf) > 1 && buf[0] == '/') {
+    -      if (strcmp(buf, "/list") == 0) {
+    +      buf[BUF_SIZE-1] = '\0'; // Ensure null-termination
+    +      if (strcmp(buf, "/list") == 0) {
+    +        buf[BUF_SIZE-1] = '\0'; // Ensure null-termination
+    +
+             // Send list of connected clients
+             char message[BUF_SIZE] = "Connected clients:\n";
+             pthread_mutex_lock(&mutex);
+    @@ -98,7 +104,10 @@
+         continue;
+       }
+     
+    -    sprintf(message, "%s: %s", client_name, buf);
+    +    snprintf(message, BUF_SIZE-1, "%s: %s", client_name, buf);
+    +    message[BUF_SIZE-1] = '\0'; // Ensure null-termination
+    +
+         send_all(message, client_id);
+         pthread_mutex_unlock(&mutex);
+       }
+    ```
+    explanation-suggested-fix: The suggested fix introduces checks to ensure null-termination of the strings and utilizes safer functions such as `strncpy` and `snprintf`, which limit the number of characters written to the buffer and prevent overflow.
+    method: CODEQL

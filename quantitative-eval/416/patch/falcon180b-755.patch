@@ -1,0 +1,22 @@
+ 
+
+--- falcon180b-755.original.c
++++ falcon180b-755.fixed.c
+@@ -29,9 +29,17 @@
+         printf("Client %d sent message: %s\n", client_socket, buffer);
+     }
+
++    // Clean up client from the clients array
++    close(client_socket);
++    for (int i = 0; i < num_clients; ++i) {
++        if (clients[i] == client_socket) {
++            clients[i] = clients[num_clients - 1];
++            num_clients--;
++            break;
++        }
++    }
++    
+     close(client_socket);
+     return NULL;
+ }
+ 

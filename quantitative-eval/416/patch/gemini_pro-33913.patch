@@ -1,0 +1,21 @@
+ 
+
+diff --git a/gemini_pro-33913 b/gemini_pro-33913
+index e69de29..bca9e67 100644
+--- a/gemini_pro-33913
++++ b/gemini_pro-33913
+@@ -42,7 +42,13 @@ void *thread_func(void *arg) {
+     char filename[BUFFER_SIZE];
+     int bytes_received = recv(sockfd, filename, BUFFER_SIZE, 0);
+     if (bytes_received < 0 || bytes_received >= BUFFER_SIZE) {
++        if (bytes_received >= BUFFER_SIZE) {
++            // Log an error message
++            fprintf(stderr, "Filename exceeded buffer size.\n");
++        }
+         perror("recv");
+         close(sockfd);
+         pthread_exit(NULL);
++    } else {
++        filename[bytes_received] = '\0'; // Null-terminate the string
+     }
+

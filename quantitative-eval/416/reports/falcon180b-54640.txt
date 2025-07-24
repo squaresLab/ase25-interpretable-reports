@@ -1,0 +1,78 @@
+
+    vuln-fix: CWE-415: Double Free in falcon180b-54640 (severity: High)
+    what: The vulnerability is a double-free issue that occurs when client_socket values are mistakenly copied and passed to new threads. When the client disconnects, it may lead to multiple threads calling close() on the same socket descriptor.
+    where: The vulnerability is located in the `main` function and the `handle_client` function in falcon180b-54640. The affected lines are those which handle the `client_socket` and thread creation:  the lines within the `while(1)` loop inside `main` where `pthread_create` is called, and within the `handle_client` function where `close(client_socket)` is called.
+    why: An attacker could exploit this vulnerability to cause the program to crash or execute arbitrary code, leading to denial of service or potential system compromise.
+    how: An attacker could establish multiple client connections to the server and then abruptly terminate those connections. This could lead to the same socket descriptor being freed multiple times, possibly causing the server to crash or behave unpredictably.
+    code-sources: The `accept` function call in the `main` function serves as the entry point where user input (client connections) enters the application.
+    code-sinks: The `close(client_socket)` call in the `handle_client` function, which acts upon the client socket, represents the code sink where the double-free vulnerability manifests.
+    suggested-fix: 
+    ```diff
+    --- falcon180b-54640.c     2023-10-10
+    +++ falcon180b-54640-fixed.c     2023-10-11
+    @@ -14,7 +14,7 @@
+    void *handle_client(void *arg) {
+        int client_socket = *(int *)arg;
+        char buffer[BUFFER_SIZE];
+     
+    +    int bytes_received;
+        while (1) {
+            memset(buffer, 0, BUFFER_SIZE);
+    -        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+    +        bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+     
+            if (bytes_received <= 0) {
+                break;
+            }
+    @@ -31,7 +31,10 @@
+    int main() {
+        int server_socket = socket(AF_INET, SOCK_STREAM, 0);
+     
+    +    struct sockaddr_in server_addr;
+        memset(&server_addr, 0, sizeof(server_addr));
+        server_addr.sin_family = AF_INET;
+        server_addr.sin_port = htons(8080);
+        server_addr.sin_addr.s_addr = INADDR_ANY;
+     
+    -    bind(server_socket, (struct sockaddr *)&server_addr, sizeof(server_addr));
+    +    if (bind(server_socket, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
+    +        perror("bind failed");
+    +        exit(EXIT_FAILURE);
+    +    }
+
+    @@ -45,13 +48,15 @@
+     
+        printf("Server is running on port 8080\n");
+     
+    -    while (1) {
+    -        int client_socket = accept(server_socket, NULL, NULL);
+    +    while (num_clients < MAX_CLIENTS) {
+    +        int *client_socket = malloc(sizeof(int));
+    +        *client_socket = accept(server_socket, NULL, NULL);
+     
+    -        if (num_clients >= MAX_CLIENTS) {
+    +        if (*client_socket < 0) {
+    +            perror("accept failed");
+                printf("Maximum number of clients reached\n");
+    -            close(client_socket);
+    +            free(client_socket);
+                continue;
+            }
+     
+    -        client_sockets[num_clients] = client_socket;
+    -        num_clients++;
+    +        client_sockets[num_clients++] = *client_socket;
+     
+    -        pthread_t thread_id;
+    -        pthread_create(&thread_id, NULL, handle_client, (void *)&client_socket);
+    +        pthread_t thread_id;
+    +        pthread_create(&thread_id, NULL, handle_client, client_socket);
+    +    +    pthread_detach(thread_id);
+        }
+     
+        return 0;
+    }
+    ```
+
+    explanation-suggested-fix: The suggested fix involves dynamically allocating memory for the `client_socket` value and passing a pointer to the new thread. This ensures that each thread operates on a separate copy of the socket descriptor. We also added error handling for `bind` and `accept` functions to prevent undefined behavior. The `pthread_detach` ensures that thread resources are released when the thread exits, avoiding any potential memory leaks.
+    method: UNKNOWN

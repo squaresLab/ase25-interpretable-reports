@@ -1,0 +1,86 @@
+
+    vuln-fix: CWE-20: Improper Input Validation in falcon180b-10058 (severity: medium)
+    what: The code does not properly validate user input when using `scanf` for integers and characters, leading to potential undefined behavior or exploitation.
+    where: 
+        - The file: falcon180b-10058
+        - Lines:
+            - `scanf("%d", &choice);` (line 15)
+            - `scanf(" %c", &input);` (line 24)
+            - `scanf(" %c", &input);` (line 32)
+    why: Improper input validation can lead to undefined behavior, buffer overflows, or the execution of unintended code paths.
+    how: An attacker can provide unexpected or malformed input to `scanf`, causing the application to crash or behave unpredictably. For example, entering non-integer values where integers are expected can disrupt the flow of the program, or cause buffer overflows.
+    code-sources: 
+        - `scanf("%d", &choice);` (line 15)
+        - `scanf(" %c", &input);` (line 24)
+        - `scanf(" %c", &input);` (line 32)
+    code-sinks: 
+        - The switch statement using `choice`.
+        - The if-else conditions using `input`.
+    suggested-fix: 
+    ```diff
+    --- falcon180b-10058
+    +++ falcon180b-10058
+    @@ -11,7 +11,18 @@
+         printf("Leave\n");
+         scanf("%d", &choice);
+
+    -    switch(choice)
+    +    if (choice < 1 || choice > 3) {
+    +        printf("Invalid choice.\n");
+    +        return;
+    +    }
+    +
+    +    switch(choice) {
+             case 1:
+                 printf("You enter the house and hear strange noises.\n");
+                 printf("Do you want to investigate? (y/n)\n");
+    -            scanf(" %c", &input);
+    +            // Ensuring only 'y' or 'n' is considered
+    +            if (scanf(" %c", &input) != 1 || (input != 'y' && input != 'n')) {
+    +                printf("Invalid input.\n");
+    +                return;
+    +            }
+                 if(input == 'y')
+                 {
+                     printf("You find a secret passage!\n");
+                 }
+                 else
+                 {
+                     printf("You leave the house.\n");
+                 }
+                 break;
+
+             case 2:
+                 printf("You find a mysterious puzzle.\n");
+                 printf("Do you want to solve it? (y/n)\n");
+    -            scanf(" %c", &input);
+    +            // Ensuring only 'y' or 'n' is considered
+    +            if (scanf(" %c", &input) != 1 || (input != 'y' && input != 'n')) {
+    +                printf("Invalid input.\n");
+    +                return;
+    +            }
+                 if(input == 'y')
+                 {
+                     printf("You solve the puzzle and find a hidden treasure!\n");
+                 }
+                 else
+                 {
+                     printf("You leave the house.\n");
+                 }
+                 break;
+
+             case 3:
+                 printf("You leave the house.\n");
+                 break;
+
+             default:
+    -            printf("Invalid choice.\n");
+    -            break;
+    +            // This condition should be unreachable due to earlier validation
+                 break;
+    +    }
+    +}
+    +
+    ```
+    explanation-suggested-fix: By adding input validation for the integer choice and character inputs, we ensure that only valid choices are processed. Any invalid inputs now cause the program to immediately handle the error gracefully, preventing undefined behavior and potential exploits.
+    method: UNKNOWN

@@ -1,0 +1,30 @@
+
+
+--- falcon180b-43477.c   YYYY-MM-DD HH:MM:SS.000000000 +0000
++++ falcon180b-43477-fixed.c YYYY-MM-DD HH:MM:SS.000000000 +0000
+@@ -18,12 +18,17 @@
+ void *handle_client(void *arg) {
+     int client_socket = *(int *) arg;
+     char buffer[1024];
+
+     while(TRUE) {
+         memset(buffer, 0, sizeof(buffer));
+         int bytes_received = recv(client_socket, buffer, sizeof(buffer)-1, 0); // Ensure null-termination
+
+-        if(bytes_received <= 0) {
++        if(bytes_received <= 0 || bytes_received >= sizeof(buffer)) { // Check for overflow
++            printf("Error receiving data or buffer overflow.\n");
+             break;
+         }
+
++        // Ensure null-termination
++        buffer[bytes_received] = '\0';
++
+         printf("Received message from client: %s\n", buffer);
+         send(client_socket, buffer, strlen(buffer), 0);
+     }
+
+     close(client_socket);
+     pthread_exit(NULL);
+ }
+

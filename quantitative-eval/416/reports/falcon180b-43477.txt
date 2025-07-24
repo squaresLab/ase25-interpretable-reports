@@ -1,0 +1,40 @@
+
+vuln-fix: CWE-120: Buffer Copy without Checking Size of Input ('Classic Buffer Overflow') in falcon180b-43477 (severity: High)
+what: The vulnerability exists because the `recv()` function reads data into a fixed-size buffer without verifying if the data fits within the buffer's boundary. An attacker could send more data than the buffer can hold, leading to a buffer overflow.
+where: The vulnerability resides in the `recv()` function call within the `handle_client` function, particularly around lines 18-25 in `falcon180b-43477`.
+why: Failure to resolve this weakness could allow an attacker to overwrite adjacent memory, which may result in a crash, data corruption, or code execution with the same privileges as the running process.
+how: An attacker would exploit this vulnerability by sending a payload larger than 1024 bytes (the size of the `buffer`). This would cause the application to overwrite adjacent memory on the stack, potentially enabling remote code execution or a denial-of-service attack.
+code-sources: The entry point for user input is the data received from network clients via the `recv` call in the `handle_client` function.
+code-sinks: Actions performed using the user input include printing the data to the console and sending it back to the client using `printf` and `send` functions.
+suggested-fix:
+```diff
+--- falcon180b-43477.c   YYYY-MM-DD HH:MM:SS.000000000 +0000
++++ falcon180b-43477-fixed.c YYYY-MM-DD HH:MM:SS.000000000 +0000
+@@ -18,12 +18,17 @@
+ void *handle_client(void *arg) {
+     int client_socket = *(int *) arg;
+     char buffer[1024];
+
+     while(TRUE) {
+         memset(buffer, 0, sizeof(buffer));
+         int bytes_received = recv(client_socket, buffer, sizeof(buffer)-1, 0); // Ensure null-termination
+
+-        if(bytes_received <= 0) {
++        if(bytes_received <= 0 || bytes_received >= sizeof(buffer)) { // Check for overflow
++            printf("Error receiving data or buffer overflow.\n");
+             break;
+         }
+
++        // Ensure null-termination
++        buffer[bytes_received] = '\0';
++
+         printf("Received message from client: %s\n", buffer);
+         send(client_socket, buffer, strlen(buffer), 0);
+     }
+
+     close(client_socket);
+     pthread_exit(NULL);
+ }
+```
+explanation-suggested-fix: The suggested code changes add checks to ensure that the received data does not exceed the buffer length minus one to maintain space for the null terminator. Additionally, the buffer is explicitly null-terminated, preventing potential overflow and ensuring safe string handling.
+method: UNKNOWN

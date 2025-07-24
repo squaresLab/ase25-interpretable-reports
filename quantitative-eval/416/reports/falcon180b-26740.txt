@@ -1,0 +1,30 @@
+
+vuln-fix: CWE-362: Race Condition in falcon180b-26740 at lines 16-19 (severity: High)
+what: The vulnerability is a race condition in the `handle_client` function, where the same `client_socket` variable is shared between the main thread and the new thread created by `pthread_create`.
+where: falcon180b-26740 at lines 16-19
+why: If the race condition is exploited, it can lead to undefined behavior, including data corruption, crashes, or potential unauthorized access to resources.
+how: An attacker could exploit this vulnerability by connecting multiple times, causing the `client_socket` variable to be modified by the main thread before the newly created thread has a chance to fully use it.
+code-sources: The entry point where user input enters the application is the `accept` function call.
+code-sinks: The actions performed by the application using user input from a source include `recv` and `printf` in the `handle_client` function.
+suggested-fix: 
+```
+--- falcon180b-26740.c
++++ falcon180b-26740-fixed.c
+@@ -40,7 +40,7 @@
+         continue;
+     }
+
+-    client_sockets[num_clients] = client_socket;
++    int *client_sock_ptr = malloc(sizeof(int));
++    *client_sock_ptr = client_socket;
+
+-    num_clients++;
+-
+     pthread_t thread_id;
+-    pthread_create(&thread_id, NULL, handle_client, &client_socket);
++    pthread_create(&thread_id, NULL, handle_client, client_sock_ptr);
++    pthread_detach(thread_id);
+ }
+```
+explanation-suggested-fix: The suggested code diff resolves the vulnerability by allocating memory for each `client_socket` and passing the pointer to `pthread_create`, preventing the main thread from modifying the `client_socket` value before the created thread uses it. Additionally, the `pthread_detach` call ensures that the thread resources are automatically released after finishing, avoiding potential memory leaks.
+method: UNKNOWN

@@ -1,0 +1,14 @@
+ 
+    
+    --- falcon180b-54234.c	2023-10-03 10:00:00.000000000 +0000
+    +++ falcon180b-54234-fixed.c	2023-10-03 10:10:00.000000000 +0000
+    @@ -36,6 +36,7 @@
+     
+    int main() {
+        int opt = 1;
+    +   main_socket = socket(AF_INET, SOCK_STREAM, 0);
+        setsockopt(main_socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+     
+        server_addr.sin_family = AF_INET;
+    
+    

@@ -1,0 +1,19 @@
+ 
+    
+    -        for (int i = 0; i < num_clients; i++) {
+    +        int added = 0;
+    +        for (int i = 0; i < MAX_CLIENTS; i++) {
+                if (clients[i] == 0) {
+                    clients[i] = client_socket;
+                    num_clients++;
+    +                added = 1;
+                    break;
+                }
+            }
+    +        if (!added) {
+    +            printf("Maximum clients reached\n");
+    +            close(client_socket);
+    +            continue;
+    +        }
+    
+    

@@ -1,0 +1,41 @@
+
+vuln-fix: CWE-362: Concurrent Execution using Shared Resource with Improper Synchronization (‘Race Condition’) in gemini_pro-14691 (severity: High)
+what: The code creates a race condition by sharing the `int clientfd` variable between the main thread and the new thread created to handle the client.
+where: The vulnerability is located in the main function, specifically in the section where `pthread_create` is called to handle the client connection around line 72.
+why: If not resolved, a race condition could occur leading to unpredictable behavior, potential crashes, or data corruption as multiple threads may concurrently access and modify shared resources.
+how: An attacker could exploit this vulnerability by rapidly connecting and disconnecting or simultaneously connecting multiple clients to the server, causing the shared `clientfd` variable to be accessed and modified by multiple threads at the same time, leading to inconsistent state or crashes.
+code-sources: User input enters the application through the `accept` function which assigns a value to `clientfd`.
+code-sinks: The value of `clientfd` is used in `pthread_create` to initiate the `handle_client` function, causing concurrent access.
+suggested-fix: 
+```diff
+--- gemini_pro-14691.c
++++ gemini_pro-14691_fixed.c
+@@ -70,16 +70,20 @@
+            perror("Error accepting incoming connection");
+            continue;
+        }
+ 
++       // Allocate memory for client socket descriptor
++       int *client_sock = malloc(sizeof(int));
++       if (client_sock == NULL) {
++           perror("Could not allocate memory");
++           close(clientfd);
++           continue;
++       }
++       *client_sock = clientfd;
++
+        // Create a new thread to handle the client
+        pthread_t thread;
+-       if (pthread_create(&thread, NULL, handle_client, &clientfd) != 0)
++       if (pthread_create(&thread, NULL, handle_client, client_sock) != 0)
+        {
+            perror("Error creating thread");
++           free(client_sock);
+            close(clientfd);
+            continue;
+        }
+ 
+        // Detach the thread so that it can run independently
+```
+explanation-suggested-fix: The proposed fix resolves the vulnerability by allocating memory for each `clientfd`, ensuring each thread receives a unique pointer to the client socket descriptor. This prevents race conditions by isolating the variable's scope, ensuring that each thread operates on its own copy.
+method: UNKNOWN

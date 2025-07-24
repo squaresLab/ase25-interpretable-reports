@@ -1,0 +1,25 @@
+
+
+--- falcon180b-15731	2023-10-04
++++ falcon180b-15731	2023-10-04
+@@ -25,7 +25,8 @@
+     while (1) {
+         memset(buffer, 0, BUFFER_SIZE);
+         int bytes_received = recv(client_socket, buffer, BUFFER_SIZE - 1, 0);
+-        if (bytes_received <= 0) {
++        if (bytes_received <= 0 || bytes_received >= BUFFER_SIZE) {
++            buffer[BUFFER_SIZE - 1] = '\0'; // Ensure null termination
+             break;
+         }
+
+@@ -41,6 +42,8 @@
+         clients[num_clients][0] = client_socket;
+         clients[num_clients][1] = num_clients;
+         num_clients++;
++
++        int *new_client_socket = malloc(sizeof(int));
+         pthread_t thread_id;
+-        pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
++        pthread_create(&thread_id, NULL, handle_client, (void *) new_client_socket);
+     }
+ 

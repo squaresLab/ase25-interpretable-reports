@@ -1,0 +1,22 @@
+ 
+    
+    --- gpt35-34852   2023-10-10 10:00:00.000000000 +0000
+    +++ gpt35-34852.fixed  2023-10-10 12:00:00.000000000 +0000
+    @@ -92,8 +92,11 @@
+             if (recv(client_fd, buffer, sizeof(buffer), 0) < 0) {
+                 perror("recv");
+                 exit(EXIT_FAILURE);
+    +         }
+    +
+    +         // Ensure no buffer overflow occurs
+    +         buffer[sizeof(buffer) - 1] = '\0';
+
+             // Preparing message to be sent back to client
+    -        strcpy(message, "Server received: ");
+    -        strcat(message, buffer);
+    +        snprintf(message, sizeof(message), "Server received: %s", buffer);
+
+             // Sending message back to client
+             if (send(client_fd, message, strlen(message), 0) < 0) {
+    
+    

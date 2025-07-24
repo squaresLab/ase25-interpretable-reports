@@ -1,0 +1,22 @@
+
+
+diff --git a/falcon180b-50361 b/falcon180b-50361
+index 39b-f5cb..d6cdf75 100644
+--- a/falcon180b-50361
++++ b/falcon180b-50361
+@@ -42,10 +42,11 @@ int main() {
+         int client_socket = accept(server_socket, (struct sockaddr *) &client_addr, &client_addr_size);
+         if(client_socket!= -1) {
+             printf("Client connected: %s:%d\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
+             client_sockets[num_clients] = client_socket;
+             num_clients++;
+             pthread_t thread_id;
+-            pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
++            int *sock_ptr = malloc(sizeof(int));
++            *sock_ptr = client_socket;
++            pthread_create(&thread_id, NULL, handle_client, (void *) sock_ptr);
+         }
+     }
+
+     close(server_socket);
+

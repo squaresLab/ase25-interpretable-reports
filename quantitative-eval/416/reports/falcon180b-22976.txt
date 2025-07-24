@@ -1,0 +1,98 @@
+
+vuln-fix: Return Pointer to Stack Allocated Memory (CWE-825) in falcon180b-22976, line 25 (severity: Medium)
+what: A function returns a pointer to a stack-allocated region of memory. This memory is deallocated at the end of the function, which may lead the caller to dereference a dangling pointer.
+where: In file falcon180b-22976, line 25
+why: If not resolved, this can lead to undefined behavior, including potential crashes or data corruption.
+how: An attacker could exploit this vulnerability by causing the program to use the returned pointer, which might point to invalid memory.
+code-sources: `fgets` function in `get_input` function.
+code-sinks: Return of `input` pointer in `get_input` function.
+suggested-fix: 
+```diff
+--- falcon180b-22976.c
++++ falcon180b-22976.c
+@@ -21,7 +21,8 @@
+ }
+ 
+ // Function to get user input
+-char* get_input(char* prompt) {
++void get_input(char* prompt, char* buffer, size_t size) {
++    char input[MAX_INPUT_LENGTH];
+     printf("%s: ", prompt);
+-    fgets(input, MAX_INPUT_LENGTH, stdin);
+-    input[strcspn(input, "\n")] = '\0';
+-    return input;
++    fgets(buffer, size, stdin);
++    buffer[strcspn(buffer, "\n")] = '\0';
+ }
+ 
+ // Main function
+-int main() {
++int main() {
++    char name[MAX_INPUT_LENGTH];
+     char kingdom[MAX_INPUT_LENGTH]; 
+     char title[MAX_INPUT_LENGTH]; 
+ 
+@@ -32,9 +33,11 @@
+     printf("Enter thy name, noble knight:\n");
+-    strcpy(name, get_input("Name: "));
++    get_input("Name: ", name, MAX_INPUT_LENGTH);
+     sanitize_input(name);
+ 
+     printf("From which kingdom dost thou hail?\n");
+-    strcpy(kingdom, get_input("Kingdom: "));
++    get_input("Kingdom: ", kingdom, MAX_INPUT_LENGTH);
+     sanitize_input(kingdom);
+ 
+     printf("What title dost thou bear?\n");
+-    strcpy(title, get_input("Title: "));
++    get_input("Title: ", title, MAX_INPUT_LENGTH);
+     sanitize_input(title);
+```
+
+explanation-suggested-fix: The suggested changes refactor `get_input` to accept an output buffer instead of returning a pointer to a stack-allocated string. This avoids returning a pointer to invalid memory once the stack frame of `get_input` ends, mitigating the risk of undefined behavior.
+
+```
+vuln-fix: Buffer Overflow (CWE-120, CWE-787, CWE-805) in falcon180b-22976, line 36 (severity: High)
+what: Buffer write operations that do not control the length of data written may overflow.
+where: In file falcon180b-22976, line 36
+why: If not resolved, this may allow an attacker to overflow buffers, causing crashes or potentially leading to arbitrary code execution.
+how: An attacker could exploit this by providing input longer than `MAX_INPUT_LENGTH`, leading the program to write past the end of the buffer.
+code-sources: `fgets` function in `get_input` function.
+code-sinks: `strcpy` function in the `main` function.
+suggested-fix: 
+```diff
+--- falcon180b-22976.c
++++ falcon180b-22976.c
+@@ -35,7 +35,7 @@
+ {
+     char name[MAX_INPUT_LENGTH];
+     char kingdom[MAX_INPUT_LENGTH];
+     char title[MAX_INPUT_LENGTH];
+ 
+     // Get user input
+     printf("Enter thy name, noble knight:\n");
+-    strcpy(name, get_input("Name: "));
++    get_input("Name: ", name, MAX_INPUT_LENGTH);
+     sanitize_input(name);
+ 
+     printf("From which kingdom dost thou hail?\n");
+-    strcpy(kingdom, get_input("Kingdom: "));
++    get_input("Kingdom: ", kingdom, MAX_INPUT_LENGTH);
+     sanitize_input(kingdom);
+ 
+     printf("What title dost thou bear?\n");
+-    strcpy(title, get_input("Title: "));
++    get_input("Title: ", title, MAX_INPUT_LENGTH);
+     sanitize_input(title);
+ 
+     // Print user input
+     printf("\nHail, Sir %s of %s!\n", name, kingdom);
+     printf("We art pleased to bestow upon thee the title of %s.\n", title);
+ 
+     return 0;
+ }
+```
+
+explanation-suggested-fix: The suggested changes replace `strcpy` with a call to the revised `get_input` function, which bounds the input reading operation to `MAX_INPUT_LENGTH`, preventing buffer overflows.
+
+method: CODEQL

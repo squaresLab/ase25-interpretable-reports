@@ -1,0 +1,83 @@
+ 
+    
+    diff --git a/gpt35-5118.c b/gpt35-5118.c
+    index abcdef1..1234567 100644
+    --- a/gpt35-5118.c
+    +++ b/gpt35-5118.c
+    @@ -17,6 +17,7 @@ void *handle_connection(void* arg) {
+         char buffer[1024] = {0};        // Buffer for messages
+         
+         // Greetings
+    +    pthread_mutex_lock(&mutex);
+         write(client_fd, "My bounty is as boundless as the sea\nMy love as deep; the more I give to thee\nThe more I have, for both are infinite.\n", 1024);
+         write(client_fd, "Welcome to our chat! Tell me, dear, who art thou?\n", 1024);
+    +    pthread_mutex_unlock(&mutex);
+     
+         // Loop to receive messages and broadcast to other clients
+         while(read(client_fd, buffer, 1024) != 0) {
+    @@ -45,8 +46,6 @@ void *handle_connection(void* arg) {
+             pthread_mutex_unlock(&mutex);
+         }
+         
+    -    // Cleanup and goodbyes
+    +    pthread_mutex_lock(&mutex);
+         write(client_fd, "Good night, good night! Parting is such sweet sorrow\nThat I shall say good night till it be morrow.\n", 1024);
+    -    close(client_fd);
+         pthread_exit(NULL);
+       }
+    
+       int main() {
+         struct sockaddr_in server_address;
+         int address_len = sizeof(server_address);    // Address length
+         
+         // Create server socket
+         server_socket = socket(AF_INET, SOCK_STREAM, 0);
+         if(server_socket == -1) {
+             perror("socket failed");
+             exit(EXIT_FAILURE);
+         }
+         
+         // Set server address
+         server_address.sin_family = AF_INET;
+         server_address.sin_addr.s_addr = INADDR_ANY;
+         server_address.sin_port = htons(8888);
+         
+         // Bind server socket
+         if(bind(server_socket, (struct sockaddr *)&server_address, address_len) == -1) {
+             perror("bind failed");
+             exit(EXIT_FAILURE);
+         }
+         
+         // Listen for incoming connections
+         if(listen(server_socket, 5)) {
+             perror("listen failed");
+             exit(EXIT_FAILURE);
+         }
+         
+         printf("Server running on port 8888...\n");
+     
+         // Loop to handle incoming connections
+         while(1) {
+             // Accept incoming connection
+             int client_fd = accept(server_socket, (struct sockaddr *)&server_address, (socklen_t*)&address_len);
+             if (client_fd == -1) {
+                 perror("accept failed");
+                 exit(EXIT_FAILURE);
+             }
+             
+             // Add client to client_socket array
+             pthread_mutex_lock(&mutex);
+             client_socket[num_clients++] = client_fd;
+             pthread_mutex_unlock(&mutex);
+             
+             // Start thread to handle client messages
+             pthread_t thread;
+             if(pthread_create(&thread, NULL, handle_connection, (void*)&client_fd)) {
+                 fprintf(stderr, "Error creating thread\n");
+                 exit(EXIT_FAILURE);
+             }
+         }
+         
+         return 0;
+    
+    

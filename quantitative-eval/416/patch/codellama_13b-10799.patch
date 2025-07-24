@@ -1,0 +1,52 @@
+ 
+
+diff --git a/codellama_13b-10799 b/codellama_13b-10799
+index ae67123..4b053e1 100644
+--- a/codellama_13b-10799
++++ b/codellama_13b-10799
+@@ -10,11 +10,12 @@
+   return password;
+ }
+
+-char* generate_password() {
+-  char password[PASSWORD_LENGTH + 1];
++void generate_password(char* password) {
+   int i;
+   for (i = 0; i < PASSWORD_LENGTH; i++) {
+     password[i] = 'a' + rand() % 26;
+   }
+   password[PASSWORD_LENGTH] = '\0';
+-  return password;
++}
++
+ void prompt_password(char* password) {
+   int i;
+   printf("Enter your password: ");
+@@ -34,11 +34,10 @@
+   password[strlen(password) - 1] = '\0';
++}
+
+ int main() {
+   int tries = 0;
+-  char* password;
++  char password[PASSWORD_LENGTH + 1];
+   while (tries < MAX_PASSWORD_TRIES) {
+-    password = prompt_password();
+-    if (check_password(password)) {
+-      display_password(password);
++    prompt_password(password);
++    if (check_password(password)) {
++      display_password(password);
+       break;
+     } else {
+-      tries++;
+-      printf("Invalid password. Try again.\n");
+     }
+@@ -48,5 +47,6 @@
+   }
+   if (tries == MAX_PASSWORD_TRIES) {
+     printf("Maximum number of tries exceeded. Goodbye.\n");
++  return 0;
+}
+
+

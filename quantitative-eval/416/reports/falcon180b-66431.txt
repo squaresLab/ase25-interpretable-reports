@@ -1,0 +1,63 @@
+
+    vuln-fix: Command Injection (CWE-78) in falcon180b-66431 (severity: High)
+    what: The code directly uses user input in the `system` function without proper sanitization or validation.
+    where: The vulnerability is located in the `handle_client` function, specifically at the lines:
+    ```C
+    if (strncmp(buffer, "on", 3) == 0) {
+        system("echo 1 > /sys/class/leds/led1/brightness");
+    } else if (strncmp(buffer, "off", 4) == 0) {
+        system("echo 0 > /sys/class/leds/led1/brightness");
+    }
+    ```
+    why: An attacker could inject malicious commands, causing arbitrary code execution on the server. This weakness could lead to severe security breaches, including unauthorized access, data theft, or complete system compromise.
+    how: An attacker could send specially crafted data that includes shell commands. For example, sending "on; rm -rf /" would execute the command to turn on the LED and then delete all files on the system, leading to data loss.
+    code-sources: The primary entry point for user input is through the `recv` function call:
+    ```C
+    int bytes_received = recv(client_socket, buffer, sizeof(buffer), 0);
+    ```
+    code-sinks: The `system` function is where the provided user input is potentially causing harm:
+    ```C
+    if (strncmp(buffer, "on", 3) == 0) {
+        system("echo 1 > /sys/class/leds/led1/brightness");
+    } else if (strncmp(buffer, "off", 4) == 0) {
+        system("echo 0 > /sys/class/leds/led1/brightness");
+    }
+    ```
+    suggested-fix: 
+    ```diff
+    --- falcon180b-66431.c
+    +++ falcon180b-66431-fixed.c
+    @@ -17,11 +17,17 @@
+         int bytes_received = recv(client_socket, buffer, sizeof(buffer), 0);
+    
+         if (bytes_received <= 0) {
+             close(client_socket);
+             clients[num_clients] = 0;
+             num_clients--;
+             break;
+         }
+    
+         printf("Client %d: %s\n", client_socket, buffer);
+    
+    -     if (strncmp(buffer, "on", 3) == 0) {
+    -         system("echo 1 > /sys/class/leds/led1/brightness");
+    -     } else if (strncmp(buffer, "off", 4) == 0) {
+    -         system("echo 0 > /sys/class/leds/led1/brightness");
+    +     if (strcmp(buffer, "on\n") == 0) {
+    +         FILE *led_file = fopen("/sys/class/leds/led1/brightness", "w");
+    +         if (led_file != NULL) {
+    +             fprintf(led_file, "1");
+    +             fclose(led_file);
+    +         }
+    +     } else if (strcmp(buffer, "off\n") == 0) {
+    +         FILE *led_file = fopen("/sys/class/leds/led1/brightness", "w");
+    +         if (led_file != NULL) {
+    +             fprintf(led_file, "0");
+    +             fclose(led_file);
+    +         }
+         }
+     }
+    
+    ```
+    explanation-suggested-fix: The suggested code diff eliminates the use of the `system` function, which is vulnerable to command injection. Instead, it uses `fopen` and `fprintf` to safely write to the LED brightness control file. This ensures the input is not executed as a shell command.
+    method: UNKNOWN

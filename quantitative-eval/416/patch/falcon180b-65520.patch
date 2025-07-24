@@ -1,0 +1,29 @@
+ 
+    
+    --- falcon180b-65520.orig.c
+    +++ falcon180b-65520.fixed.c
+    @@ -24,7 +24,7 @@
+      }
+    
+      void accept_connections(int server_socket) {
+    +    while (1) {
+    +        int *client_socket = malloc(sizeof(int));
+    +        *client_socket = accept(server_socket, NULL, NULL);
+    -
+    -        if (client_socket == -1) {
+    +        if (*client_socket == -1) {
+                free(client_socket);
+                break;
+            }
+
+            printf("Client connected: %d\n", *client_socket);
+
+            pthread_t thread_id;
+    -        pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+    +        pthread_create(&thread_id, NULL, handle_client, (void *) client_socket);
+
+            clients[num_clients++] = *client_socket;
+        }
+      }
+    
+    

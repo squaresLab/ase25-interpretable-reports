@@ -1,0 +1,42 @@
+ 
+
+--- gemini_pro-33594.c	2023-04-08 12:47:24.000000000 +0000
++++ gemini_pro-33594-fixed.c	2023-04-08 13:47:24.000000000 +0000
+@@ -19,7 +19,7 @@
+ void *client_handler(void *arg) {
+     int client_socket_fd = *(int *)arg;
+     char buffer[1024];
++    int num_bytes_received;
+     while (1) {
+         // Receive data from client
+-        int num_bytes_received = recv(client_socket_fd, buffer, 1024, 0);
++        pthread_mutex_lock(&lock);
++        num_bytes_received = recv(client_socket_fd, buffer, 1024, 0);
++        pthread_mutex_unlock(&lock);
+         if (num_bytes_received == 0) {
+             printf("Client disconnected\n");
+             pthread_mutex_lock(&lock);
+@@ -40,10 +40,10 @@
+             pthread_mutex_unlock(&lock);
+             break;
+         }
+-        // Process data
+-        pthread_mutex_lock(&lock);
+         printf("Received message from client: %s\n", buffer);
+-        pthread_mutex_unlock(&lock);
+ 
+         // Send data back to client
++        pthread_mutex_lock(&lock);
+         int num_bytes_sent = send(client_socket_fd, "Hello from server!", 17, 0);
+         if (num_bytes_sent < 0) {
+             perror("send");
+@@ -51,6 +50,7 @@
+             pthread_mutex_unlock(&lock);
+             break;
+         }
++        pthread_mutex_unlock(&lock);
+     }
+     pthread_exit(NULL);
+ }
+
+

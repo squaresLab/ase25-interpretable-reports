@@ -1,0 +1,41 @@
+ 
+    
+    --- gemma7b-4471.c
+    +++ gemma7b-4471_fixed.c
+    @@ -21,6 +21,9 @@
+       return reader;
+     }
+     
+    +#define SAFE_REALLOC(ptr, size)                   \
+    +  if ((ptr = realloc(ptr, size)) == NULL) {        \
+    +    perror("Memory allocation failed"); exit(EXIT_FAILURE); }
+     
+     void csvReader_free(CSVReader *reader) {
+       fclose(reader->fp);
+     }
+     
+     int csvReader_readNextLine(CSVReader *reader) {
+    @@ -29,8 +32,8 @@
+       int lineSize = 0;
+     
+       if (reader->currentLine >= reader->bufferSize - 1) {
+    -    reader->bufferSize *= 2;
+    -    reader->buffer = realloc(reader->buffer, reader->bufferSize * MAX_BUFFER_SIZE);
+    +    reader->bufferSize = (reader->bufferSize == 0) ? 1 : reader->bufferSize * 2;
+    +    SAFE_REALLOC(reader->buffer, reader->bufferSize * MAX_BUFFER_SIZE);
+       }
+     
+       line = fgets(reader->buffer, MAX_BUFFER_SIZE, reader->fp);
+    @@ -47,8 +50,8 @@
+       int columnDataIndex = 0;
+     
+       if (reader->currentColumn >= reader->bufferSize - 1) {
+    -    reader->bufferSize *= 2;
+    -    reader->buffer = realloc(reader->buffer, reader->bufferSize * MAX_BUFFER_SIZE);
+    +    reader->bufferSize = (reader->bufferSize == 0) ? 1 : reader->bufferSize * 2;
+    +    SAFE_REALLOC(reader->buffer, reader->bufferSize * MAX_BUFFER_SIZE);
+       }
+     
+       columnData = reader->buffer[reader->currentLine - 1] + column;
+    
+    

@@ -1,0 +1,56 @@
+
+vuln-fix: CWE-362: Concurrent Execution using Shared Resource with Improper Synchronization ('Race Condition') in gemini_pro-9974:23,26 (severity: High)
+what: The code creates multiple threads that access and modify shared data (`drone_altitudes[]`) without properly synchronizing access to this data, leading to potential race conditions.
+where: Lines 23 and 26 in gemini_pro-9974:
+  pthread_create(&drone_threads[i], NULL, drone_control, (void *)&i); (Line 23)
+  drone_altitudes[drone_id] += rand() % 10 - 5; (Line 26)
+why: Failure to resolve this weakness may result in unpredictable behavior of the drone control system, where the incorrect altitude may be printed for drones — potentially causing harmful decision-making based on inaccurate altitude data.
+how: An attacker could potentially manipulate the timing of thread execution to force the program into an inconsistent state, causing drones to report incorrect altitudes and possibly disrupting operations that rely on accurate altitude data.
+code-sources: Entry points where user input or initialization data is handled:
+  - int main() where threads are created with shared data variables
+
+code-sinks: Actions performed using shared data variables:
+  - drone_altitudes[drone_id] += rand() % 10 - 5; in drone_control()
+
+suggested-fix: 
+  ```diff
+    --- gemini_pro-9974
+    +++ gemini_pro-9974
+    @@ -23,7 +23,8 @@
+         pthread_create(&drone_threads[i], NULL, drone_control, (void *)&i);
+     }
+
+    + // Ensure unique thread identifiers
+    + int drone_ids[NUM_DRONES];
+     // Wait for drone control threads to finish
+     for (int i = 0; i < NUM_DRONES; i++) {
+         pthread_join(drone_threads[i], NULL);
+     }
+
+     // Initialize shared data variables
+     for (int i = 0; i < NUM_DRONES; i++) {
+         drone_altitudes[i] = 0;
+    +    drone_ids[i] = i;
+     }
+
+    -    pthread_create(&drone_threads[i], NULL, drone_control, (void *)&i);
+    +    pthread_create(&drone_threads[i], NULL, drone_control, (void *)&drone_ids[i]);
+
+    @@@@@@ -26,7 +26,6 @@@@@@
+     while (1) {
+         // Randomly adjust drone altitude
+        pthread_mutex_lock(&altitude_lock);
+    -   drone_altitudes[drone_id] += rand() % 10 - 5;
+    +   int alt_change = rand() % 10 - 5;
+    +   drone_altitudes[drone_id] += alt_change;
+        printf("Drone %d: Altitude: %d\n", drone_id, drone_altitudes[drone_id]);
+        pthread_mutex_unlock(&altitude_lock);
+
+       // Sleep for a while
+        sleep(1);
+     }
+```
+
+explanation-suggested-fix: The suggested code diff ensures that each thread gets a unique identifier by using an array `drone_ids` to store the identifiers, avoiding the issue of passing the address of the loop counter, which changes during iteration. Moreover, it locks the resource before any altitude change and performs changes inside the critical section, thus ensuring synchronized access.
+
+method: UNKNOWN

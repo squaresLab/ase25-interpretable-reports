@@ -1,0 +1,18 @@
+ 
+
+@@ -18,6 +18,9 @@ void *handle_client(void *arg) {
+         }
+ 
+         if (strstr(buffer, "LIGHT ON")!= NULL) {
+-            system("gpio -g write 4 1");
++            if (system("/usr/bin/gpio -g write 4 1") == -1) {
++                perror("Command execution failed");
++            }
+         } else if (strstr(buffer, "LIGHT OFF")!= NULL) {
+-            system("gpio -g write 4 0");
++            if (system("/usr/bin/gpio -g write 4 0") == -1) {
++                perror("Command execution failed");
++            }
+         }
+     }
+

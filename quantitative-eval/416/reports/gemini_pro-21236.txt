@@ -1,0 +1,58 @@
+
+    vuln-fix: cpp/return-stack-allocated-memory (CWE-825) and cpp/unbounded-write (CWE-120, CWE-787, CWE-805) in gemini_pro-21236 (severity: High)
+    what: The code contains two critical vulnerabilities: returning a pointer to a stack-allocated buffer and potential buffer overflow due to unbounded writes.
+    where: The vulnerabilities occur in gemini_pro-21236 at lines 53-54.
+    why: If not resolved, these vulnerabilities can lead to undefined behavior, including application crashes and potential arbitrary code execution, compromising the security of the system.
+    how: An attacker can exploit the buffer overflow by inputting a string longer than 64 characters, causing a stack-based buffer overflow. The use of a dangling pointer by returning a stack-allocated memory can lead to undefined behavior and program crashes.
+    code-sources: The entry point for user input is the `scanf` function in the `getAnswer` function.
+    code-sinks: The user input is used in the `checkAnswer` function for the comparison with the correct answer and is returned directly from the `getAnswer` function.
+    suggested-fix:
+    ```
+    diff --git a/gemini_pro-21236 b/gemini_pro-21236
+    index 1234567..89abcde 100644
+    --- a/gemini_pro-21236
+    +++ b/gemini_pro-21236
+    @@ -52,12 +52,14 @@ void displayQuestion(struct Question question) {
+    
+    // Function to get the user's answer
+    -char* getAnswer() {
+    -    char answer[64];
+    -    scanf("%s", answer);
+    -    return answer;
+    +void getAnswer(char *buffer, size_t size) {
+    +    if (fgets(buffer, size, stdin) != NULL) {
+    +        size_t len = strlen(buffer);
+    +        if (len > 0 && buffer[len - 1] == '\n') {
+    +            buffer[len - 1] = '\0';
+    +        }
+         }
+    }
+    
+    @@ -66,16 +68,17 @@ int checkAnswer(char* answer, char* correctAnswer) {
+    
+    int main() {
+         // Initialize the score
+         int score = 0;
+         char answer[64];
+    
+         // Loop through the questions
+         for (int i = 0; i < sizeof(questions) / sizeof(struct Question); i++) {
+             // Display the question and options
+             displayQuestion(questions[i]);
+    
+             // Get the user's answer
+    -        char* answer = getAnswer(answer, sizeof(answer));
+    +        getAnswer(answer, sizeof(answer));
+    
+             // Check if the answer is correct
+             if (checkAnswer(answer, questions[i].answer)) {
+                 // Increment the score
+                 score++;
+             }
+         }
+    
+         // Display the result
+         displayResult(score);
+    ```
+    explanation-suggested-fix: The code fix involves changing the `getAnswer` function to accept a buffer pointer and its size as arguments. This prevents returning a pointer to a stack-allocated buffer and mitigates buffer overflow by using `fgets` to read the user input, which safeguards against writing beyond the allocated buffer size.
+    method: CODEQL

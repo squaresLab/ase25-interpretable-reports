@@ -1,0 +1,37 @@
+ 
+    
+    --- falcon180b-66431.c
+    +++ falcon180b-66431-fixed.c
+    @@ -17,11 +17,17 @@
+         int bytes_received = recv(client_socket, buffer, sizeof(buffer), 0);
+    
+         if (bytes_received <= 0) {
+             close(client_socket);
+             clients[num_clients] = 0;
+             num_clients--;
+             break;
+         }
+    
+         printf("Client %d: %s\n", client_socket, buffer);
+    
+    -     if (strncmp(buffer, "on", 3) == 0) {
+    -         system("echo 1 > /sys/class/leds/led1/brightness");
+    -     } else if (strncmp(buffer, "off", 4) == 0) {
+    -         system("echo 0 > /sys/class/leds/led1/brightness");
+    +     if (strcmp(buffer, "on\n") == 0) {
+    +         FILE *led_file = fopen("/sys/class/leds/led1/brightness", "w");
+    +         if (led_file != NULL) {
+    +             fprintf(led_file, "1");
+    +             fclose(led_file);
+    +         }
+    +     } else if (strcmp(buffer, "off\n") == 0) {
+    +         FILE *led_file = fopen("/sys/class/leds/led1/brightness", "w");
+    +         if (led_file != NULL) {
+    +             fprintf(led_file, "0");
+    +             fclose(led_file);
+    +         }
+         }
+     }
+    
+    
+    

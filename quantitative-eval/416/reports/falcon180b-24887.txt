@@ -1,0 +1,86 @@
+    
+    vuln-fix: Vulnerability to Integer Overflow or Wraparound (CWE-190) in falcon180b-24887 (severity: High)
+    what: The provided code is susceptible to an integer overflow vulnerability when `num_clients` surpasses the `MAX_CLIENTS` limit. The line `client_sockets[num_clients] = client_socket;` causes an array out-of-bounds access if `num_clients` exceeds the array's bounds.
+    where: Lines 53-55 in falcon180b-24887
+    why: If this vulnerability is exploited, it may result in overwriting adjacent memory locations, potentially causing corruption, crashes, or the ability to execute arbitrary code from unintended memory areas by an attacker.
+    how: An attacker could exploit this vulnerability by opening multiple connections to the server concurrently, causing `num_clients` to wrap around, modifying memory areas beyond the array boundary.
+    code-sources: The entry point for user input is the `recv` function within the `handle_client` function and the `accept` function in the main server loop.
+    code-sinks: The `client_sockets` array assignment in `client_sockets[num_clients] = client_socket;` is the sink where the integer overflow could lead to memory corruption.
+    suggested-fix: 
+```diff
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdint.h>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <pthread.h>
+
+#define MAX_CLIENTS 10
+#define BUFFER_SIZE 1024
+
+int client_sockets[MAX_CLIENTS];
+int num_clients = 0;
+pthread_mutex_t clients_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+void *handle_client(void *arg) {
+    int client_socket = *(int *)arg;
+
+    char buffer[BUFFER_SIZE];
+    while (1) {
+        memset(buffer, 0, BUFFER_SIZE);
+        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+
+        if (bytes_received <= 0) {
+            break;
+        }
+
+        printf("Client %d sent message: %s\n", client_socket, buffer);
+    }
+
+    close(client_socket);
+    pthread_mutex_lock(&clients_mutex);
+    num_clients--;
+    pthread_mutex_unlock(&clients_mutex);
+    return NULL;
+}
+
+int main() {
+    int server_socket = socket(AF_INET, SOCK_STREAM, 0);
+
+    struct sockaddr_in server_addr;
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.s_addr = INADDR_ANY;
+    server_addr.sin_port = htons(9000);
+
+    bind(server_socket, (struct sockaddr *)&server_addr, sizeof(server_addr));
+
+    listen(server_socket, 5);
+
+    while (1) {
+        int client_socket = accept(server_socket, NULL, NULL);
+
+        pthread_mutex_lock(&clients_mutex);
+        if (num_clients >= MAX_CLIENTS) {
+            pthread_mutex_unlock(&clients_mutex);
+            send(client_socket, "Server is full.\n", strlen("Server is full.\n"), 0);
+            close(client_socket);
+            continue;
+        }
+
+        client_sockets[num_clients] = client_socket;
+        num_clients++;
+        pthread_mutex_unlock(&clients_mutex);
+
+        pthread_t thread_id;
+        pthread_create(&thread_id, NULL, handle_client, (void *)&client_socket);
+        pthread_detach(thread_id);
+    }
+
+    return 0;
+}
+```
+    explanation-suggested-fix: The suggested fix introduces a mutex to synchronize access to the `num_clients` variable. This prevents integer overflow by ensuring that the value of `num_clients` is safely checked and modified within a critical section, avoiding data races and out-of-bounds memory access.
+    method: UNKNOWN

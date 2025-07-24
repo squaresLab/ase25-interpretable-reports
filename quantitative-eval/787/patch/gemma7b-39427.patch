@@ -1,0 +1,32 @@
+ 
+
+diff --git a/gemma7b-39427.c b/gemma7b-39427.c
+index e69de29..b681b3b 100644
+--- a/gemma7b-39427.c
++++ b/gemma7b-39427.c
+@@ -18,12 +18,20 @@ CSVReader *createCSVReader(char *filename) {
+ void freeCSVReader(CSVReader *reader) {
+   fclose(reader->fp);
+   if (reader->buffer != NULL) {
++    for (int i = 0; i < reader->bufferSize; i++) {
++      free(reader->buffer[i]);
++    }
+     free(reader->buffer);
++    reader->buffer = NULL;
+   }
+   if (reader->data != NULL) {
+     free(reader->data);
++    reader->data = NULL;
+   }
+   free(reader);
+ }
+
+@@ -35,6 +43,7 @@ void readCSVLine(CSVReader *reader) {
+   // Allocate memory for the line buffer
+   reader->buffer = realloc(reader->buffer, (reader->bufferSize + 1) * sizeof(char *));
+ 
++  // Guard against unsuccessful memory allocation
+   if (reader->buffer == NULL) {
+     perror("Unable to allocate memory for buffer");
+     exit(1);
+

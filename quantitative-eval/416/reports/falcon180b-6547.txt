@@ -1,0 +1,37 @@
+
+    vuln-fix: Race Condition (CWE-362) in falcon180b-6547 lines 45-50 (severity: High)
+    what: The vulnerability is a race condition that occurs when the shared global variable `g_client_count` and the array `g_client_sockets` are accessed without proper synchronization, leading to inconsistent state or even segmentation faults.
+    where: The vulnerability is located in the loop inside the `accept_client_connections` function, specifically around lines 45-50 within the file falcon180b-6547.
+    why: If this race condition is not resolved, it can cause the application to crash or behave unpredictably, leading to denial of service or potential remote code execution if further vulnerabilities are present.
+    how: An attacker with the ability to initiate multiple client connections at high speed can exploit this race condition to induce erratic behavior or crashes by creating a state where the shared variables `g_client_count` and `g_client_sockets` are inconsistent.
+    code-sources: The entry point for user input is the `accept` function which accepts client connections and the subsequent use of the `recv` function within the `handle_client_request` function.
+    code-sinks: The variables `g_client_count` and `g_client_sockets` in the `accept_client_connections` function.
+    suggested-fix: 
+    ```diff
+    --- a/falcon180b-6547
+    +++ b/falcon180b-6547
+    @@ -45,11 +45,12 @@
+       while (1) {
+           printf("Waiting for client connection...\n");
+           int client_socket = accept(server_socket, NULL, NULL);
+           if (client_socket == -1) {
+               printf("Error accepting client connection\n");
+               continue;
+           }
+    
+           lock_semaphore();
+           if (g_client_count < MAX_CLIENTS) {
+               g_client_sockets[g_client_count] = client_socket;
+               g_client_count++;
+    
+               pthread_t thread_id;
+    -          pthread_create(&thread_id, NULL, handle_client_request, (void *)&client_socket);
+    +              pthread_create(&thread_id, NULL, handle_client_request, (void *)&client_socket);
+    +      } else {
+    +          close(client_socket); // Reject client if max limit reached
+           }
+           unlock_semaphore();
+       }
+    ```
+    explanation-suggested-fix: The suggested fix involves adding a check to see if the client count has reached the maximum limit before proceeding with adding the client socket and incrementing the client count. This check is done under the protection of a semaphore lock, ensuring mutual exclusion and protecting the shared variables from concurrent access issues.
+    method: UNKNOWN

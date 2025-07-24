@@ -1,0 +1,49 @@
+ 
+
+43c43,54
+<     // Print options
+---
+>     // Print options and read user input
+>     printf("\nChoose an option:\n");
+>     printf("1 - Turn on/off a bulb\n");
+>     printf("2 - Set the brightness level of a bulb\n");
+>     printf("3 - Quit\n");
+>     if (scanf("%d", &option) != 1) {
+>       printf("Invalid input! Exiting.\n");
+>       exit(1);
+>     }
+>     
+45a57,58
+>     int bulbId;
+>     int brightness;
+48c61,66
+<     scanf("%d", &bulbId);
+---
+>     if (scanf("%d", &bulbId) != 1) {
+>       printf("Invalid bulb ID input!\n");
+>       break;
+>     }
+57c75,80
+<     scanf("%d", &bulbId);
+---
+>     if (scanf("%d", &bulbId) != 1) {
+>       printf("Invalid bulb ID input!\n");
+>       break;
+>     }
+>     if (bulbId < 1 || bulbId > MAX_BULBS) {
+>       printf("Invalid bulb ID!\n");
+>       break;
+61c85,91
+<     scanf("%d", &brightness);
+---
+>     if (scanf("%d", &brightness) != 1) {
+>       printf("Invalid brightness input!\n");
+>       break;
+>     }
+>     if (brightness < 0 || brightness > 100) {
+>       printf("Invalid brightness level!\n");
+>       break;
+>     }
+72a103
+>     default:
+

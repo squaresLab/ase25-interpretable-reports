@@ -1,0 +1,26 @@
+ 
+
+--- vulnerable_code.c
++++ fixed_code.c
+@@ -23,7 +23,9 @@
+         if (read_size < 0) {
+             perror("Error reading from client");
+             break;
+         }
++        if (read_size >= BUFFER_SIZE) {
++            read_size = BUFFER_SIZE - 1;
++        }
+         buffer[read_size] = '\0';
+         printf("Client %d says: %s\n", sock, buffer);
+         pthread_mutex_lock(&client_mutex);
+@@ -51,6 +53,9 @@
+         }
+         pthread_mutex_unlock(&client_mutex);
+         printf("Client %d connected\n", client_socket);
++        if (num_clients >= MAX_CLIENTS) {
++            close(client_socket);
++            continue;
++        }
+         pthread_t thread;
+         if (pthread_create(&thread, NULL, handle_client, &client_socket) != 0) {
+

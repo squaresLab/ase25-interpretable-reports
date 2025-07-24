@@ -1,0 +1,42 @@
+
+vuln-fix: CWE-401: Memory Leak in gpt35-24384 (severity: Moderate)
+what: The code contains a memory leak vulnerability in the `add_node` function where the allocated memory for `name` is not freed, leading to potential memory exhaustion over time.
+where: 
+```
+    void add_node(struct graph *g, int id, char *name) {
+        struct node n;
+        n.id = id;
+        n.name = strdup(name); // memory allocated here
+        g->nodes[g->num_nodes++] = n;
+    }
+```
+    (file: gpt35-24384, lines 17-22)
+why: If the memory leak is not resolved, it can cause the application to consume an increasing amount of memory, potentially leading to performance degradation and eventually causing the application to crash when the system memory is exhausted.
+how: An attacker could exploit this vulnerability by repeatedly adding nodes to the graph, causing continuous memory allocation without freeing, thereby exhausting the system memory.
+code-sources: The `name` parameter in the `add_node` function.
+code-sinks: The `strdup(name)` call in the `add_node` function where memory is allocated.
+suggested-fix:
+```
+diff --git a/gpt35-24384 b/gpt35-24384
+index e69de29..2e69e36 100644
+--- a/gpt35-24384
++++ b/gpt35-24384
+@@ -43,6 +43,7 @@ int main() {
+     add_node(&g, 4, "Switch2");
+     add_node(&g, 5, "Router3");
+     add_node(&g, 6, "Server1");
++    free(g.nodes[0].name);
+     add_node(&g, 7, "Server2");
+ 
+     add_edge(&g, 1, 2, 1);
+@@ -55,6 +56,7 @@ int main() {
+     add_edge(&g, 4, 6, 2);
+     add_edge(&g, 4, 7, 1);
+ 
++    for (int i = 0; i < g.num_nodes; i++) { free(g.nodes[i].name); }
+     print_graph(&g);
+ 
+     return 0;
+```
+explanation-suggested-fix: The proposed fix includes freeing the allocated memory for the `name` field of each node in the main function after it has been used. The loop ensures all dynamically allocated memory for `name` is properly freed, which prevents the memory leak.
+method: UNKNOWN

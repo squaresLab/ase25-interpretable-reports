@@ -1,0 +1,24 @@
+ 
+
+--- falcon180b-46356.orig.cpp
++++ falcon180b-46356.fixed.cpp
+@@ -36,14 +36,16 @@
+         int bytes_received = recv(client_socket, buffer, MAX_BUFFER_SIZE, 0);
+         if (bytes_received <= 0) {
+             printf("Client %d disconnected\n", client_socket);
+             close(client_socket);
+             break;
+         }
+         buffer[bytes_received] = '\0'; // Null-terminate the buffer
+-        printf("Client %d sent: %s\n", client_socket, buffer);
++        printf("Client %d sent: %.*s\n", client_socket, bytes_received, buffer);
+         for (int i = 0; i < num_clients; i++) {
+             if (client_sockets[i]!= client_socket) {
+-                send(client_sockets[i], buffer, strlen(buffer), 0);
++                send(client_sockets[i], buffer, bytes_received, 0);
+             }
+         }
+     }
+     return NULL;
+ }
+

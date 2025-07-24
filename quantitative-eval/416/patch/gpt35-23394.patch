@@ -1,0 +1,25 @@
+
+
+--- gpt35-23394.c
++++ gpt35-23394-fixed.c
+@@ -58,7 +58,15 @@
+     }
+     // Loop to send and receive messages from the server
+     while(1) {
++        int len;
+         printf("Message: ");
+-        fgets(buffer, BUFSIZE, stdin);
++        if (fgets(buffer, BUFSIZE, stdin) == NULL) {
++            perror("Error reading input");
++            return 1;
++        }
++        len = strcspn(buffer, "\n");
++        if (len < BUFSIZE) {
++            buffer[len] = '\0';
++        } else {
++            buffer[BUFSIZE - 1] = '\0';
++        }
+         // Send the message to the server
+         if(send(sockfd, buffer, strlen(buffer), 0) < 0) {
+             perror("Error sending message");
+ 

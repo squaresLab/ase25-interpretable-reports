@@ -1,0 +1,34 @@
+ 
+    
+    --- falcon180b-71134.c
+    +++ falcon180b-71134-fixed.c
+    @@ -34,17 +34,20 @@
+     
+     int main() {
+         srand(time(0));
+    +    int light_indices[NUM_LIGHTS];
+    +    int sensor_indices[NUM_SENSORS];
+         for (int i = 0; i < NUM_LIGHTS; i++) {
+    +        light_indices[i] = i;
+             pthread_create(&light_threads[i], NULL, light_thread, &light_indices[i]);
+         }
+         for (int i = 0; i < NUM_SENSORS; i++) {
+    +        sensor_indices[i] = i;
+             pthread_create(&sensor_threads[i], NULL, sensor_thread, &sensor_indices[i]);
+         }
+         while (1) {
+             for (int i = 0; i < NUM_LIGHTS; i++) {
+                 printf("Light %d: %d\n", i+1, light_values[i]);
+             }
+             printf("\n");
+             for (int i = 0; i < NUM_SENSORS; i++) {
+                 printf("Sensor %d: %d\n", i+1, sensor_values[i]);
+             }
+             printf("\n");
+             fflush(stdout);
+             usleep(100000);
+         }
+         return 0;
+     }
+    
+    

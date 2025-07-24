@@ -1,0 +1,14 @@
+ 
+
+--- gpt35-63037-original.c
++++ gpt35-63037-fixed.c
+@@ -24,7 +24,7 @@
+         fgets(msg, MAX_MSG_LENGTH, stdin);
+         msg[strcspn(msg, "\n")] = '\0'; // remove newline character
+         // Buffer length checking is added here
+-        sprintf(msg, "%s: %s", cl->name, msg);
++        snprintf(msg, MAX_MSG_LENGTH, "%s: %s", cl->name, msg);
+         if (send(cl->sockfd, msg, strlen(msg), 0) < 0) {
+             perror("Error sending message to all clients");
+         }
+

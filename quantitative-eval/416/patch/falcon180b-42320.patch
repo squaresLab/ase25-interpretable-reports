@@ -1,0 +1,35 @@
+ 
+
+diff --git a/falcon180b-42320 b/falcon180b-42320
+index abcdefg..hijklmn 100644
+--- a/falcon180b-42320
++++ b/falcon180b-42320
+@@ -26,7 +26,7 @@ void *handle_client(void *arg) {
+ int main() {
+     int opt = 1;
+     setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+ 
+-    while (num_clients < MAX_CLIENTS) {
++    while (num_clients < MAX_CLIENTS) {
+-        int client_socket = accept(server_socket, NULL, NULL);
++        int *client_socket = malloc(sizeof(int));
++        *client_socket = accept(server_socket, NULL, NULL);
+ 
+         if (*client_socket == -1) {
+             printf("Error accepting connection\n");
+@@ -34,8 +34,10 @@ int main() {
+         }
+ 
+-        printf("Client %d connected\n", client_socket);
+-        client_sockets[num_clients++] = client_socket;
++        printf("Client %d connected\n", *client_socket);
++        client_sockets[num_clients++] = *client_socket;
+ 
+         pthread_t thread_id;
+-        pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
++        pthread_create(&thread_id, NULL, handle_client, (void *) client_socket);
++        pthread_detach(thread_id); // Ensure resources are cleaned up when the thread terminates
+         }
+ 
+     while (1) {
+

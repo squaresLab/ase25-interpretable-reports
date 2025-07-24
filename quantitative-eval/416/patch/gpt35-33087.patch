@@ -1,0 +1,19 @@
+ 
+
+--- gpt35-33087.c
++++ gpt35-33087-fixed.c
+@@ -12,8 +12,13 @@
+ void *handle_client(void *client_socket) {
+     int socket = *(int *)client_socket;
+     char buffer[1024] = {0};
+-    while (recv(socket, buffer, 1024, 0) > 0) {
+-        printf("Message from client: %s\n", buffer);
++    ssize_t recv_len;
++    while ((recv_len = recv(socket, buffer, 1024, 0)) > 0) {
++        buffer[recv_len] = '\0'; // Ensure null-termination
++        printf("Message from client: %.1024s\n", buffer); // Limit output to buffer size
+         memset(buffer, 0, 1024);
+     }
+     close(socket);
+ }
+

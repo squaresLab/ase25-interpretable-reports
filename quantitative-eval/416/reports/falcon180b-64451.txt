@@ -1,0 +1,49 @@
+
+    vuln-fix: CWE-362: Race Condition in falcon180b-64451 (severity: High)
+    what: The code contains a race condition vulnerability due to the incorrect handling of thread arguments in the `create_thread` function.
+    where: The vulnerability is located in the `create_thread` function, where the `id` argument is shared among all threads without proper synchronization.
+    why: If not resolved, this race condition can lead to undefined behavior or program crashes, causing potential data corruption and security risks.
+    how: An attacker could exploit this race condition to manipulate data being processed by different threads, leading to unexpected results or making the application crash.
+    code-sources: In this program, there are no user inputs as sources. However, the vulnerability arises from the shared `id` variable in the `create_thread` function.
+    code-sinks: The sink is the improper usage of the `id` variable inside the `create_thread` function.
+    suggested-fix: 
+    ```diff
+    --- falcon180b-64451.c
+    +++ falcon180b-64451-fixed.c
+    @@ -20,12 +20,16 @@
+     
+     void *worker(void *arg) {
+         int id = *(int *) arg;
+    -    printf("Thread %d is running\n", id);
+    +    printf("Thread %d is running\n", id);
+         sleep(1);
+    -    printf("Thread %d is done\n", id);
+    +    printf("Thread %d is done\n", id);
+         return NULL;
+     }
+     
+    -void create_thread(int id) {
+    -    thread_t *thread = &queue.threads[id];
+    -    pthread_create(&thread->thread_id, NULL, worker, &id);
+    +void create_thread(int *id_ptr) {
+    +    int id = *id_ptr;
+    +    thread_t *thread = &queue.threads[id];
+    +    int *arg = malloc(sizeof(int));
+    +    *arg = id;
+    +    pthread_create(&thread->thread_id, NULL, worker, arg);
+         thread->is_running = 1;
+    +    free(arg);
+     }
+     
+     void start_queue() {
+    @@ -38,7 +42,7 @@
+         int i;
+         for (i = 0; i < MAX_THREADS; i++) {
+    -        create_thread(i);
+    +        create_thread(&queue.threads[i].id);
+         }
+     }
+     
+    ```
+    explanation-suggested-fix: The suggested fix allocates memory for a new integer to hold the thread id and then passes this pointer to the `worker` function. This ensures each thread receives a unique copy of the `id`, preventing the race condition. Freeing the allocated memory ensures no memory leaks in the `create_thread` function.
+    method: UNKNOWN

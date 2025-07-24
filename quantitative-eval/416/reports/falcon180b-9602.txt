@@ -1,0 +1,25 @@
+    
+vuln-fix: CWE-126: Buffer Over-read in falcon180b-9602 (severity: High)
+what: The code reads data from a socket without proper bounds checking, leading to potential buffer over-read due to the use of `strlen()` on untrusted data from the buffer.
+where: The vulnerability is located in the `handle_client()` function, particularly on lines with `recv()` and `strlen(buffer)`.
+why: An attacker can cause the application to read beyond the intended buffer boundaries, potentially leading to information disclosure, memory corruption, or application crashes.
+how: An attacker can send specially crafted data to the server. By manipulating the data sent, the attacker can exploit the lack of bounds checking around the size and content of the data read and sent back, potentially triggering a buffer over-read.
+code-sources: `recv()` function call on `buffer` in the `handle_client()` function.
+code-sinks: `strlen()` function call on `buffer` in the `handle_client()` function; `send()` function call using `buffer` and the result of `strlen(buffer)`.
+suggested-fix: 
+```diff
+--- falcon180b-9602.c
++++ falcon180b-9602-fixed.c
+@@ -14,6 +14,7 @@
+         memset(buffer, 0, BUFFER_SIZE);
+         int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+         if (bytes_received <= 0) {
++            break;
++        } else if (bytes_received >= BUFFER_SIZE) {
++            buffer[BUFFER_SIZE - 1] = '\0';
+         }
+         printf("Client %d sent message: %s\n", client_socket, buffer);
+         send(client_socket, buffer, strlen(buffer), 0);
+```
+explanation-suggested-fix: The suggested fix includes additional checks to ensure the buffer is properly null-terminated if the amount of data received reaches or exceeds the buffer size. This prevents `strlen()` from reading beyond the allocated buffer.
+method: UNKNOWN

@@ -1,0 +1,101 @@
+
+vuln-fix: CWE-787: Out-of-bounds Write in falcon180b-51 (severity: High)
+what: The vulnerability is an out-of-bounds write due to using the `client_socket` descriptor to identify clients in the client handler thread, causing potential misuse of array boundaries and memory corruption.
+where: The vulnerability is located in the `handle_client` function, specifically around the for-loop that sends data to all connected clients and the client array management in lines starting from line 18 and ending at the decrement of `num_clients`.
+why: If this weakness is not resolved, an attacker can exploit this to write beyond the allocated memory boundaries, potentially causing application crashes, data corruption, or arbitrary code execution.
+how: An attacker could send a specially crafted sequence of network packets to manipulate the `client_socket` identifier, resulting in an out-of-bounds write when accessing the `client_sockets` array or decrementing `num_clients`.
+code-sources: The entry point where user input enters the application is through network communication in the `accept` function call in the `main` function.
+code-sinks: The application uses the user input in the `send` function inside the `handle_client` function.
+suggested-fix:
+```diff
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <pthread.h>
+
+#define MAX_CLIENTS 10
+#define BUFFER_SIZE 1024
+#define PORT 8080
+
+int client_sockets[MAX_CLIENTS];
+pthread_mutex_t clients_mutex = PTHREAD_MUTEX_INITIALIZER;
+int num_clients = 0;
+
+void *handle_client(void *arg) {
+    int client_socket = *(int *) arg;
+    char buffer[BUFFER_SIZE];
+
+    while (1) {
+        memset(buffer, 0, BUFFER_SIZE);
+        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+
+        if (bytes_received <= 0) {
+            break;
+        }
+
+        printf("Client %d sent: %s\n", client_socket, buffer);
+
+        pthread_mutex_lock(&clients_mutex);
+        for (int i = 0; i < num_clients; i++) {
+            if (client_sockets[i] != client_socket && client_sockets[i] != -1) {
+                send(client_sockets[i], buffer, strlen(buffer), 0);
+            }
+        }
+        pthread_mutex_unlock(&clients_mutex);
+    }
+
+    close(client_socket);
+
+    pthread_mutex_lock(&clients_mutex);
+    for (int i = 0; i < num_clients; i++) {
+        if (client_sockets[i] == client_socket) {
+            client_sockets[i] = -1;
+        }
+    }
+    num_clients--;
+    pthread_mutex_unlock(&clients_mutex);
+}
+
+int main() {
+    int server_socket = socket(AF_INET, SOCK_STREAM, 0);
+
+    struct sockaddr_in server_addr;
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.s_addr = INADDR_ANY;
+    server_addr.sin_port = htons(PORT);
+
+    bind(server_socket, (struct sockaddr *) &server_addr, sizeof(server_addr));
+
+    listen(server_socket, 3);
+
+    printf("Server is listening on port %d\n", PORT);
+
+    while (1) {
+        int client_socket = accept(server_socket, NULL, NULL);
+
+        pthread_mutex_lock(&clients_mutex);
+        if (num_clients >= MAX_CLIENTS) {
+            send(client_socket, "Server is full. Please try again later.\n", 50, 0);
+            close(client_socket);
+            pthread_mutex_unlock(&clients_mutex);
+            continue;
+        }
+
+        client_sockets[num_clients] = client_socket;
+        num_clients++;
+        pthread_mutex_unlock(&clients_mutex);
+
+        pthread_t thread_id;
+        pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+    }
+
+    return 0;
+}
+```
+explanation-suggested-fix: The suggested fix includes the introduction of a mutex to protect the shared `client_sockets` array and `num_clients` variable. This ensures that modifications and accesses to these shared resources are synchronized, preventing out-of-bounds access and potential memory corruption. The mutex locks and unlocks prevent race conditions, ensuring thread-safe operations.
+method: UNKNOWN

@@ -1,0 +1,26 @@
+
+    vuln-fix: Unbounded Write (CWE-787) in gpt35-72480 (severity: High)
+    what: The code accepts an input string for the HEX color code without checking the size, which can lead to a buffer overflow when a large input is provided.
+    where: Line 42 in file gpt35-72480.c
+    why: An attacker can exploit this vulnerability by supplying an excessively long string, causing a buffer overflow. This can lead to arbitrary code execution, system crashes, or data corruption.
+    how: An attacker would supply a string longer than the allocated size of the `color` array (20 bytes) to overflow the buffer.
+    code-sources: `scanf("%s",color)` in the case 2 of the switch statement.
+    code-sinks: The contents of `color` are used in the `strtol` function calls which could read beyond the buffer boundary given an overly lengthy input string.
+    suggested-fix:
+    ```diff
+    --- gpt35-72480.c
+    +++ gpt35-72480.c
+    @@ -39,7 +39,7 @@
+             break;
+             
+         case 2:
+             printf("Enter the HEX color code: ");
+    -        scanf("%s",color);
+    +        scanf("%19s",color);
+             printf("The RGB color code is (%d, %d, %d)\n", 
+                 (int)strtol(color+0, &ch, 16),
+                 (int)strtol(color+2, &ch, 16),
+    ```
+
+    explanation-suggested-fix: The proposed change limits the length of input to 19 characters (one less than the allocated buffer size to leave room for the null terminator), preventing buffer overflow by ensuring the input fits within the allocated array.
+    method: UNKNOWN

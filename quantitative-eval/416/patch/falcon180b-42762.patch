@@ -1,0 +1,25 @@
+
+
+--- falcon180b-42762.c 2023-09-01
++++ falcon180b-42762-patched.c 2023-09-01
+@@ -18,7 +18,8 @@
+         recv(client_socket, buffer, BUFFER_SIZE, 0);
+
+         if (strcmp(buffer, "on") == 0) {
+-            system("gpio write 18 1");
++            // Replace system call with safer implementation
++            gpio_write(18, 1);
+         } else if (strcmp(buffer, "off") == 0) {
+-            system("gpio write 18 0");
++            // Replace system call with safer implementation
++            gpio_write(18, 0);
+         } else if (strcmp(buffer, "status") == 0) {
+             char response[20];
+-            sprintf(response, "Light is %s", (system("gpio read 18") == 0)? "off" : "on");
++            // Replace system call with safer implementation
++            char *status = get_gpio_status(18);
++            sprintf(response, "Light is %s", status);
+             send(client_socket, response, strlen(response), 0);
+         }
+     ...
+

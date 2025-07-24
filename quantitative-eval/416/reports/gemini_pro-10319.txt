@@ -1,0 +1,52 @@
+
+vuln-fix: CWE-362: Race Condition in gemini_pro-10319 (severity: High)
+what: The code creates a race condition by passing the address of the local variable `client_socket` to `pthread_create`. Since `client_socket` is reused in the loop, multiple threads can end up with the same value, leading to undefined behavior, potential crashes, or interactions with the wrong sockets.
+where: The race condition occurs in the `main` function, specifically in the following lines:
+   ```c
+   int client_socket;
+   pthread_t thread;
+   while ((client_socket = accept(server_socket, NULL, NULL)) != -1) {
+       if (pthread_create(&thread, NULL, handle_connection, (void*)&client_socket) != 0) {
+           perror("Failed to create thread");
+           return 1;
+       }
+       pthread_detach(thread);
+   }
+   ```
+why: If this weakness is not resolved, it can cause undefined behavior, including but not limited to application crashes, incorrect processing of client requests, and unintended interactions between client connections. Such issues can compromise the reliability and security of the application.
+how: An attacker might exploit this race condition by rapidly opening multiple connections to the server, causing new threads to be created before the previous ones had a chance to copy the `client_socket` value. This can confuse the server, causing it to mishandle client messages or crash.
+code-sources: The entry point where user input enters the application is the `recv` function in the `handle_connection` thread function.
+code-sinks: The entry points where the user input is used are within the `handle_connection` function, specifically:
+    - `recv(client_socket, message, sizeof(message), 0);`
+    - `printf("Received message: %s\n", message);`
+suggested-fix: 
+```diff
+diff --git a/gemini_pro-10319 b/gemini_pro-10319
+index a1b2c3d..e4f5g6h 100644
+--- a/gemini_pro-10319
++++ b/gemini_pro-10319
+@@ -40,14 +40,19 @@ int main() {
+     printf("Server is up and running, waiting for connections...\n");
+ 
+     // Handle incoming connections in separate threads
+-    int client_socket;
++    int client_socket;
+     pthread_t thread;
++    
+     while ((client_socket = accept(server_socket, NULL, NULL)) != -1) {
+-        if (pthread_create(&thread, NULL, handle_connection, (void*)&client_socket) != 0) {
++        int *client_sock_ptr = malloc(sizeof(int));
++        *client_sock_ptr = client_socket;
++        if (pthread_create(&thread, NULL, handle_connection, client_sock_ptr) != 0) {
+             perror("Failed to create thread");
+             return 1;
+         }
+         pthread_detach(thread);
++        client_sock_ptr = NULL;
++        free(client_sock_ptr);
+     }
+ 
+     // Close the server socket
+```
+explanation-suggested-fix: The suggested code diff resolves the race condition by dynamically allocating memory for each `client_socket` value and passing this address to `pthread_create`. This ensures that each thread gets a unique socket value, eliminating the chances of race conditions. The memory allocated is freed immediately after the socket is successfully passed to the thread.
+method: UNKNOWN

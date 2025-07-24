@@ -1,0 +1,21 @@
+ 
+    
+    --- gemini_pro-19533.c
+    +++ gemini_pro-19533-fixed.c
+    @@ -31,12 +31,14 @@
+         // Create an array of thread IDs
+         pthread_t thread_ids[NUM_CANDIDATES];
+     
+    +    // Create an array to hold candidate IDs
+    +    int candidate_ids[NUM_CANDIDATES];
+    +
+         // Create a thread for each candidate
+         for (int i = 0; i < NUM_CANDIDATES; i++) {
+    +        candidate_ids[i] = i;
+             pthread_create(&thread_ids[i], NULL, cast_vote, &candidate_ids[i]);
+         }
+     
+         // Join all the threads
+         for (int i = 0; i < NUM_CANDIDATES; i++) {
+    
+    

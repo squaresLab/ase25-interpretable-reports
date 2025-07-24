@@ -1,0 +1,71 @@
+
+vuln-fix: Buffer Overflow (CWE-120) in falcon180b-1578 (severity: High)
+what: The code contains a buffer overflow vulnerability in the `handle_client` function. Specifically, the `buffer` array allocated on the stack has a fixed size of 1024 bytes, but `recv` can write up to 1024 bytes into `buffer` without null-terminating it. Subsequent use of `strlen(buffer)` in `send` can lead to out-of-bounds access.
+where: Line numbers in falcon180b-1578 for function `handle_client`:
+```c
+void *handle_client(void *arg) {
+    int client_socket = *(int *) arg;
+    char buffer[BUFFER_SIZE];
+
+    while (1) {
+        memset(buffer, 0, BUFFER_SIZE);
+        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+
+        if (bytes_received <= 0) {
+            break;
+        }
+
+        printf("Client %d sent message: %s\n", client_socket, buffer);
+        for (int i = 0; i < num_clients; i++) {
+            if (clients[i]!= client_socket) {
+                send(clients[i], buffer, strlen(buffer), 0);
+            }
+        }
+    }
+
+    close(client_socket);
+    return NULL;
+}
+```
+why: If this vulnerability is not resolved, an attacker could send a specially crafted message that leads to buffer overflow, potentially causing a program crash, allowing arbitrary code execution or other undesired behavior.
+how: An attacker would send a message exceeding the buffer size to overflow the `buffer` variable and potentially execute arbitrary code or crash the server.
+code-sources: 
+- The `recv` function call in `handle_client` function.
+```c
+int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+```
+- The `accept` function call in `main`:
+```c
+int client_socket = accept(server_socket, NULL, NULL);
+```
+code-sinks: 
+- The `send` function call within the for loop in `handle_client`:
+```c
+send(clients[i], buffer, strlen(buffer), 0);
+```
+suggested-fix: 
+```diff
+--- falcon180b-1578.c
++++ falcon180b-1578-fixed.c
+@@ -13,6 +13,7 @@
+     char buffer[BUFFER_SIZE];
+
+     while (1) {
++        memset(buffer, 0, BUFFER_SIZE + 1);  // Ensure extra space for null-termination
+         int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+
+         if (bytes_received <= 0) {
+@@ -20,6 +21,7 @@
+         }
+
+         buffer[bytes_received] = '\0';  // Explicitly null-terminate the received data
+-        printf("Client %d sent message: %s\n", client_socket, buffer);
++        printf("Client %d sent message: %.*s\n", client_socket, bytes_received, buffer);  // Prevent overflow in printf
+         for (int i = 0; i < num_clients; i++) {
+             if (clients[i] != client_socket) {
+                 send(clients[i], buffer, bytes_received, 0);
+             }
+         }
+```
+explanation-suggested-fix: The code diff resolves the buffer overflow vulnerability by ensuring the buffer is explicitly null-terminated after data is received from `recv`. Additionally, it changes the `printf` function to use a length-limited format to avoid reading beyond the received message length.
+method: UNKNOWN

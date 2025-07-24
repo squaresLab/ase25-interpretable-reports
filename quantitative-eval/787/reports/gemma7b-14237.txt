@@ -1,0 +1,28 @@
+
+vuln-fix: Unbounded Write (CWE-787) in gemma7b-14237 at line 34 (severity: High)
+what: This vulnerability involves a buffer write operation that does not control the length of data being written, potentially causing a buffer overflow.
+where: The vulnerability is located in the csv_reader_parse function at line 34 in gemma7b-14237.
+why: If this vulnerability is not addressed, an attacker could exploit it to perform a buffer overflow attack, potentially allowing execution of arbitrary code, crashing the application, or corrupting data.
+how: An attacker could exploit this vulnerability by crafting a CSV file with a line longer than 1024 characters. When such a line is read by fgets, it would cause subsequent operations like strcpy and token manipulations to overflow the allocated buffer.
+code-sources: The source of user input is in the csv_reader_init function when the filename parameter is used to open a file.
+code-sinks: The actions using user input are found in the csv_reader_parse function, specifically in the fgets, strcpy, and token assignments.
+suggested-fix: 
+```diff
+--- gemma7b-14237.c
++++ gemma7b-14237.c
+@@ -30,7 +30,8 @@
+         reader->rows++;
+         token = strtok(line, ",");
+         reader->cols = (token ? atoi(token) : 0) + 1;
+-        reader->data = realloc(reader->data, reader->rows * sizeof(char*));
++        reader->data = realloc(reader->data, reader->rows * sizeof(char*));
++        reader->data[reader->rows - 1] = malloc(reader->cols * sizeof(char*));
+-        strcpy(reader->data[reader->rows - 1], line);
++        strncpy(reader->data[reader->rows - 1], line, sizeof(reader->data[reader->rows - 1]) - 1);
++        reader->data[reader->rows-1][sizeof(reader->data[reader->rows-1]) - 1] = '\0';
+         i = 0;
+         token = strtok(line, ",");
+         while (token) {
+```
+explanation-suggested-fix: The provided code diff replaces the vulnerable strcpy function with strncpy, which includes the maximum buffer size to prevent buffer overflow. It also ensures the last character in the buffer is a null-terminator, safeguarding against potential overflow.
+method: CODEQL

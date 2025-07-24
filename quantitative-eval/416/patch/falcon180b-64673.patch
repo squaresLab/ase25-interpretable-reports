@@ -1,0 +1,44 @@
+ 
+    
+    --- original_falcon180b-64673.c
+    +++ fixed_falcon180b-64673.c
+    @@ -13,11 +13,15 @@
+     int create_thread(pthread_t *thread, const char *name,
+                       void *(*func)(void *), void *arg) {
+         int ret;
+    -    thread_data_t data;
+    +    thread_data_t *data;
+    +    
+    +    data = malloc(sizeof(thread_data_t));
+    +    if (data == NULL) {
+    +        fprintf(stderr, "Error: unable to allocate memory for thread_data_t\n");
+    +        return -1;
+    +    }
+
+    -    data.id = *thread;
+    -    data.func = func;
+    -    data.arg = arg;
+    +    data->id = *thread;
+    +    data->func = func;
+    +    data->arg = arg;
+
+         ret = pthread_create(thread, NULL, thread_func, data);
+         if (ret!= 0) {
+             fprintf(stderr, "Error: unable to create thread, %s\n", strerror(ret));
+    @@ -26,6 +30,7 @@
+             return ret;
+         }
+
+    -    ret = pthread_setname_np(*thread, name);
+    +    ret = pthread_setname_np(*thread, name);
+         if (ret!= 0) {
+            fprintf(stderr, "Error: unable to set thread name, %s\n", strerror(ret));
+    +        free(data);
+            return ret;
+         }
+    
+         return 0;
+     }
+    
+
+    

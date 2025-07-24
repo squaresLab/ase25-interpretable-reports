@@ -1,0 +1,37 @@
+
+vuln-fix: CWE-788 (Out-of-bounds Write) in falcon180b-10930 (severity: High)
+what: The code snippet contains a potential buffer overflow due to the handling of incoming data in the `handle_client` function. The `buffer` array is of a fixed size (`BUFFER_SIZE`), but there are no checks to ensure that incoming messages do not exceed this size, which could lead to a buffer overflow.
+where: The vulnerability is located in the `handle_client` function of the `falcon180b-10930` file, specifically at the line where `recv` is called:
+```c
+int bytes_received = recv(client_sock, buffer, BUFFER_SIZE, 0);
+```
+why: A buffer overflow can lead to various critical issues, including corruption of data, crashes, or exploitation by malicious actors to execute arbitrary code, thereby compromising the system or network.
+how: An attacker could exploit this vulnerability by sending specially crafted data that exceeds `BUFFER_SIZE`, causing a buffer overflow and potentially allowing the execution of arbitrary code or crashing the server, resulting in a denial of service.
+code-sources: The entry point where user input enters the application is the `accept` function call which accepts incoming connections from clients. Specifically, it is this line of code in the main function:
+```c
+int client_sock = accept(server_sock, (struct sockaddr *) &client_addr, &client_addr_size);
+```
+Once a connection is accepted, the user input is processed in the `recv` function call:
+```c
+int bytes_received = recv(client_sock, buffer, BUFFER_SIZE, 0);
+```
+code-sinks: The action performed by the application using user input is the logging of the received data with the `printf` function call:
+```c
+printf("Client %d sent: %s\n", client_sock, buffer);
+```
+suggested-fix: 
+```diff
+10a11
+> #include <errno.h>
+45a47,54
+>         if (bytes_received == -1) {
+>             perror("recv failed");
+>             break;
+>         }
+> 
+>         if (bytes_received >= BUFFER_SIZE) {
+>             fprintf(stderr, "Received data exceeds buffer size\n");
+>             break;
+>         }
+explanation-suggested-fix: The suggested code diff adds error handling to check the return value of `recv`. If `recv` fails (returns -1), the error is logged using `perror`, and the loop breaks, closing the connection. Additionally, if `bytes_received` exceeds the buffer size, an error message is logged, and the loop also breaks to prevent a buffer overflow.
+method: UNKNOWN

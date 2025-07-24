@@ -1,0 +1,33 @@
+ 
+
+--- falcon180b-60732-original.c
++++ falcon180b-60732-fixed.c
+@@ -64,8 +64,10 @@
+ 
+         lock_semaphore();
+ 
+-        int i = 0;
+-        while (clients[i] != 0) {
++        int i;
++        for (i = 0; i < MAX_CLIENTS && clients[i] != 0; i++);
++
++        if (i < MAX_CLIENTS) {
+             i++;
+         }
+ 
++        clients[i] = client_socket_fd;
+-        printf("Client %d connected\n", client_socket_fd);
++        printf("Client %d connected\n", client_socket_fd);
++
++        unlock_semaphore();
++
++        pthread_t thread_id;
++        pthread_create(&thread_id, NULL, handle_client, &client_socket_fd);
++    }
++
++    close(server_socket_fd);
++    sem_destroy(&mutex);
++
++    return 0;
++}
+

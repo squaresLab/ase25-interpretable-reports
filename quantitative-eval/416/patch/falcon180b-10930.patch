@@ -1,0 +1,14 @@
+ 
+
+10a11
+> #include <errno.h>
+45a47,54
+>         if (bytes_received == -1) {
+>             perror("recv failed");
+>             break;
+>         }
+> 
+>         if (bytes_received >= BUFFER_SIZE) {
+>             fprintf(stderr, "Received data exceeds buffer size\n");
+>             break;
+>         }

@@ -1,0 +1,29 @@
+ 
+
+--- falcon180b-4385  2023-10-09 12:00:00
++++ falcon180b-4385-fixed  2023-10-09 12:30:00
+@@ -16,7 +16,7 @@
+ void *handle_client(void *arg) {
+     int client_socket = *(int *) arg;
+     char buffer[BUFFER_SIZE];
+ 
+     while (1) {
+         memset(buffer, 0, BUFFER_SIZE);
+-        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
++        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE - 1, 0);
+ 
+         if (bytes_received <= 0) {
+             break;
+@@ -21,7 +21,8 @@
+ 
+         printf("Client %d sent message: %s\n", client_socket, buffer);
+ 
+         for (int i = 0; i < num_clients; i++) {
+             if (client_sockets[i]!= client_socket) {
+-                send(client_sockets[i], buffer, strlen(buffer), 0);
++                send(client_sockets[i], buffer, bytes_received, 0);
+             }
+         }
+     }
+
+ 

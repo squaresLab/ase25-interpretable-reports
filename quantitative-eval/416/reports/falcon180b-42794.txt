@@ -1,0 +1,134 @@
+
+vuln-fix: CWE-676 (Use of Potentially Dangerous Function) and CWE-362 (Race Condition) in falcon180b-42794 line 17 and 44 (severity: High)
+what: The code contains improper synchronization leading to a race condition, and it uses the `strlen` function on potentially non-null-terminated buffers.
+where: 
+- Race condition in line 44: `pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);`
+- Improper use of `strlen` in line 17: `send(client_sockets[i], buffer, strlen(buffer), 0);`
+why: Failure to address the race condition could allow attackers to interfere with the server's operations, potentially causing data corruption or denial of service. The use of `strlen` on a non-null-terminated buffer could lead to information leakage or buffer overflows.
+how: An attacker can exploit the race condition by quickly sending multiple connection requests to the server, potentially causing the server to overwrite client_socket values, disrupting client communication. They can also send crafted input to cause the `buffer` to be improperly processed by `strlen`, leading to information leakage or execution of unintended commands.
+code-sources: 
+- User input from network connections at line 31: `int client_socket = accept(server_socket, (struct sockaddr *) &client_addr, &addr_size);`
+- Received data processing at line 17: `int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);`
+code-sinks: 
+- Logging user input at line 23: `printf("Client %d sent: %s\n", client_socket, buffer);`
+- Broadcasting user input to other clients at line 26.
+suggested-fix:
+```diff
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <errno.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <pthread.h>
+#include <signal.h>
+
+#define SERVER_PORT 8080
+#define MAX_CLIENTS 10
+#define BUFFER_SIZE 1024
+
+int server_socket;
+int client_sockets[MAX_CLIENTS];
+int num_clients;
+pthread_mutex_t clients_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+void *handle_client(void *arg) {
+    int client_socket = *(int *) arg;
+    char buffer[BUFFER_SIZE];
+
+    while (1) {
+        memset(buffer, 0, BUFFER_SIZE);
+        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE - 1, 0);
+
+        if (bytes_received <= 0) {
+            break;
+        }
+
+        buffer[bytes_received] = '\0';  // Ensure null termination
+        printf("Client %d sent: %s\n", client_socket, buffer);
+        
+        pthread_mutex_lock(&clients_mutex);
+        for (int i = 0; i < num_clients; i++) {
+            if (client_sockets[i] != client_socket) {
+                send(client_sockets[i], buffer, bytes_received, 0);
+            }
+        }
+        pthread_mutex_unlock(&clients_mutex);
+    }
+
+    close(client_socket);
+
+    pthread_mutex_lock(&clients_mutex);
+    for (int i = 0; i < num_clients; i++) {
+        if (client_sockets[i] == client_socket) {
+            for (int j = i; j < num_clients - 1; j++) {
+                client_sockets[j] = client_sockets[j + 1];
+            }
+            num_clients--;
+            break;
+        }
+    }
+    pthread_mutex_unlock(&clients_mutex);
+
+    return NULL;
+}
+
+int main() {
+    int opt = 1;
+    setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+
+    if ((server_socket = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
+        perror("socket failed");
+        exit(EXIT_FAILURE);
+    }
+
+    struct sockaddr_in address;
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = INADDR_ANY;
+    address.sin_port = htons(SERVER_PORT);
+
+    if (bind(server_socket, (struct sockaddr *)&address, sizeof(address))<0) {
+        perror("bind failed");
+        exit(EXIT_FAILURE);
+    }
+
+    if (listen(server_socket, 3) < 0) {
+        perror("listen");
+        exit(EXIT_FAILURE);
+    }
+
+    while (1) {
+        struct sockaddr_in client_addr;
+        socklen_t addr_size = sizeof(client_addr);
+        int client_socket = accept(server_socket, (struct sockaddr *) &client_addr, &addr_size);
+
+        if (client_socket == -1) {
+            perror("accept");
+            continue;
+        }
+
+        printf("Client %d connected\n", client_socket);
+
+        pthread_mutex_lock(&clients_mutex);
+        if (num_clients >= MAX_CLIENTS) {
+            close(client_socket);
+            pthread_mutex_unlock(&clients_mutex);
+            continue;
+        }
+
+        client_sockets[num_clients++] = client_socket;
+        pthread_mutex_unlock(&clients_mutex);
+
+        int *new_sock = malloc(1);
+        *new_sock = client_socket;
+        pthread_t thread_id;
+        pthread_create(&thread_id, NULL, handle_client, (void *) new_sock);
+        pthread_detach(thread_id);  // Ensure resources are freed when thread terminates
+    }
+
+    return 0;
+}
+```
+explanation-suggested-fix: The suggested fix resolves the vulnerabilities by ensuring proper synchronization with a mutex (pthread_mutex_t) around the critical sections of code that modify shared resources, preventing race conditions, and by ensuring the received data is null-terminated, mitigating buffer overflow and information leakage risks.
+method: CODEQL

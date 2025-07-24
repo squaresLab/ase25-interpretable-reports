@@ -1,0 +1,43 @@
+
+vuln-fix: Unbounded Write (CWE-787) in gpt35-11639 (severity: High)
+what: The code includes buffer overflow vulnerabilities due to unbounded buffer write operations without proper length checks.
+where: Line 27 (`strcpy(new_client.username, client_username);`) and Line 44 (`sprintf(msg, "%s: %s", client_username, buffer);`) in gpt35-11639.
+why: This can lead to a buffer overflow, causing potential crashes or allowing attackers to execute arbitrary code.
+how: An attacker could send a carefully crafted input exceeding the buffer capacity, causing the application to overwrite adjacent memory.
+code-sources: Line 24: `read(socket_fd, client_username, sizeof(client_username));` and Line 31: `int valread = read(socket_fd, buffer, 1024);`
+code-sinks: Line 27: `strcpy(new_client.username, client_username);` and Line 44: `sprintf(msg, "%s: %s", client_username, buffer);`
+suggested-fix: 
+```diff
+--- gpt35-11639.c
++++ gpt35-11639.c
+@@ -24,7 +24,7 @@
+ void *handle_client(void *cli_socket) {
+   int socket_fd = *(int *)cli_socket;
+   char client_username[20];
+-  read(socket_fd, client_username, sizeof(client_username));
++  read(socket_fd, client_username, sizeof(client_username)-1);
++  client_username[sizeof(client_username)-1] = '\0';
+   
+   // store client data
+   client_data new_client = { socket_fd };
+-  strcpy(new_client.username, client_username);
++  strncpy(new_client.username, client_username, sizeof(new_client.username)-1);
++  new_client.username[sizeof(new_client.username)-1] = '\0';
+@@ -41,7 +41,7 @@
+     int valread = read(socket_fd, buffer, 1024); 
+     if (valread == 0) {
+       // client has disconnected
+       close(socket_fd);
+       printf("%s has disconnected\n", client_username);
+       pthread_exit(NULL);
+     }
+     
+     // format client message
+     memset(msg, 0, sizeof(msg));
+-    sprintf(msg, "%s: %s", client_username, buffer);
++    snprintf(msg, sizeof(msg), "%s: %s", client_username, buffer);
+     
+     // broadcast message to all clients
+```
+explanation-suggested-fix: The proposed changes replace unbounded write functions `strcpy` and `sprintf` with their safer counterparts `strncpy` and `snprintf`. These functions prevent buffer overflows by controlling the length of data written. Additionally, after reading input with `read`, null-termination is explicitly added to ensure string safety.
+method: CODEQL

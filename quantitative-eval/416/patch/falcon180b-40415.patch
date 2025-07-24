@@ -1,0 +1,25 @@
+ 
+
+--- falcon180b-40415.original.c
++++ falcon180b-40415.fixed.c
+@@ -13,6 +13,7 @@
+ void *handle_client(void *arg) {
+     int client_socket = *(int *) arg;
+     char buffer[BUFFER_SIZE + 1]; // +1 to ensure null-termination
++    int bytes_received;
+
+     while (1) {
+         memset(buffer, 0, BUFFER_SIZE + 1);
+-        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
++        bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+
+         if (bytes_received <= 0) {
+             break;
+         }
+
++        buffer[BUFFER_SIZE] = '\0'; // Ensure null-termination to prevent buffer overflow
+         printf("Client %d sent: %s\n", client_socket, buffer);
+     }
+
+     close(client_socket);
+

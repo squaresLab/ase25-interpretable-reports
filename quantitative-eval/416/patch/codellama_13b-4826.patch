@@ -1,0 +1,17 @@
+ 
+
+--- codellama_13b-4826.c
++++ codellama_13b-4826_fixed.c
+@@ -37,9 +37,12 @@
+        
+         printf("Enter device name (or 'q' to quit): ");
+-        scanf("%s", device_name);
++        if (scanf("%31s", device_name) != 1) {
++            fprintf(stderr, "Error reading device name\n");
++            exit(EXIT_FAILURE);
++        }
+
+         if (strcmp(device_name, "q") == 0) {
+             break;
+         }
+

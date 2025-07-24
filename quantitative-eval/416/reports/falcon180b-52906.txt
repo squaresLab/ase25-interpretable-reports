@@ -1,0 +1,33 @@
+
+    vuln-fix: Buffer Overflow (CWE-120) in falcon180b-52906 at line 15 (severity: High)
+    what: The code lacks proper bounds checking on array indices, which can result in accessing or modifying data outside the intended bounds of buffer arrays.
+    where: The buffer overflow vulnerability is present at line 15, in the handle_client function within the file falcon180b-52906.
+    why: Failing to resolve this weakness may allow an attacker to execute arbitrary code on the server, potentially compromising the system and its data.
+    how: An attacker could exploit this vulnerability by sending crafted data that exceeds the BUFFER_SIZE, causing a buffer overflow and potentially leading to arbitrary code execution.
+    code-sources: The potential entry point for user input is recv() function call at line 15 in the handle_client() function.
+    code-sinks: The user input buffer is accessed at lines 21 and 24 in the same function handle_client().
+    suggested-fix: 
+    ```diff
+    --- falcon180b-52906	2023-10-03 22:55:33.000000000 +0200
+    +++ falcon180b-52906-fixed	2023-10-03 22:55:33.000000000 +0200
+    @@ -16,8 +16,11 @@
+         while (1) {
+             memset(buffer, 0, BUFFER_SIZE);
+             int bytes_received = recv(client_socket, buffer, BUFFER_SIZE - 1, 0);
+     
+             if (bytes_received <= 0) {
+                 break;
+            }
+ 	+
+ 	+       // Ensure null-termination of buffer
+ 	+       buffer[bytes_received] = '\0';
+ 	+
+             printf("Client %d sent: %s\n", client_socket, buffer);
+             for (int i = 0; i < num_clients; i++) {
+                 if (i != client_socket) {
+                     send(client_sockets[i], buffer, strlen(buffer), 0);
+                 }
+             }
+
+    explanation-suggested-fix: The suggested fix ensures that the buffer is properly null-terminated, which prevents buffer overflow by ensuring that any received data is confined within the allocated buffer size.
+    method: UNKNOWN

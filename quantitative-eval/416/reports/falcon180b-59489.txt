@@ -1,0 +1,29 @@
+
+    vuln-fix: Stack-based Buffer Overflow (CWE-121) in falcon180b-59489 (severity: High)
+    what: The code is susceptible to a stack-based buffer overflow vulnerability because the `handle_client` function reads data into a fixed size buffer `char buffer[BUFFER_SIZE]` without validating the length of the received data.
+    where: The vulnerability is located in falcon180b-59489, specifically within the `handle_client` function from lines 10 to 23.
+    why: If a buffer overflow occurs, it can lead to unauthorized memory access, resulting in data corruption, application crashes, or arbitrary code execution.
+    how: An attacker would send a payload larger than `BUFFER_SIZE` (1024 bytes in this case) to the application, causing the `buffer` to overflow and potentially overwriting adjacent memory, leading to a crash or executing arbitrary code.
+    code-sources: Entry point is the `recv` function in the `handle_client` function where it reads incoming data into buffer.
+    code-sinks: The vulnerability manifests when the content of the `buffer` is printed using `printf` on line 20, after data is read from the `recv` function on line 16.
+    suggested-fix: 
+    ```diff
+    --- falcon180b-59489.c   2023-10-01 12:00:00.000000000 +0000
+    +++ falcon180b-59489-fixed.c   2023-10-01 12:30:00.000000000 +0000
+    @@ -16,7 +16,7 @@
+             memset(buffer, 0, BUFFER_SIZE);
+             ssize_t bytes_received = recv(client_socket, buffer, BUFFER_SIZE - 1, 0);
+             if (bytes_received <= 0) {
+                 close(client_socket);
+                 printf("Client %d disconnected\n", client_socket);
+                 break;
+             }
+    -        printf("Client %d sent message: %s\n", client_socket, buffer);
+    +        buffer[BUFFER_SIZE - 1] = '\0'; // Ensure null-termination
+    +        printf("Client %d sent message: %.1023s\n", client_socket, buffer); // Limit to BUFFER_SIZE-1
+    
+         }
+
+    ```
+    explanation-suggested-fix: The fix ensures the buffer is always null-terminated by setting `buffer[BUFFER_SIZE - 1] = '\0'` and limits the number of characters printed to avoid overflow using `%.1023s` in the `printf` statement, thereby preventing buffer overflow.
+    method: UNKNOWN

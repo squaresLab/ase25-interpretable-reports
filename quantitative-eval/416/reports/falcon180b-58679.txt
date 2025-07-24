@@ -1,0 +1,73 @@
+
+vuln-fix: CWE-362: Race Condition in falcon180b-58679 (severity: High)
+what: The vulnerability occurs because multiple threads access and modify shared variables (`client_sock` and `num_clients`) without proper synchronization mechanisms.
+where: Lines 17-23 and lines 48-52 in the file falcon180b-58679
+why: If the race condition is not resolved, it can lead to unexpected behavior, crashes, and potential security breaches due to inconsistent states of shared variables.
+how: An attacker could exploit this vulnerability by rapidly connecting and disconnecting multiple clients, causing the server to exhibit unpredictable behavior, potentially leading to denial of service or other issues.
+code-sources: User connections via `accept()` call on line 48
+code-sinks: Modifications of `client_sock` and `num_clients` in `handle_client()` function and `main()` function.
+suggested-fix: 
+```diff
+--- falcon180b-58679.c
++++ falcon180b-58679-fixed.c
+@@ -13,6 +13,7 @@
+ int sock;
+ struct sockaddr_in server_addr;
+ struct sockaddr_in client_addr[MAX_CLIENTS];
++pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+ int client_sock[MAX_CLIENTS];
+ int num_clients = 0;
+
+@@ -21,6 +22,8 @@
+ void *handle_client(void *arg) {
+     int client_sock = *(int *)arg;
+     char buffer[1024];
++    pthread_mutex_lock(&lock);
+     while (1) {
+         memset(buffer, 0, sizeof(buffer));
+         int bytes_received = recv(client_sock, buffer, sizeof(buffer), 0);
+@@ -28,6 +31,7 @@
+             break;
+         }
+         printf("Client %d said: %s\n", client_sock, buffer);
++        pthread_mutex_unlock(&lock);
+         send(client_sock, buffer, strlen(buffer), 0);
+     }
+     close(client_sock);
+@@ -46,14 +50,19 @@
+ int main() {
+     int opt = 1;
+     setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
++    pthread_mutex_init(&lock, NULL);
+
+     server_addr.sin_family = AF_INET;
+     server_addr.sin_addr.s_addr = INADDR_ANY;
+     server_addr.sin_port = htons(PORT);
+
+     bind(sock, (struct sockaddr *)&server_addr, sizeof(server_addr));
+     listen(sock, BACKLOG);
+
++    socklen_t addrlen = sizeof(client_addr[num_clients]);
+     printf("Server is listening on port %d\n", PORT);
+
+     while (1) {
++        pthread_mutex_lock(&lock);
+         int client_sock = accept(sock, (struct sockaddr *)&client_addr[num_clients], sizeof(client_addr[num_clients]));
++        pthread_mutex_unlock(&lock);
+         if (client_sock == -1) {
+             printf("Error accepting connection\n");
+             continue;
+@@ -61,7 +70,9 @@
+         }
+         printf("Client %d connected\n", client_sock);
+         pthread_t thread_id;
++        pthread_mutex_lock(&lock);
+         pthread_create(&thread_id, NULL, handle_client, (void *)&client_sock);
+         num_clients++;
++        pthread_mutex_unlock(&lock);
+     }
+
+     return 0;
+```
+explanation-suggested-fix: The suggested code diff adds a mutex lock to ensure that access to shared variables (`client_sock` and `num_clients`) is synchronized across multiple threads. This prevents race conditions by ensuring that only one thread can access these variables at a time.
+method: UNKNOWN

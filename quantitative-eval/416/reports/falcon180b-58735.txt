@@ -1,0 +1,86 @@
+
+vuln-fix: Data Race (CWE-362) in falcon180b-58735 (severity: High)
+what: The code demonstrates a data race condition due to the incorrect use of mutex locks when passing the thread ID (variable `i`) to new threads. The `i` variable is shared among all threads and is modified by the thread creation loop. This can lead to undefined behavior as multiple threads may access and modify `i` concurrently.
+where: Line numbers related to the issue are:
+- Thread creation in lines 30-32
+- Usage of `i` in the loop within the thread function
+- Conditional waiting lines are around lines 38-41
+why: One possible consequence of not resolving the data race condition is that threads may receive incorrect or the same thread ID, leading to incorrect program behavior or crashes.
+how: An attacker may exploit this vulnerability by manipulating thread scheduling, potentially causing unpredictable program behavior and even crashes, which could be used to create a denial-of-service (DoS) condition.
+code-sources: The entry point where user input metaphorically affects the application is at the thread creation loop:
+```
+for (int i = 0; i < NUM_THREADS; i++) {
+    pthread_create(&threads[i], NULL, thread_function, (void*) &i);
+}
+```
+code-sinks: The usage of the `i` variable within the thread:
+```
+int id = *(int*) arg;
+printf("Thread %d started\n", id);
+```
+suggested-fix:
+```diff
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+
+// Mutex for synchronization
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+
+// Condition variable for signaling
+pthread_cond_t condition = PTHREAD_COND_INITIALIZER;
+
+// Number of threads
+#define NUM_THREADS 5
+
+// Thread function
+void *thread_function(void *arg) {
+    int id = *(int*) arg;
+    printf("Thread %d started\n", id);
+
+    // Lock the mutex
+    pthread_mutex_lock(&mutex);
+
+    // Signal the main thread that a thread has started
+    pthread_cond_signal(&condition);
+
+    // Unlock the mutex
+    pthread_mutex_unlock(&mutex);
+
+    // Do some work
+    for (int i = 0; i < 1000000; i++) {
+        printf("Thread %d is working...\n", id);
+    }
+
+    return NULL;
+}
+
+// Main function
+int main() {
++    int thread_ids[NUM_THREADS];
+    pthread_t threads[NUM_THREADS];
+
+    // Create threads
+    for (int i = 0; i < NUM_THREADS; i++) {
++        thread_ids[i] = i;
+        pthread_create(&threads[i], NULL, thread_function, (void*) &thread_ids[i]);
+    }
+
+    // Wait for threads to start
+    for (int i = 0; i < NUM_THREADS; i++) {
+        pthread_cond_wait(&condition, &mutex);
+    }
+
+    // Unlock the mutex and exit
+    pthread_mutex_unlock(&mutex);
+    printf("All threads have started\n");
+
+    for (int i = 0; i < NUM_THREADS; i++) {
+        pthread_join(threads[i], NULL);
+    }
+
+    return 0;
+}
+```
+explanation-suggested-fix: By introducing an array `thread_ids` to store the thread IDs, each thread receives a unique memory address pointing to its respective id. This prevents the race condition as the shared variable `i` is no longer being passed to threads.
+method: UNKNOWN

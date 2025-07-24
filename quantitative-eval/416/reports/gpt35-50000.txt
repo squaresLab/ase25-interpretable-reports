@@ -1,0 +1,25 @@
+     
+vuln-fix: Return of stack-allocated memory (CWE-825) in gpt35-50000:line 55 (severity: high)
+what: A function returns a pointer to a stack-allocated region of memory. This memory is deallocated at the end of the function, which may lead the caller to dereference a dangling pointer.
+where: line 55 in the file gpt35-50000
+why: If not resolved, this vulnerability can cause the application to crash or exhibit undefined behavior due to dereferencing a dangling pointer. This can potentially lead to a denial of service or allow an attacker to corrupt memory.
+how: An attacker can exploit this vulnerability by causing the application to use the dangling pointer returned from `read_file`, leading to a crash or undefined behavior when `process_data` tries to process the corrupted memory.
+code-sources: The entry point of user input is the `argv` array, specifically `argv[1]` which is passed as a filename to the `open` function.
+code-sinks: The actions performed using user input are the `open`, `read`, and `printf` functions, which read and process the contents of the specified file.
+suggested-fix: 
+```diff
+58c58,62
+<     return (void*) &res;
+---
+>     read_response *pres = (read_response *)malloc(sizeof(read_response));
+>     if (pres == NULL) {
+>         perror("malloc");
+>         exit(EXIT_FAILURE);
+>     }
+>     *pres = res;
+>     return (void*) pres;
+113a118
+>     free(response);
+```
+explanation-suggested-fix: The suggested code diff allocates memory on the heap for the `read_response` struct and copies the stack-allocated `res` struct to it. This ensures that the memory remains valid after the `read_file` function returns, avoiding the use of a dangling pointer. Additionally, the allocated memory is freed after processing the data, avoiding memory leaks.
+method: CODEQL if there is any taint information; say UNKNOWN otherwise

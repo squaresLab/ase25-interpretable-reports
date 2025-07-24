@@ -1,0 +1,21 @@
+ 
+
+diff --git a/falcon180b-66643 b/falcon180b-66643
+index e69de29..fa03883 100644
+--- a/falcon180b-66643
++++ b/falcon180b-66643
+@@ -57,7 +57,10 @@ int main() {
+         }
+
+         if(num_clients >= MAX_CLIENTS) {
+-            close(client_socket);
++            close(client_socket);
++            printf("Maximum number of clients reached\n");
++            continue;
+         }
+
++        if (num_clients < 0) num_clients = 0; // Added additional check to ensure num_clients remains valid
+         clients[num_clients] = client_socket;
+         num_clients++;
+ 
+

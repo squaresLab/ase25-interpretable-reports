@@ -1,0 +1,14 @@
+ 
+
+--- gpt35-44427.c
++++ gpt35-44427-fixed.c
+@@ -74,7 +74,8 @@
+   BankRecord *new_record = malloc(sizeof(BankRecord));
+   new_record->account_number = account_number;
+-  strcpy(new_record->account_holder_name, account_holder_name);
++  strncpy(new_record->account_holder_name, account_holder_name, sizeof(new_record->account_holder_name) - 1);
++  new_record->account_holder_name[sizeof(new_record->account_holder_name) - 1] = '\0'; // Null-terminate the string
+   new_record->balance = balance;
+   if (head == NULL) {
+     head = new_record;
+

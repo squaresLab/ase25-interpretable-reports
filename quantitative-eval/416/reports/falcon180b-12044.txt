@@ -1,0 +1,27 @@
+
+vuln-fix: CWE-120: Buffer Overflow in falcon180b-12044 (severity: high)
+what: The vulnerability is a potential buffer overflow when using the `send` function in the `handle_client` function. Specifically, the length of the data sent is based on `strlen(buffer)`, which does not account for the actual size received by `recv`, leading to an overflow.
+where: The vulnerability is located in the `handle_client` function, specifically at the line with `send(client_socket, buffer, strlen(buffer), 0);` in the `falcon180b-12044` file.
+why: If not resolved, an attacker could exploit this weakness to execute arbitrary code, leading to potential unauthorized data access or a complete compromise of the server.
+how: An attacker could send a carefully crafted input larger than `BUFFER_SIZE`, causing the `strlen(buffer)` to misinterpret the buffer's boundaries and overwriting adjacent memory, leading to arbitrary code execution.
+code-sources: The entry point for user input is the `recv` function in the `handle_client` function.
+code-sinks: The action performed based on user input is the `send` function using `buffer` data.
+suggested-fix: 
+```diff
+--- falcon180b-12044.c	2023-10-02 10:34:56.000000000 -0400
++++ falcon180b-12044-fixed.c	2023-10-02 10:34:56.000000000 -0400
+@@ -16,7 +16,7 @@
+         if (bytes_received <= 0) {
+             break;
+         }
+
+-        printf("Client %d sent: %s\n", client_socket, buffer);
+-        send(client_socket, buffer, strlen(buffer), 0);
++        printf("Client %d sent: %.*s\n", client_socket, bytes_received, buffer);
++        send(client_socket, buffer, bytes_received, 0);
+     }
+
+     close(client_socket);
+```
+explanation-suggested-fix: This code change ensures `send` uses the actual number of bytes received from `recv` rather than the result of `strlen(buffer)`, preventing buffer overflows by adhering to the bounds of received data.
+method: CODEQL

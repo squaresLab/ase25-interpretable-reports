@@ -1,0 +1,38 @@
+ 
+    
+    diff --git a/falcon180b-56980 b/falcon180b-56980
+    index abcdefg..hijklmn 100644
+    --- a/falcon180b-56980
+    +++ b/falcon180b-56980
+    @@ -15,7 +15,10 @@ void *handle_client(void *arg) {
+             bzero(buffer, BUF_SIZE);
+             int bytes_received = recv(client_socket, buffer, BUF_SIZE - 1, 0);
+     
+    -        if (bytes_received <= 0) {
+    +        if (bytes_received < 0) {
+    +            close(client_socket);
+    +            pthread_exit(NULL);
+    +        } else if (bytes_received == 0) {
+                 close(client_socket);
+                 pthread_exit(NULL);
+             }
+    @@ -17,6 +20,7 @@ void *handle_client(void *arg) {
+     
+             char *command = strtok(buffer, " ");
+             if (strcmp(command, "lights") == 0) {
+                 char *status = strtok(NULL, " ");
+                 if (strcmp(status, "on") == 0) {
+                     // Turn lights on
+                 } else if (strcmp(status, "off") == 0) {
+                     // Turn lights off
+                 }
+             } else if (strcmp(command, "temperature") == 0) {
+                 char *value = strtok(NULL, " ");
+                 // Set temperature to specified value
+             } else if (strcmp(command, "exit") == 0) {
+                 pthread_exit(NULL);
+             }
+         }
+     }
+    
+    

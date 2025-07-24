@@ -1,0 +1,55 @@
+
+
+--- falcon180b-17241.original.c
++++ falcon180b-17241.fixed.c
+@@ -15,9 +15,12 @@
+ void add_company(struct company companies[], int n){
+     printf("Enter company name: ");
+-    scanf("%s", companies[n].name);
++    scanf("%19s", companies[n].name);
+     printf("Enter company symbol: ");
+-    scanf("%s", companies[n].symbol);
++    scanf("%9s", companies[n].symbol);
+     printf("Enter company price per share: ");
+     scanf("%f", &companies[n].price);
+     printf("Enter number of shares: ");
+     scanf("%d", &companies[n].shares);
+ }
+ 
+ void main(){
+     // ... existing code ...
+
+@@ -94,14 +98,16 @@
+     while(1){
+         system("clear");
+         printf("\nCompany\tSymbol\tPrice per share\tShares\n");
+         display_companies(companies, n);
+         printf("\nWhat do you want to do?\n1. Buy shares\n2. Sell shares\n3. Exit\n");
+         int choice;
+         scanf("%d", &choice);
+
+         switch(choice){
+             case 1:
+                 printf("\nEnter company symbol: ");
+-                char symbol[10];
+-                scanf("%s", symbol);
++                char symbol[10] = {0};
++                scanf("%9s", symbol);
+                 buy_shares(companies, n, symbol);
+                 break;
+             case 2:
+                 printf("\nEnter company symbol: ");
++                // Re-initialize symbol to ensure no residual data
++                memset(symbol, 0, sizeof(symbol));
+                 scanf("%9s", symbol);
+                 sell_shares(companies, n, symbol);
+                 break;
+             case 3:
+                 exit(0);
+             default:
+                 printf("\nInvalid choice!");
+         }
+     }
+ }
+
+

@@ -1,0 +1,52 @@
+
+vuln-fix: CWE-362: Race Condition in gemini_pro-33594 at lines 28, 43, 51 (severity: High)
+what: The code contains multiple race conditions, where the protection of the shared `client_socket_fd` is improperly implemented.
+where: file gemini_pro-33594, lines 28 (`close(client_socket_fd);` inside `pthread_mutex_lock(&lock);` and `pthread_mutex_unlock(&lock);`), lines 43 (`close(client_socket_fd);` inside `pthread_mutex_lock(&lock);` and `pthread_mutex_unlock(&lock);`), line 51 (`printf("Received message from client: %s\n", buffer);` protected by mutex but could cause TOCTOU problems).
+why: If not resolved, an attacker could exploit the race condition to cause unexpected behavior such as resource leaks, crashes, or execution of unintended code, which significantly impacts the reliability and security of the server.
+how: An attacker could open multiple connections and force specific timing conditions to manipulate the shared state inconsistencies, leading to overlaps in critical section executions.
+code-sources: Code line 20 (`recv(client_socket_fd, buffer, 1024, 0);` using `client_socket_fd` which is user input).
+code-sinks: Code line 58 (`send(client_socket_fd, "Hello from server!", 17, 0);` sending data using the vulnerable `client_socket_fd`).
+suggested-fix: 
+```diff
+--- gemini_pro-33594.c	2023-04-08 12:47:24.000000000 +0000
++++ gemini_pro-33594-fixed.c	2023-04-08 13:47:24.000000000 +0000
+@@ -19,7 +19,7 @@
+ void *client_handler(void *arg) {
+     int client_socket_fd = *(int *)arg;
+     char buffer[1024];
++    int num_bytes_received;
+     while (1) {
+         // Receive data from client
+-        int num_bytes_received = recv(client_socket_fd, buffer, 1024, 0);
++        pthread_mutex_lock(&lock);
++        num_bytes_received = recv(client_socket_fd, buffer, 1024, 0);
++        pthread_mutex_unlock(&lock);
+         if (num_bytes_received == 0) {
+             printf("Client disconnected\n");
+             pthread_mutex_lock(&lock);
+@@ -40,10 +40,10 @@
+             pthread_mutex_unlock(&lock);
+             break;
+         }
+-        // Process data
+-        pthread_mutex_lock(&lock);
+         printf("Received message from client: %s\n", buffer);
+-        pthread_mutex_unlock(&lock);
+ 
+         // Send data back to client
++        pthread_mutex_lock(&lock);
+         int num_bytes_sent = send(client_socket_fd, "Hello from server!", 17, 0);
+         if (num_bytes_sent < 0) {
+             perror("send");
+@@ -51,6 +50,7 @@
+             pthread_mutex_unlock(&lock);
+             break;
+         }
++        pthread_mutex_unlock(&lock);
+     }
+     pthread_exit(NULL);
+ }
+
+```
+explanation-suggested-fix: The suggested fix locks the critical section before receiving and sending data. This ensures the shared `client_socket_fd` is appropriately synchronized, avoiding race conditions and preventing multiple threads from making concurrent `recv` or `send` calls that could lead to state inconsistencies.
+method: UNKNOWN

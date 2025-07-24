@@ -1,0 +1,112 @@
+
+vuln-fix: CWE-362: Race Condition in falcon180b-32167 (severity: High)
+what: The code is vulnerable to a race condition. The global variable `num_clients` is modified without proper synchronization. Multiple threads can concurrently access this variable, leading to undefined behavior or corruption.
+where: The vulnerability is located in the `handle_client` function:
+- Line 13: `num_clients--` (decrement without synchronization)
+- Line 54: `num_clients++` (increment without synchronization)
+why: If the race condition is not resolved, it can lead to inconsistent state of the `num_clients` variable, resulting in possible crashes, data corruption, and potentially allowing more clients than the limit to connect or denying connections when space is available.
+how: An attacker could exploit this vulnerability by rapidly connecting and disconnecting multiple clients, potentially causing the server to mismanage the `num_clients` count, leading to service disruptions or crashes.
+code-sources: User input enters the application at:
+- Line 41: `recv(client_socket, buffer, BUFFER_SIZE, 0);` (receiving data from the client)
+code-sinks: Actions performed by the application using user input:
+- Line 46: `send(clients[i], buffer, bytes_received, 0);` (sending data to other clients)
+suggested-fix: 
+```diff
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <pthread.h>
+
+#define MAX_CLIENTS 10
+#define BUFFER_SIZE 1024
+
+int clients[MAX_CLIENTS];
+int num_clients = 0;
+pthread_mutex_t clients_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+void *handle_client(void *arg) {
+    int client_socket = *(int *) arg;
+    char buffer[BUFFER_SIZE];
+
+    while (1) {
+        memset(buffer, 0, BUFFER_SIZE);
+        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+
+        if (bytes_received <= 0) {
+            break;
+        }
+
+        pthread_mutex_lock(&clients_mutex); // Synchronize access to clients
+        for (int i = 0; i < num_clients; i++) {
+            if (clients[i] != client_socket) {
+                send(clients[i], buffer, bytes_received, 0);
+            }
+        }
+        pthread_mutex_unlock(&clients_mutex); // Release lock after access
+    }
+
+    close(client_socket);
+    
+    pthread_mutex_lock(&clients_mutex); // Synchronize access to num_clients
+    num_clients--;
+    pthread_mutex_unlock(&clients_mutex); // Release lock after update
+}
+
+int main() {
+    int server_socket = socket(AF_INET, SOCK_STREAM, 0);
+
+    if (server_socket == -1) {
+        printf("Error creating socket\n");
+        return 1;
+    }
+
+    struct sockaddr_in server_addr;
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(8000);
+    server_addr.sin_addr.s_addr = INADDR_ANY;
+
+    if (bind(server_socket, (struct sockaddr *) &server_addr, sizeof(server_addr)) == -1) {
+        printf("Error binding socket\n");
+        return 1;
+    }
+
+    if (listen(server_socket, MAX_CLIENTS) == -1) {
+        printf("Error listening on socket\n");
+        return 1;
+    }
+
+    printf("Server started on port 8000\n");
+
+    while (1) {
+        int client_socket = accept(server_socket, NULL, NULL);
+
+        if (client_socket == -1) {
+            printf("Error accepting connection\n");
+            continue;
+        }
+
+        pthread_mutex_lock(&clients_mutex); // Synchronize access to num_clients
+        if (num_clients >= MAX_CLIENTS) {
+            pthread_mutex_unlock(&clients_mutex); // Release lock if max clients exceeded
+            close(client_socket);
+            continue;
+        }
+
+        clients[num_clients] = client_socket;
+        num_clients++;
+        pthread_mutex_unlock(&clients_mutex); // Release lock after update
+
+        pthread_t thread_id;
+        pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+    }
+
+    return 0;
+}
+```
+explanation-suggested-fix: The suggested code diff uses a mutex (`pthread_mutex_t clients_mutex`) to synchronize access to the shared resource `num_clients` and the `clients` array. This prevents race conditions by ensuring that only one thread can modify these shared resources at a time, thereby maintaining data consistency.
+method: UNKNOWN

@@ -1,0 +1,18 @@
+ 
+    
+    --- falcon180b-49192.c
+    +++ falcon180b-49192-fixed.c
+    @@ -18,7 +18,7 @@
+             int bytes_received = recv(client_sock, buffer, BUFFER_SIZE, 0);
+
+             if (bytes_received <= 0) {
+                 break;
+             }
+
+    -        printf("Received message: %s\n", buffer);
+    +        printf("Received message: %.*s\n", bytes_received, buffer);
+         }
+
+         close(client_sock);
+    
+    

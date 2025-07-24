@@ -1,0 +1,17 @@
+ 
+
+--- falcon180b-14057
++++ falcon180b-14057
+@@ -60,6 +60,9 @@
+ void simulateCircuit(CircuitProperties *circuit, double dt) {
+     int i, j;
++    // Validate numNodes to ensure it does not exceed MAX_NODES
++    if (circuit->numNodes > MAX_NODES) {
++        fprintf(stderr, "Error: numNodes exceeds MAX_NODES\n");
++        exit(EXIT_FAILURE);
++    }
+     for (i = 0; i < circuit->numNodes; i++) {
+         circuit->nodes[i].voltage += dt * circuit->nodes[i].current;
+     }
+
+  

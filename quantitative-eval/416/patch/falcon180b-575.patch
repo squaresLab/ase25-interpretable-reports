@@ -1,0 +1,19 @@
+ 
+    
+    --- falcon180b-575.old.c
+    +++ falcon180b-575.new.c
+    @@ -64,6 +64,7 @@
+            break;
+        }
+        broadcast(client_socket, buffer);
+    +    pthread_mutex_lock(&lock);
+    +    close(client_socket);
+    +    pthread_mutex_unlock(&lock);
+    +    return NULL;
+--handle-client 
+    @@ -74,6 +75,7 @@
+            }
+            pthread_t thread_id;
+            pthread_create(&thread_id, NULL, handle_client, &client_socket);
+    
+    

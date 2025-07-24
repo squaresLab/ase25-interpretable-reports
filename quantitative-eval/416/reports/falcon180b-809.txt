@@ -1,0 +1,35 @@
+
+vuln-fix: Use of Incorrectly-Resolved Memory Location (CWE-824) in falcon180b-809 (line 64) (severity: High)
+what: The vulnerability arises from using the address of a local variable (`client_sock`) in the `pthread_create` call. When the `thread_func` accesses this variable, the content might have changed if the main thread overwrites it for the next client connection. This leads to data corruption.
+where: Line 64 of the file `falcon180b-809`
+why: If not resolved, the server could exhibit unexpected behavior such as data corruption, crashes, or unpredictable security flaws, adversely affecting its ability to handle multiple connections reliably.
+how: An attacker might exploit this by connecting and disconnecting multiple clients rapidly, causing multiple threads to operate on the same overwritten memory area, leading to crashes or allowing code execution exploits.
+code-sources: Entry point for user input is on line 32 in the `recv` function within `thread_func`.
+code-sinks: The application uses the user input in the `send` function on line 38 within `thread_func`.
+suggested-fix:
+```diff
+--- falcon180b-809.c
++++ falcon180b-809-fixed.c
+@@ -59,7 +59,7 @@
+         int client_sock = accept(server_sock, (struct sockaddr *) &clients[num_clients].addr, &addr_size);
+
+         if (client_sock == -1) {
+             printf("Error accepting connection\n");
+             continue;
+         }
+
+         inet_ntop(AF_INET, &clients[num_clients].addr.sin_addr, clients[num_clients].name, 20);
+         clients[num_clients].sock = client_sock;
+
+         pthread_t thread_id;
+-        pthread_create(&thread_id, NULL, thread_func, (void *) &client_sock);
++        int *pclient = malloc(sizeof(int));
++        *pclient = client_sock;
++        pthread_create(&thread_id, NULL, thread_func, pclient);
+     }
+
+     return 0;
+ }
+```
+explanation-suggested-fix: The suggested fix involves dynamically allocating memory for each client socket and passing this allocated memory to `pthread_create`. This ensures that each thread gets a unique memory location to work with, preventing data corruption.
+method: UNKNOWN

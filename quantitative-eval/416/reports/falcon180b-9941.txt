@@ -1,0 +1,40 @@
+
+vuln-fix: Command Injection (CWE-78) in falcon180b-9941 (severity: High)
+what: The code contains a command injection vulnerability that allows an attacker to execute arbitrary system commands.
+where: This vulnerability is located in the `handle_client` function in the line where `system("echo 0 > /dev/ttyACM0")` and `system("echo 1 > /dev/ttyACM0")` are called, in the file falcon180b-9941.
+why: If this weakness is not resolved, an attacker could gain unauthorized control over the host system, potentially leading to unauthorized data access or system compromise.
+how: An attacker could send a specially crafted input to the server that includes additional commands or metacharacters to be executed by the `system` function, resulting in arbitrary command execution on the server.
+code-sources: The entry point is in the `accept_connections` function where user input is received via the `accept` function and passed to the `handle_client` function.
+code-sinks: The actions performed by the application using user input are in `handle_client` function, specifically in the `system` function calls.
+suggested-fix: 
+```diff
+--- falcon180b-9941	2023-10-01 12:00:00.000000000 +0000
++++ falcon180b-9941-fixed	2023-10-01 13:00:00.000000000 +0000
+@@ -15,12 +15,16 @@
+         if (recv(client_socket, buffer, BUFFER_SIZE, 0) <= 0) {
+             close(client_socket);
+             pthread_exit(0);
+         }
+
+         // Use safer alternative to system to avoid command injection
+-        if (strncmp(buffer, "on", 3) == 0) {
+-            system("echo 1 > /dev/ttyACM0");
+-        } else if (strncmp(buffer, "off", 4) == 0) {
+-            system("echo 0 > /dev/ttyACM0");
++        if (strcmp(buffer, "on\n") == 0) {
++            FILE *fp = fopen("/dev/ttyACM0", "w");
++            fprintf(fp, "1\n");
++            fclose(fp);
++        } else if (strcmp(buffer, "off\n") == 0) {
++            FILE *fp = fopen("/dev/ttyACM0", "w");
++            fprintf(fp, "0\n");
++            fclose(fp);
+         }
+     }
+
+     return NULL;
+ }
+ 
+```
+explanation-suggested-fix: The proposed fix replaces the unsafe `system` calls with safer file handling operations using `fopen`, `fprintf`, and `fclose`. This avoids the possibility of command injection by removing the reliance on shell command execution and directly writing to the device file.
+method: UNKNOWN

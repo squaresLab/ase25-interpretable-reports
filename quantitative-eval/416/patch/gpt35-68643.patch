@@ -1,0 +1,38 @@
+
+
+--- gpt35-68643.c	<date>
++++ gpt35-68643-fixed.c	<date>
+@@ -23,7 +23,7 @@
+ 
+     // Receive the client's name
+     char name[BUFFER_SIZE];
+-    read(client_socket, name, BUFFER_SIZE);
++    int bytes_read = read(client_socket, name, BUFFER_SIZE - 1);
++    if (bytes_read < 0) {
++        perror("Failed to read client name");
++        close(client_socket);
++        return NULL;
++    }
++    name[bytes_read] = '\0';
+ 
+     // Add the client to the players' list
+     pthread_mutex_lock(&players_mutex);
+@@ -27,7 +29,7 @@
+     for (int i = 0; i < MAX_PLAYERS; i++) {
+         if (players[i].socket == 0) {
+             players[i].socket = client_socket;
+-            strncpy(players[i].name, name, BUFFER_SIZE);
++            strncpy(players[i].name, name, BUFFER_SIZE - 1);
++            players[i].name[BUFFER_SIZE - 1] = '\0';
+             player_index = i;
+             break;
+         }
+     }
++    if (player_index == -1) {
++        char message[BUFFER_SIZE];
++        snprintf(message, BUFFER_SIZE, "Sorry, the game is already full.");
++        write(client_socket, message, strlen(message));
++        close(client_socket);
++        return NULL;
++    }
+ 

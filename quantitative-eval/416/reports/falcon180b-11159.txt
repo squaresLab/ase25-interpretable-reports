@@ -1,0 +1,48 @@
+
+    vuln-fix: Improper Synchronization (CWE-362) in falcon180b-11159 (severity: High)
+    what: The given code spawns a new thread for each client connection without proper synchronization mechanisms. This can lead to race conditions with shared variables like `num_clients` and `client_sockets`.
+    where: 
+       - In the `handle_client` function and the main loop around the `pthread_create` call, lines managing `num_clients` and `client_sockets` in falcon180b-11159. 
+       - Specifically in the increment of `num_clients` and assignment to `client_sockets`.
+    why: Without proper synchronization, race conditions may occur, leading to corrupted data, crashes, or undefined behavior. An attacker can exploit these race conditions to disrupt the server or execute arbitrary code.
+    how: An attacker could repeatedly connect and disconnect from the server, causing the race condition to manifest, potentially leading to server instability or crashes.
+    code-sources: The entry point is the `accept()` function call which establishes a new client connection and the `recv()` function call which receives data from the client.
+    code-sinks: The variables `client_sockets` and `num_clients` are modified based on user input, received via the `accept()` and `recv()` system calls.
+    suggested-fix: 
+    ```diff
+    --- falcon180b-11159
+    +++ falcon180b-11159
+    @@ -16,6 +16,7 @@
+     #define BUFFER_SIZE 1024
+     
+     int client_sockets[MAX_CLIENTS];
+    -int num_clients = 0;
+    +int num_clients = 0;
+    +pthread_mutex_t clients_mutex = PTHREAD_MUTEX_INITIALIZER;
+     
+     void *handle_client(void *socket) {
+         int client_socket = *(int *)socket;
+    @@ -59,7 +60,10 @@
+             printf("Error accepting client\n");
+             continue;
+         }
+    -    
+    +    
+    +        pthread_mutex_lock(&clients_mutex);
+         if (num_clients >= MAX_CLIENTS) {
+    +            pthread_mutex_unlock(&clients_mutex);
+             close(client_socket);
+             printf("Server full, cannot accept more clients\n");
+             continue;
+         }
+    -    
+    +    
+         client_sockets[num_clients] = client_socket;
+         num_clients++;
+    +        pthread_mutex_unlock(&clients_mutex);
+     
+         pthread_t thread_id;
+         pthread_create(&thread_id, NULL, handle_client, (void *)&client_socket);
+    ```
+    explanation-suggested-fix: The suggested fix uses a mutex (`clients_mutex`) to ensure that operations modifying shared variables `num_clients` and `client_sockets` are performed atomically. This prevents race conditions by ensuring that only one thread at a time can modify these variables.
+    method: UNKNOWN

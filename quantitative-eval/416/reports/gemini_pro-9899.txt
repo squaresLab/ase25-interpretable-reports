@@ -1,0 +1,26 @@
+
+vuln-fix: CWE-252: Unchecked Return Value in gemini_pro-9899 (severity: High)
+what: The vulnerability arises from not checking the return value of `pthread_create` in the main `while` loop. This can lead to a situation where a client connection is accepted but not properly handled by a thread if thread creation fails.
+where: Lines involving the call to `pthread_create` function (lines 63-67) in the file `gemini_pro-9899`.
+why: If this weakness is not resolved, client connections might not be handled as intended, leading to potential denial of service as the server might refuse new connections once the maximum connections limit is reached.
+how: An attacker could exploit this vulnerability by flooding the server with connection requests, knowing that some connections will not be properly handled, potentially consuming server resources and denying service to legitimate clients.
+code-sources: The entry point for user input is the `accept` function which accepts client connections.
+code-sinks: The vulnerable action happens at the `pthread_create` call, which should handle each client connection.
+suggested-fix: 
+```diff
+--- gemini_pro-9899.c
++++ gemini_pro-fixed.c
+@@ -64,8 +64,12 @@
+         pthread_t thread;
+         if (pthread_create(&thread, NULL, handle_client, &client_sock) != 0) {
+             perror("Error creating thread to handle client connection");
++            close(client_sock);
++            continue;
+         }
++        // Detach thread to reclaim resources on thread exit
+         pthread_detach(thread);
+     }
+ 
+ ```
+explanation-suggested-fix: The suggested fix adds a check for the return value of `pthread_create`. If the thread creation fails, the client socket is closed, and the server continues to accept new connections. This ensures that failed thread creation does not leave sockets open and unused, maintaining server stability and function.
+method: UNKNOWN

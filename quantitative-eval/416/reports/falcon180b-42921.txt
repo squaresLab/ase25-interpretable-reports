@@ -1,0 +1,66 @@
+
+    vuln-fix: CWE-362: Race Condition in falcon180b-42921 (severity: High)
+    what: The code has a race condition vulnerability due to improper synchronization when checking `num_clients` and modifying the `clients` array.
+    where: Lines 56-66 in falcon180b-42921.
+    why: An attacker could exploit this race condition to create more client connections than allowed, which could lead to resource exhaustion on the server.
+    how: An attacker could rapidly connect to the server, potentially allowing multiple threads to modify `clients` and `num_clients` without proper synchronization, exceeding the maximum client limit.
+    code-sources: The entry point is the client connection accepted at line 56 in the `accept` function.
+    code-sinks: The vulnerability arises when `num_clients` and `clients` are manipulated without proper locking in lines 61-66.
+    suggested-fix: 
+```diff
+    diff --git a/falcon180b-42921 b/falcon180b-42921
+    --- a/falcon180b-42921
+    +++ b/falcon180b-42921
+    @@ -13,6 +13,7 @@
+     #include <arpa/inet.h>
+     #include <sys/socket.h>
+     #include <netinet/in.h>
+    +#include <semaphore.h>
+
+     #define MAX_CLIENTS 10
+     #define MAX_MSG_SIZE 1024
+    @@ -18,6 +19,8 @@
+     int clients[MAX_CLIENTS];
+     int num_clients = 0;
+
+    +sem_t client_semaphore;
+    +
+     void *handle_client(void *arg) {
+         int client_socket = *(int *) arg;
+         char buffer[MAX_MSG_SIZE];
+    @@ -54,6 +57,7 @@
+     
+         server_addr.sin_family = AF_INET;
+         server_addr.sin_port = htons(8080);
+    @@ -61,6 +65,8 @@
+     
+         listen(server_socket, 10);
+     
+    +    sem_init(&client_semaphore, 0, 1);
+    +
+         printf("Server is listening on port 8080\n");
+     
+         while (1) {
+    @@ -67,8 +73,16 @@
+     
+             if (num_clients >= MAX_CLIENTS) {
+                 send(client_socket, "Server is full. Please try again later.\n", strlen("Server is full. Please try again later.\n"), 0);
+                 close(client_socket);
+             } else {
+    +            sem_wait(&client_semaphore);
+                 clients[num_clients] = client_socket;
+                 num_clients++;
+    +            sem_post(&client_semaphore);
+     
+                 pthread_t thread_id;
+                 pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+             }
+         }
+    +
+    +    sem_destroy(&client_semaphore);
+     
+         return 0;
+     }
+```
+    explanation-suggested-fix: The suggested code diff introduces a semaphore (`client_semaphore`) to ensure that the critical section where `num_clients` and `clients` are modified is protected. By using `sem_wait` and `sem_post` around this critical section, we ensure that only one thread can access and modify these variables at a time, preventing race conditions.
+    method: UNKNOWN

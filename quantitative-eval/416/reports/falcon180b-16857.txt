@@ -1,0 +1,54 @@
+
+vuln-fix: CWE-120: Buffer Copy without Checking Size of Input ('Classic Buffer Overflow') in falcon180b-16857:21-31 (severity: High)
+what: The vulnerable code potentially allows an attacker to induce a buffer overflow by sending more data than the `buffer` array can hold during the `recv` call.
+where: Lines 21-31 in falcon180b-16857:
+    ```c
+    void *handle_client(void *arg) {
+        int client_socket = *(int *) arg;
+        char buffer[BUFFER_SIZE];
+        while (1) {
+            memset(buffer, 0, BUFFER_SIZE);
+            int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+            if (bytes_received <= 0) {
+                close(client_socket);
+                break;
+            }
+            printf("Client %d sent: %s\n", client_socket, buffer);
+            send(client_socket, buffer, strlen(buffer), 0);
+        }
+    }
+    ```
+why: If this vulnerability is not resolved, it could allow an attacker to overwrite memory of the program leading to potential arbitrary code execution or crashes.
+how: An attacker would connect to the server and send a payload exceeding the size of the `buffer`. This could overwrite parts of the memory and potentially allow the execution of malicious code.
+code-sources: `recv(client_socket, buffer, BUFFER_SIZE, 0)`
+code-sinks: `printf("Client %d sent: %s\n", client_socket, buffer);`
+suggested-fix:
+    ```diff
+    --- falcon180b-16857    2023-10
+    +++ falcon180b-16857    2023-10
+    @@ -23,10 +23,15 @@
+         int client_socket = *(int *) arg;
+         char buffer[BUFFER_SIZE];
+         while (1) {
+    -        memset(buffer, 0, BUFFER_SIZE);
+    +        memset(buffer, 0, sizeof(buffer));
+             int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+             if (bytes_received <= 0) {
+                 close(client_socket);
+                 break;
+             }
+    -        printf("Client %d sent: %s\n", client_socket, buffer);
+    -        send(client_socket, buffer, strlen(buffer), 0);
+    +        buffer[bytes_received] = '\0'; // Null-terminate the received data
+    +        if (bytes_received < BUFFER_SIZE) {
+    +            printf("Client %d sent: %s\n", client_socket, buffer);
+    +            send(client_socket, buffer, bytes_received, 0);
+    +        } else {
+    +            // Handle case when buffer is completely filled 
+    +            printf("Warning: Message from client %d is too large and has been truncated.\n", client_socket);
+    +            send(client_socket, "Input is too large", 18, 0);
+    +        }
+         }
+    ```
+explanation-suggested-fix: The suggested code diff adds null-termination to the received data. This ensures that any string operations such as `printf` are safely handled, preventing potential overflows by invalid data lengths. It also adds a check to handle cases where the buffer is filled completely to not overflow on subsequent operations.
+method: UNKNOWN

@@ -1,0 +1,25 @@
+ 
+
+--- falcon180b-36023.c
++++ falcon180b-36023-fixed.c
+@@ -15,13 +15,16 @@
+     int sock = *(int *) arg;
+     char buffer[BUFFER_SIZE];
+
+     while (1) {
+-        memset(buffer, 0, BUFFER_SIZE);
+-        recv(sock, buffer, BUFFER_SIZE, 0);
+-        printf("Client %d: %s\n", sock, buffer);
+-        send(sock, buffer, strlen(buffer), 0);
++	if (recv(sock, buffer, BUFFER_SIZE-1, 0) <= 0) {
++	    break;
++	}
++	buffer[BUFFER_SIZE-1] = '\0'; // Ensuring null termination
++	printf("Client %d: %.1000s\n", sock, buffer);
++	send(sock, buffer, strnlen(buffer, BUFFER_SIZE-1), 0);
+     }
+
+     close(sock);
+     pthread_exit(0);
+ }
+

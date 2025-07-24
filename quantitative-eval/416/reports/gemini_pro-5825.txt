@@ -1,0 +1,133 @@
+
+    vuln-fix: Buffer write operations that do not control the length of data written (CWE-120, CWE-787, CWE-805) in gemini_pro-5825 (lines 76, 81) (severity: High)
+    what: The code performs buffer write operations without properly controlling the length of data written, which may lead to buffer overflow vulnerabilities.
+    where: The vulnerabilities are located in the `main` function at lines 76 and 81 in the file `gemini_pro-5825`.
+    why: If these buffer overflow vulnerabilities are not resolved, an attacker could exploit them to execute arbitrary code, potentially taking control of the application or crashing it, leading to denial of service.
+    how: An attacker can exploit these vulnerabilities by supplying input that exceeds the buffer's capacity, causing it to overflow and overwrite adjacent memory. This can lead to corruption of data, application crashes, or execution of malicious code.
+    code-sources: 
+        - `scanf("%s", password);` (line 76)
+        - `scanf("%d", &index);` (line 81)
+    code-sinks: 
+        - `add_password(password)` (line 77)
+        - `delete_password(index)` (line 82)
+    suggested-fix: 
+```diff
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define MAX_PASSWORDS 100
+#define MAX_PASSWORD_LENGTH 20
+
+typedef struct {
+    char password[MAX_PASSWORD_LENGTH];
+    int length;
+} Password;
+
+char **passwords;
+int num_passwords = 0;
+
+void add_password(char *password) {
+    if (num_passwords >= MAX_PASSWORDS) {
+        printf("Error: Maximum number of passwords reached.\n");
+        return;
+    }
+
+    passwords[num_passwords] = malloc(strlen(password) + 1);
+    strcpy(passwords[num_passwords], password);
+    passwords[num_passwords][strlen(password)] = '\0';
+    num_passwords++;
+}
+
+int find_password(char *password) {
+    for (int i = 0; i < num_passwords; i++) {
+        if (strcmp(passwords[i], password) == 0) {
+            return i;
+        }
+    }
+
+    return -1;
+}
+
+void delete_password(int index) {
+    if (index < 0 || index >= num_passwords) {
+        printf("Error: Invalid password index.\n");
+        return;
+    }
+
+    free(passwords[index]);
+    for (int i = index; i < num_passwords - 1; i++) {
+        passwords[i] = passwords[i + 1];
+    }
+    num_passwords--;
+}
+
+void print_passwords() {
+    printf("Passwords:\n");
+    for (int i = 0; i < num_passwords; i++) {
+        printf("%d: %s\n", i, passwords[i]);
+    }
+}
+
+int main() {
+    passwords = malloc(sizeof(char *) * MAX_PASSWORDS);
+    int choice;
+    char password[MAX_PASSWORD_LENGTH];
+
+    while (1) {
+        printf("1. Add password\n");
+        printf("2. Find password\n");
+        printf("3. Delete password\n");
+        printf("4. Print passwords\n");
+        printf("5. Exit\n");
+        printf("Enter your choice: ");
+        scanf("%d", &choice);
+
+        switch (choice) {
+            case 1:
+                printf("Enter password: ");
+-                scanf("%s", password);
++                if (scanf("%19s", password) != 1) {
++                    printf("Error: failed to read password.\n");
++                    break;
++                }
+                add_password(password);
+                break;
+            case 2:
+                printf("Enter password: ");
+-                scanf("%s", password);
++                if (scanf("%19s", password) != 1) {
++                    printf("Error: failed to read password.\n");
++                    break;
++                }
+                int index = find_password(password);
+                if (index == -1) {
+                    printf("Password not found.\n");
+                } else {
+                    printf("Password found at index %d.\n", index);
+                }
+                break;
+            case 3:
+                printf("Enter password index: ");
+-                scanf("%d", &index);
++                if (scanf("%d", &index) != 1) {
++                    printf("Error: failed to read index.\n");
++                    break;
++                }
+                delete_password(index);
+                break;
+            case 4:
+                print_passwords();
+                break;
+            case 5:
+                exit(0);
+            default:
+                printf("Invalid choice.\n");
+        }
+    }
+
+    return 0;
+}
+```
+    explanation-suggested-fix: The suggested code change limits the input length to `MAX_PASSWORD_LENGTH - 1` characters using the format specifier `%19s` in the `scanf` calls for reading passwords. Additionally, it checks the return value of `scanf` to ensure proper input reading, thereby preventing buffer overflow vulnerabilities.
+    method: CODEQL

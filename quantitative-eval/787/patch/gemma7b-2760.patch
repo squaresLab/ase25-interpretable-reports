@@ -1,0 +1,27 @@
+ 
+--- gemma7b-2760.c
++++ gemma7b-2760-fixed.c
+@@ -23,10 +23,11 @@
+         reader->rows++;
+         data = realloc(reader->buffer, reader->rows * sizeof(char*));
+         reader->buffer = data;
+
+-        reader->cols = 0;
++        reader->cols = strlen(line);
++        data[reader->rows - 1] = malloc((reader->cols + 1) * sizeof(char));
+         data[reader->rows - 1] = strdup(line);
+-        while (line[i] != '\n') {
+-            reader->cols++;
+-            data[reader->rows - 1] = realloc(data[reader->rows - 1], (reader->cols + 1) * sizeof(char));
+-            data[reader->rows - 1][reader->cols] = line[i];
+-            i++;
++        if (data[reader->rows - 1] == NULL) {
++            perror("Unable to allocate buffer");
++            exit(EXIT_FAILURE);
++        }
++        strcpy(data[reader->rows - 1], line);
+     }
+ 
+     fclose(reader->file);
+ 
+    

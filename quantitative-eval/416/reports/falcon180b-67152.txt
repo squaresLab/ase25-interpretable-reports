@@ -1,0 +1,33 @@
+
+vuln-fix: Buffer Overflow (CWE-120) in falcon180b-67152 (severity: High)
+what: The vulnerability is a buffer overflow due to improper handling of received messages from clients. Specifically, the length of the message is not checked when it is handled by the server, leading to a possible buffer overflow.
+where: The vulnerability is located in the `handle_client` function when handling received messages on line 19.
+why: One possible consequence of not resolving this weakness is that an attacker could exploit the buffer overflow to execute arbitrary code, potentially gaining control over the server.
+how: An attacker would proceed to exploit this vulnerability by sending a specially crafted message that exceeds the `MAX_MESSAGE_LENGTH` to trigger a buffer overflow. This could lead to overwriting critical data structures or executing malicious code.
+code-sources: The entry point where user input enters the application is through the `recv` function in the `handle_client` function on line 21.
+code-sinks: The action performed by the application using user input is the message printing and sending through the `printf` function on line 28 and `send` function also on line 28.
+suggested-fix: 
+```diff
+diff --git a/falcon180b-67152 b/falcon180b-67152
+index 6a8ef69..43d4f74 100644
+--- a/falcon180b-67152
++++ b/falcon180b-67152
+@@ -18,8 +18,11 @@ void *handle_client(void *arg) {
+ 
+     while (1) {
+         memset(message, 0, MAX_MESSAGE_LENGTH);
+-        int bytes_received = recv(client_socket, message, MAX_MESSAGE_LENGTH, 0);
++        int bytes_received = recv(client_socket, message, MAX_MESSAGE_LENGTH - 1, 0);
+
+         if (bytes_received <= 0) {
+             printf("Client %d disconnected.\n", client_socket);
+             close(client_socket);
+             return NULL;
+         }
+
++        message[MAX_MESSAGE_LENGTH - 1] = '\0'; // Ensure null-termination
+         printf("Client %d: %s", client_socket, message);
+         send(client_socket, message, strlen(message), 0);
+```
+explanation-suggested-fix: The suggested code diff ensures that the `recv` function does not write more bytes into the `message` buffer than its capacity. It reads only `MAX_MESSAGE_LENGTH - 1` bytes to leave space for a null terminator, which is explicitly set after the `recv` call to ensure the buffer is always null-terminated. This prevents buffer overflow and potential memory corruption.
+method: UNKNOWN

@@ -1,0 +1,28 @@
+
+vuln-fix: cpp/return-stack-allocated-memory (CWE-825) in codellama_13b-3965:86 (severity: High)
+what: The function `input_element()` returns a pointer to a stack-allocated region of memory. This memory is deallocated at the end of the function, which leads to a dangling pointer when the caller tries to use it.
+where: Line 86 in file `codellama_13b-3965.c`
+why: Dereferencing a dangling pointer can lead to undefined behavior, including crashes or unexpected program behavior.
+how: An attacker could exploit this vulnerability by causing the program to reference a dangling pointer, potentially leading to execution of arbitrary code or a crash, which could be leveraged for a denial-of-service (DoS) attack.
+code-sources: The entry point is the return of `fgets` in `input_element()` function on line 86.
+code-sinks: The action where this memory is used is in `search_element(periodic_table_data, element)` invocation.
+suggested-fix: 
+```
+diff --git a/codellama_13b-3965.c b/codellama_13b-3965.c
+index 1f2e15a..3a5b7b5 100644
+--- a/codellama_13b-3965.c
++++ b/codellama_13b-3965.c
+@@ -83,15 +83,16 @@ void display_periodic_table(char** periodic_table) {
+ char* input_element() {
+     // Prompt the user for a chemical element
+-    char element[100];
++    char* element = malloc(sizeof(char) * 100);
+     printf("Enter a chemical element: ");
+     fgets(element, 100, stdin);
+ 
+     // Return the element's symbol
+     return element;
+ }
+ ```
+explanation-suggested-fix: The suggested fix changes the allocation of memory for the `element` variable in the `input_element` function from stack allocation to heap allocation using `malloc()`. This ensures that the memory remains valid after the function returns, preventing the dangling pointer issue.
+method: CODEQL

@@ -1,0 +1,80 @@
+
+    vuln-fix: CWE-787: Out-of-Bounds Write in falcon180b-58898 (severity: High)
+    what: The vulnerability is an out-of-bounds write that occurs when user data can be written beyond the allocated space of an array. In this case, the issue arises from the `generate_conspiracy` function creating words that may exceed the safe bounds of the `conspiracy` array.
+    where: The issue is in the `generate_conspiracy` function, specifically where words are concatenated to the `conspiracy` string using `strcat`. It affects multiple lines around the concatenation operations.
+    why: If not resolved, this weakness can lead to buffer overflow, which may cause crashes or allow attackers to execute arbitrary code, resulting in severe security breaches.
+    how: An attacker could exploit this vulnerability by manipulating the random input to ensure that the length of characters concatenated exceeds the allocated buffer size of the `conspiracy` array.
+    code-sources: The initial length assignment `int length = rand() % MAX_CONSPIRACY_LENGTH + 1;` in the `main` function.
+    code-sinks: The concatenation of words in `generate_conspiracy` using `strcat(conspiracy, words[i].word);` without bounds checking.
+    suggested-fix: 
+    ```diff
+    #include <stdio.h>
+    #include <stdlib.h>
+    #include <time.h>
+    #include <string.h>
+
+    #define MAX_CONSPIRACY_LENGTH 100
+    #define MAX_CONSPIRACY_WORDS 20
+    #define MAX_WORD_LENGTH 20
+
+    typedef struct {
+        char word[MAX_WORD_LENGTH];
+        int length;
+    } ConspiracyWord;
+
+    void generate_conspiracy(char *conspiracy, int max_length, int num_words) {
+        srand(time(NULL));
+        ConspiracyWord words[MAX_CONSPIRACY_WORDS];
+        int total_length = 0;
+
+        // Add random words to the conspiracy
+        for (int w = 0; w < num_words; w++) {
+            int word_length = rand() % (MAX_WORD_LENGTH - 1) + 1;
+            ConspiracyWord new_word = {{0}, word_length};
+
+            for (int i = 0; i < word_length; i++) {
+                new_word.word[i] = rand() % 26 + 'a';
+            }
+
+            words[w] = new_word;
+            total_length += word_length + 1; // +1 for the space or null terminator
+            if (total_length >= max_length) {
+                num_words = w + 1; // limit the number of words so we don't exceed the buffer
+                break;
+            }
+        }
+
+        // Shuffle the words
+        for (int i = 0; i < num_words; i++) {
+            int j = rand() % num_words;
+            ConspiracyWord temp = words[i];
+            words[i] = words[j];
+            words[j] = temp;
+        }
+
+        // Concatenate the words into a conspiracy
+        conspiracy[0] = '\0'; // Initialize the conspiracy string
+        for (int i = 0; i < num_words; i++) {
+            if (strlen(conspiracy) + words[i].length + 1 >= max_length) {
+                break;
+            }
+            if (i > 0) {
+                strncat(conspiracy, " ", max_length - strlen(conspiracy) - 1);
+            }
+            strncat(conspiracy, words[i].word, max_length - strlen(conspiracy) - 1);
+        }
+    }
+
+    int main() {
+        char conspiracy[MAX_CONSPIRACY_LENGTH] = {0};
+        int length = rand() % MAX_CONSPIRACY_WORDS + 1;
+
+        generate_conspiracy(conspiracy, MAX_CONSPIRACY_LENGTH, length);
+        printf("A new conspiracy theory has emerged:\n");
+        printf("%s\n", conspiracy);
+
+        return 0;
+    }
+    ```
+    explanation-suggested-fix: The fix ensures that each word and the spaces between them do not exceed the buffer allocated for the `conspiracy` string. By maintaining an accurate count of the total length and carefully checking bounds before concatenation, we prevent buffer overflow.
+    method: CODEQL

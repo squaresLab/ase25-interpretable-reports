@@ -1,0 +1,91 @@
+
+    vuln-fix: Uncontrolled Recursion (CWE-674) in falcon180b-2880 (severity: Medium)
+    what: The code contains a potential uncontrolled recursion vulnerability due to the infinite loop in the `thread_handler` function. If a malicious user repeatedly sends data to the server, it could lead to a stack overflow causing the program to crash.
+    where: The vulnerability is located within the `thread_handler` function in the `falcon180b-2880` file:
+    ```c
+    void *thread_handler(void *arg) {
+        int client_socket = *(int *) arg;
+        char message[MAX_MESSAGE_SIZE];
+
+        while (1) {
+            memset(message, 0, MAX_MESSAGE_SIZE);
+            int bytes_received = recv(client_socket, message, MAX_MESSAGE_SIZE, 0);
+
+            if (bytes_received <= 0) {
+                close(client_socket);
+                break;
+            }
+
+            send(client_socket, message, bytes_received, 0);
+        }
+
+        return NULL;
+    }
+    ```
+    why: If an attacker continuously sends data to the server, the infinite loop in `thread_handler` could cause the server to be stuck processing that single client, leading to denial of service (DoS) for other legitimate clients or even a system crash from a stack overflow.
+    how: An attacker could exploit this vulnerability by establishing a connection to the server and then sending continuous messages large enough to exhaust the stack space allocated for the process, causing the system to crash.
+    code-sources: The entry point is the `recv` call in the `thread_handler` function that receives input from a client socket.
+    code-sinks: The action performed is the `send` call in the `thread_handler` function.
+    suggested-fix: 
+    ```diff
+    --- falcon180b-2880.c
+    +++ falcon180b-2880-fixed.c
+    @@ -11,6 +11,7 @@
+
+     int clients[MAX_CLIENTS];
+     pthread_mutex_t clients_mutex = PTHREAD_MUTEX_INITIALIZER;
+    +int active_threads = 0;
+
+     void *thread_handler(void *arg) {
+         int client_socket = *(int *) arg;
+         char message[MAX_MESSAGE_SIZE];
+    @@ -20,6 +21,10 @@
+         while (1) {
+             memset(message, 0, MAX_MESSAGE_SIZE);
+             int bytes_received = recv(client_socket, message, MAX_MESSAGE_SIZE, 0);
+
+    +        if (bytes_received <= 0) {
+    +            break;
+    +        }
+    +
+             send(client_socket, message, bytes_received, 0);
+         }
+
+        close(client_socket);
+    +    pthread_mutex_lock(&clients_mutex);
+    +    active_threads--;
+    +    pthread_mutex_unlock(&clients_mutex);
+         return NULL;
+     }
+
+    @@ -39,11 +44,17 @@
+         }
+
+         while (1) {
+             int client_socket = accept(server_socket, NULL, NULL);
+    @@ -54,10 +65,17 @@
+                     clients[i] = client_socket;
+                     pthread_t thread_id;
+                     pthread_create(&thread_id, NULL, thread_handler, (void *) &client_socket);
+    +                pthread_detach(thread_id);
+    +                pthread_mutex_lock(&clients_mutex);
+    +                active_threads++;
+    +                pthread_mutex_unlock(&clients_mutex);
+                     break;
+                 }
+             }
+    +        pthread_mutex_lock(&clients_mutex);
+             if (i == MAX_CLIENTS - 1) {
+                 printf("Max clients reached. Connection refused.\n");
+                 close(client_socket);
+             }
+    +        pthread_mutex_unlock(&clients_mutex);
+         }
+
+    +    pthread_mutex_destroy(&clients_mutex);
+         close(server_socket);
+         return 0;
+     }
+    ```
+    explanation-suggested-fix: The suggested fix includes several modifications to manage active threads and ensure the server is not overwhelmed. By introducing a mutex lock for client and thread management and adding a limit on active threads, this prevents potential resource exhaustion and ensures the system can handle multiple clients efficiently.
+    method: UNKNOWN

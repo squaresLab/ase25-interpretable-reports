@@ -1,0 +1,47 @@
+
+    vuln-fix: CWE-190 Integer Overflow or Wraparound in gemini_pro-29412 (severity: High)
+    what: The code fails to validate user input for potential overflows, particularly when performing shift operations.
+    where: Lines involving `scanf` and shift operations (line 14, line 24-45) in gemini_pro-29412.
+    why: If integer overflow occurs during shift operations, it could lead to undefined behavior, potentially crashing the program or leading to security vulnerabilities.
+    how: An attacker could supply a very large value for `shift`, causing an integer overflow. This overflow could potentially be leveraged to execute arbitrary code or crash the program, leading to denial of service.
+    code-sources: `scanf("%u", &n);` at line 20, `scanf("%u", &m);` at line 22, `scanf("%d", &shift);` at line 37 and line 43.
+    code-sinks: `n << shift;` at line 41, `n >> shift;` at line 47.
+    suggested-fix: 
+    ```diff
+    --- gemini_pro-29412.c
+    +++ gemini_pro-29412_fixed.c
+    @@ -19,6 +19,11 @@
+       scanf("%d", &choice);
+    
+       // Receive the numbers thou wishest to operate upon
+    +  if (choice < 1 || choice > 6) {
+    +    printf("Invalid choice, brave soul. Try again.\n");
+    +    return 1;
+    +  }
+    +
+       printf("Enter the first number, brave soul: ");
+       scanf("%u", &n);
+       printf("Enter the second number, valiant warrior: ");
+    @@ -36,6 +41,10 @@
+         case 5:
+           printf("Enter the number of bits to shift left: ");
+           int shift;
+    +      scanf("%d", &shift);
+    +      if (shift < 0 || shift >= sizeof(unsigned int) * 8) {
+    +        printf("Invalid shift value.\n");
+    +        return 1;
+    +      }
+           result = n << shift;
+           printf("The left shift of %u by %d is %u\n", n, shift, result);
+           break;
+         case 6:
+           printf("Enter the number of bits to shift right: ");
+    +      scanf("%d", &shift);
+    +      if (shift < 0 || shift >= sizeof(unsigned int) * 8) {
+    +        printf("Invalid shift value.\n");
+    +        return 1;
+    +      }    
+           result = n >> shift;
+
+    explanation-suggested-fix: The suggested code diff adds checks to ensure the user-provided `choice` is within the valid range of operations (1 to 6). Additionally, it checks that the `shift` value is non-negative and does not exceed the bit-width of an `unsigned int` to prevent overflow.
+    method: UNKNOWN

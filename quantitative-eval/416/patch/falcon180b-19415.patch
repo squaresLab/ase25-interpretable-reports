@@ -1,0 +1,24 @@
+
+
+diff --git a/falcon180b-19415 b/falcon180b-19415
+index 3a80c6f..b2e906f 100644
+--- a/falcon180b-19415
++++ b/falcon180b-19415
+@@ -61,7 +61,7 @@ int main() {
+         if(num_clients >= MAX_CLIENTS) {
+             send(client_socket, "Server is full. Please try again later. ", 46, 0);
+             close(client_socket);
+-            continue;
++            continue; // Ensure not to pass client_socket to thread_handler
+         }
+
+         clients[num_clients] = client_socket;
+@@ -69,10 +69,10 @@ int main() {
+         pthread_create(&thread_id, NULL, thread_handler, (void *)&clients[num_clients-1]);
+     }
+
+-    return 0;
++ close(server_socket);
+     return 0;
+ }
+ 

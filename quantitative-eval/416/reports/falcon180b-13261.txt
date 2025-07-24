@@ -1,0 +1,32 @@
+
+vuln-fix: CWE-787: Out-of-bounds Write in falcon180b-13261 at lines 59-60 (severity: High)
+what: The code allocates a fixed size memory (20 bytes) for each client but attempts to store client socket descriptors in it, leading to a potential out-of-bounds write.
+where: Lines 59-60 in file falcon180b-13261.
+why: If the buffer overflow is exploited, it can lead to arbitrary code execution, crash the application or corrupt critical data, representing a critical security risk.
+how: An attacker could potentially send a long input or exploit this buffer overflow to overwrite adjacent memory, leading to undefined behavior.
+code-sources: Input from clients are received through the `recv` function calls at lines 15 and 37.
+code-sinks: The inputs are used directly in memory allocation and storage in the `clients` array at lines 59-60.
+suggested-fix: 
+```diff
+@@ -56,7 +56,7 @@
+        int client_socket = accept(server_socket, NULL, NULL);
+
+        if (num_clients >= MAX_CLIENTS) {
+            send(client_socket, "Server is full. Please try again later.\n", 46, 0);
+            close(client_socket);
+            continue;
+        }
+
+-       clients[num_clients] = (char *)malloc(sizeof(char) * 20);
+-       sprintf(clients[num_clients], "Client %d", num_clients + 1);
++       int *client_fd = (int *)malloc(sizeof(int));
++       *client_fd = client_socket;
++       clients[num_clients] = (char *)client_fd;
+
+        num_clients++;
+
+        pthread_t thread_id;
+        pthread_create(&thread_id, NULL, client_thread, (void *)&client_socket);
+```
+explanation-suggested-fix: The modified code allocates memory correctly for storing the client socket descriptor by allocating memory of size `sizeof(int)` and then stores the descriptor directly in it, preventing the potential out-of-bounds write by properly handling the client socket.
+method: UNKNOWN

@@ -1,0 +1,79 @@
+ 
+
+--- gpt35-42182.c 2023-10-04 12:00:00.000000000 +0000
++++ gpt35-42182-fixed.c 2023-10-04 12:30:00.000000000 +0000
+@@ -1,12 +1,13 @@
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
+ 
+ #define MAX_FILE_SIZE 1024 // Maximum size of a file in the file system
+ #define NUM_FILES 10 // Number of files in the file system
+ #define NUM_BLOCKS 20 // Number of blocks in the file system
+ #define BLOCK_SIZE 64 // Size of each block in bytes
+
++ void safe_strcpy(char* dest, size_t dest_size, const char* src);
+
+ typedef struct {
+     char name[20]; // Name of file
+     int size; // Size of file in bytes
+@@ -24,8 +25,8 @@
+     for (int i = 0; i < NUM_BLOCKS; i++) {
+         fs->data[i] = (char*)malloc(BLOCK_SIZE);
+     }
+     for (int i = 0; i < num_files; i++) {
+-        strcpy(fs->files[i].name, "");
++        safe_strcpy(fs->files[i].name, sizeof(fs->files[i].name), "");
+         fs->files[i].size = 0;
+         fs->files[i].start_block = -1;
+     }
+ }
+@@ -52,13 +53,13 @@
+ void write_block(file_system* fs, int block_num, char* data) {
+     if (strlen(data) > BLOCK_SIZE) {
+         printf("Error: Data too large for block size\n");
+         return;
+     }
+-    strcpy(fs->data[block_num], data);
++    safe_strcpy(fs->data[block_num], BLOCK_SIZE, data);
+ }
+ 
+ // Reads data from the given block of the file system into the given buffer
+ void read_block(file_system* fs, int block_num, char* buffer) {
+     strcpy(buffer, fs->data[block_num]);
+ }
+@@ -68,8 +69,8 @@
+         if (strcmp(fs->files[i].name, "") == 0) { // Find first available spot in files array
+             fs->free_space -= (size + sizeof(file_info));
+-            strcpy(fs->files[i].name, name);
++            safe_strcpy(fs->files[i].name, sizeof(fs->files[i].name), name);
+             fs->files[i].size = size;
+             for (int j = 0; j < NUM_BLOCKS; j++) {
+                 if (strcmp(fs->data[j], "") == 0) { // Find first available block in data array
+                     fs->files[i].start_block = j;
+                     write_block(fs, j, ""); // Initialize block with empty string
+@@ -126,8 +127,8 @@
+     int blocks_read = 0;
+     int block_num = fs->files[file_index].start_block;
+     while (blocks_read < num_blocks_needed) { // Read data from required number of blocks
+         char block_data[BLOCK_SIZE];
+         read_block(fs, block_num, block_data);
+-        strcat(buffer, block_data);
++        safe_strcpy(buffer + strlen(buffer), MAX_FILE_SIZE - strlen(buffer), block_data);
+         blocks_read++;
+         block_num++;
+     }
+ }
++ 
++void safe_strcpy(char* dest, size_t dest_size, const char* src) {
++    if (strlen(src) >= dest_size) {
++        fprintf(stderr, "Error: source string too long\n");
++        exit(EXIT_FAILURE);
++    }
++    strcpy(dest, src);
++}
++
+ int main() {
+     file_system fs;
+ 
+    

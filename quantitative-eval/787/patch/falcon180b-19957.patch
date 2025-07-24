@@ -1,0 +1,27 @@
+ 
+
+diff --git a/falcon180b-19957 b/falcon180b-19957
+index e69de29..b74d6ba 100644
+--- a/falcon180b-19957
++++ b/falcon180b-19957
+@@ -25,6 +25,17 @@ void add_record(Database* db, char* name, int age, float salary) {
+     return;
+   }
+   Record* new_row = &db->rows[db->num_rows];
++  // Free previously allocated memory if it exists to prevent memory leak
++  if (new_row->name != NULL) {
++      free(new_row->name);
++  }
+   new_row->name = strdup(name);
+   new_row->age = age;
+   new_row->salary = salary;
+   db->num_rows++;
+ }
++
++void free_table(Database* db) {
++  // Free the strdup allocated memory
++  for (int i = 0; i < db->num_rows; i++) {
++    free(db->rows[i].name);
++  }
+ }
+

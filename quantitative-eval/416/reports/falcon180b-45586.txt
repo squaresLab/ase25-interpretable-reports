@@ -1,0 +1,44 @@
+ 
+vuln-fix: Buffer Overflow (CWE-120) in falcon180b-45586 (severity: High)
+what: The code contains a buffer overflow vulnerability in the `handle_client` function. Specifically, when user input is received via `recv` and stored in the fixed-size buffer `buffer`, there is the potential to write more data into `buffer` than it can hold, leading to a buffer overflow.
+where: The vulnerability occurs at the line `int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);` in the `handle_client` function.
+why: If not resolved, this vulnerability can lead to arbitrary code execution, system crashes, or unauthorized access, potentially allowing an attacker to gain control of the server.
+how: An attacker can exploit this vulnerability by sending more than 1024 bytes of data to the server, causing a buffer overflow and potentially overwriting control data on the stack, such as return addresses, to execute arbitrary code.
+code-sources: The entry point is the `recv` function in the `handle_client` function where user input is received and stored in the `buffer`.
+code-sinks: The action performed by the application is printing the received user input with `printf` in the `handle_client` function.
+suggested-fix: 
+```
+diff --git a/falcon180b-45586 b/falcon180b-45586
+index f7f8f8f..ed8d8d7 100644
+--- a/falcon180b-45586
++++ b/falcon180b-45586
+@@ -14,6 +14,7 @@ void *handle_client(void *arg) {
+     int client_socket = *(int *) arg;
+     char buffer[BUFFER_SIZE];
+ 
++    int actual_buffer_size;
+     while (1) {
+         memset(buffer, 0, BUFFER_SIZE);
+         int bytes_received = recv(client_socket, buffer, BUFFER_SIZE-1, 0);
+ 
++        buffer[BUFFER_SIZE-1] = '\0'; // Ensure null-termination
+         if (bytes_received <= 0) {
+             break;
+         }
+ 
+@@ -45,7 +46,7 @@ int main() {
+ 
+         clients[num_clients] = client_socket;
+         num_clients++;
+ 
+-        pthread_t thread_id;
++        int *client_sock = malloc(sizeof(int));
++        *client_sock = client_socket;
+         pthread_create(&thread_id, NULL, handle_client, (void *) client_sock);
+     }
+ 
+     return 0;
+ }
+```
+explanation-suggested-fix: The suggested fix null-terminates the buffer to prevent potential overflows and memory corruption. Additionally, the client socket descriptor is dynamically allocated and passed to `pthread_create` to ensure the correct value is used in the `handle_client` thread.
+method: UNKNOWN

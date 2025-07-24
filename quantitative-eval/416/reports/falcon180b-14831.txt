@@ -1,0 +1,20 @@
+
+vuln-fix: CWE-835: Loop with Unreachable Exit Condition ('Infinite Loop') in falcon180b-14831 (severity: High)
+what: The loop in handle_client() continues indefinitely if the recv() call keeps returning positive values. If the client keeps sending valid data without end, the loop never exits.
+where: Lines 17 to 29 in handle_client() function
+why: This results in a denial of service (DoS) as the server thread handling the client is never freed, eventually exhausting system resources.
+how: An attacker can exploit this by continuously sending valid data to the server, preventing the server from closing the connection and freeing up the handled thread.
+code-sources: Line 18, variable `buffer` reads data from the client using recv().
+code-sinks: Line 24, `send()` sends the received data to other clients.
+suggested-fix: 
+```diff
+35c35
+<        pthread_create(&thread_id, NULL, handle_client, (void*)&client_socket);
+---
+>        pthread_create(&thread_id, NULL, handle_client, (void*) num_clients_socket);
+58a59,60
+>    timeout.tv_sec = 5;  // Set timeout seconds 
+>    setsockopt(client_socket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof timeout);
+```
+explanation-suggested-fix: Setting a timeout for the socket receive operation ensures that if the client does not send data for the specified duration, the recv() call will return an error, causing the loop to exit and freeing the server-side resources.
+method: UNKNOWN

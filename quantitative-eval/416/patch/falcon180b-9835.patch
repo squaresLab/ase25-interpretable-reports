@@ -1,0 +1,24 @@
+ 
+
+--- falcon180b-9835.c 
++++ falcon180b-9835-fixed.c
+@@ -21,9 +21,10 @@
+ 
+ void *handle_client(void *arg) {
+   int client_socket = *(int *) arg;
+   char buffer[BUFFER_SIZE + 1]; // Adjust buffer size to accommodate null terminator
+
+   while (1) {
+     memset(buffer, 0, BUFFER_SIZE + 1);
+-    int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
++    int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0); 
++    if(bytes_received > BUFFER_SIZE){
++      printf("Received data exceeds buffer size\n");
++      break;
++    }
+
+     if (bytes_received <= 0) {
+       break;
+     }
+
+

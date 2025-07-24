@@ -1,0 +1,35 @@
+ 
+    
+    --- falcon180b-6268	(date)
+    +++ falcon180b-6268	(date)
+    @@ -12,7 +12,7 @@
+         int client_socket = *(int *) arg;
+         char request[MAX_REQUEST_SIZE];
+
+    -    while (1) {
+    -        memset(request, 0, MAX_REQUEST_SIZE);
+    -        int bytes_received = recv(client_socket, request, MAX_REQUEST_SIZE, 0);
+    +    while (1) {
+    +        memset(request, 0, MAX_REQUEST_SIZE);
+    +        int bytes_received = recv(client_socket, request, MAX_REQUEST_SIZE - 1, 0);
+
+             if (bytes_received <= 0) {
+                 break;
+    @@ -21,6 +21,7 @@
+                 break;
+             }
+
+    +        request[bytes_received] = '\0'; // Ensure null-termination
+             printf("Client %d sent request: %s\n", client_socket, request);
+
+             // Process request here
+
+    @@ -26,8 +27,8 @@
+             memset(request, 0, MAX_REQUEST_SIZE);
+         }
+
+         close(client_socket);
+         pthread_exit(0);
+     }
+    
+    

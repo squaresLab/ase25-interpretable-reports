@@ -1,0 +1,31 @@
+ 
+
+diff --git a/gpt35-62096 b/gpt35-62096
+index abc123..def456 100644
+--- a/gpt35-62096
++++ b/gpt35-62096
+@@ -72,7 +72,10 @@ void *handle_client(void *arg) {
+ 
+     // Receive initial username message from client
+     char username[32];
+-    recv(socket_fd, username, 32, 0);
++    int username_len = recv(socket_fd, username, 31, 0);
++    if (username_len < 0) {
++        perror("Error receiving username");
++        pthread_exit(NULL); }
++    username[username_len] = '\0'; // Null-terminate the username buffer
+ 
+     // Add client to list of connected clients
+     pthread_mutex_lock(&clients_mutex);
+@@ -114,7 +117,10 @@ void *handle_client(void *arg) {
+         }
+ 
+         // Broadcast message to all other clients
+-        char message[BUFFER_SIZE + 32];
+-        sprintf(message, "%s: %s", username, buffer);
++        char message[BUFFER_SIZE + 32] = {0};
++        snprintf(message, sizeof(message), "%s: %s", username, buffer);
+         broadcast_message(message, socket_fd);
+     }
+ 
+

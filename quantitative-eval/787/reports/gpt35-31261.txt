@@ -1,0 +1,36 @@
+
+vuln-fix: Buffer Overflow (CWE-120) in gpt35-31261.c:75 (severity: High)
+what: The code does not check the boundary of the `num_nodes` or `num_components` array, leading to potential buffer overflows if more nodes or components are added than the array can hold.
+where: Lines 47-53, 56-61, 75 of gpt35-31261.c
+why: If not resolved, an attacker can exploit this weakness to overwrite memory, potentially leading to arbitrary code execution, crashes, or other unpredictable behavior of the application.
+how: An attacker could exploit this vulnerability by adding more nodes or components than the predefined maximum, causing a buffer overflow which could be used to overwrite function pointers or sensitive variables in memory.
+code-sources: The functions add_node() and add_component()
+code-sinks: Increment operations on num_nodes in add_node() and num_components in add_component()
+suggested-fix: 
+```diff
+--- gpt35-31261.c.old
++++ gpt35-31261.c
+@@ -48,6 +48,8 @@
+ // Add node to circuit
+ void add_node(circuit *c) {
+     if (c->num_nodes < MAX_NODES) {
++        c->nodes[c->num_nodes].index = c->num_nodes;
++        c->nodes[c->num_nodes].voltage = 0.0;
+         c->num_nodes++;
+     } else {
+         fprintf(stderr, "Error: Maximum number of nodes exceeded\n");
+@@ -57,6 +59,8 @@
+ void add_component(circuit *c, component_type type, int node1, int node2, double value) {
+     if (c->num_components < MAX_NODES) {
+         c->components[c->num_components].type = type;
+         c->components[c->num_components].node1 = node1;
+         c->components[c->num_components].node2 = node2;
+         c->components[c->num_components].value = value;
+         c->num_components++;
+     } else {
+         fprintf(stderr, "Error: Maximum number of components exceeded\n");
+     }
+}
+```
+explanation-suggested-fix: The added conditional checks in the `add_node` and `add_component` functions ensure that no more nodes or components can be added if the circuit has reached its predefined maximum, thereby preventing potential buffer overflows and ensuring memory safety.
+method: UNKNOWN

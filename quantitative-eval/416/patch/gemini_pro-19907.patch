@@ -1,0 +1,37 @@
+ 
+    
+    --- a/gemini_pro-19907
+    +++ b/gemini_pro-19907
+    @@ -19,6 +19,7 @@ void *handle_client(void *arg) {
+
+                 pthread_mutex_lock(&mutex);
+    +            char buffer[MAX_MESSAGE_LENGTH]; // Move buffer declaration inside the critical section
+                 int bytes_received = recv(client_socket, buffer, MAX_MESSAGE_LENGTH, 0);
+                 if (bytes_received <= 0) {
+                     sem_wait(&semaphore);
+    @@ -27,16 +28,17 @@ void *handle_client(void *arg) {
+                     printf("Client disconnected\n");
+                     close(client_socket);
+                     pthread_mutex_unlock(&mutex);
+                     sem_post(&semaphore);
+                     break;
+                 }
+
+    +            pthread_mutex_lock(&mutex);
+    +            printf("Received message: %s\n", buffer);
+                    pthread_mutex_unlock(&mutex);
+
+                 char response[MAX_MESSAGE_LENGTH];
+                 snprintf(response, MAX_MESSAGE_LENGTH, "Hello, client!");
+                 int bytes_sent = send(client_socket, response, strlen(response), 0);
+                 if (bytes_sent < 0) {
+                     sem_wait(&semaphore);
+                     pthread_mutex_lock(&mutex);
+                     printf("Failed to send message\n");
+                     pthread_mutex_unlock(&mutex);
+                     sem_post(&semaphore);
+                     break;
+                 }
+             }
+    
+    

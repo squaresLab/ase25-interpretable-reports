@@ -1,0 +1,15 @@
+ 
+
+--- falcon180b-69706
++++ falcon180b-69706
+@@ -18,7 +18,7 @@
+         if (bytes_received <= 0) {
+             break;
+         }
+ 
+-        printf("Received message: %s\n", buffer);
++        printf("Received message: %.*s\n", BUFFER_SIZE, buffer);
+     }
+ 
+     close(client_socket);
+

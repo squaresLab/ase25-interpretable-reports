@@ -1,0 +1,9 @@
+ 
+
+33c33
+<         pthread_create(&threads[i], NULL, runner, (void *) &i);
+---
+>         int *thread_id = malloc(sizeof(int));
+>         *thread_id = i;
+>         pthread_create(&threads[i], NULL, runner, thread_id);
+

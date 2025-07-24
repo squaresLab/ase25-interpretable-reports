@@ -1,0 +1,25 @@
+
+vuln-fix: CWE-787: Out-of-bounds Write in falcon180b-70345 (severity: High)
+what: The code does not properly handle the case when the `recv` function reads more data than expected. This could cause an overflow in the `buffer` and potentially lead to arbitrary code execution.
+where: Lines 27-29 in `falcon180b-70345`
+why: Not resolving this weakness could allow an attacker to exploit the overflow to execute arbitrary code, crash the application, or escalate their privileges.
+how: An attacker could send a specially crafted packet larger than `BUFFER_SIZE`, causing the `recv` function to overflow the `buffer` array.
+code-sources: `recv(client_socket, buffer, BUFFER_SIZE, 0);` in `handle_client` function at line 27.
+code-sinks: `printf("Client %d sent: %s\n", client_socket, buffer);` and `send(client_socket, buffer, strlen(buffer), 0);` in `handle_client` function.
+suggested-fix:
+```diff
+--- falcon180b-70345  2023-10-02 12:00:00.000000000 +0000
++++ falcon180b-70345  2023-10-02 12:15:00.000000000 +0000
+@@ -20,6 +20,7 @@
+     char buffer[BUFFER_SIZE];
+ 
+     while (1) {
++        int received_data_length = 0;
+         memset(buffer, 0, BUFFER_SIZE);
+         int bytes_received = recv(client_socket, buffer, sizeof(buffer) - 1, 0); // change from BUFFER_SIZE to sizeof(buffer) - 1
+ 
+         if (bytes_received <= 0) { 
+             break;
+```
+explanation-suggested-fix: By changing the third parameter in the `recv` function from `BUFFER_SIZE` to `sizeof(buffer) - 1`, we ensure that the buffer will always have space for the null-terminator, preventing an out-of-bounds write.
+method: UNKNOWN

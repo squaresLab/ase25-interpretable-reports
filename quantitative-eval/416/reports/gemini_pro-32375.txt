@@ -1,0 +1,40 @@
+    
+vuln-fix: cpp/return-stack-allocated-memory ('cwe-825') in gemini_pro-32375 (severity: high)
+what: A function returns a pointer to a stack-allocated region of memory, which becomes invalid once the function exits.
+where: gemini_pro-32375, lines 39
+why: Dereferencing a dangling pointer can lead to undefined behavior, crashes, or other severe issues including memory corruption.
+how: An attacker can exploit this vulnerability by causing the program to use the deallocated stack memory, leading to a potential crash or other unpredictable behavior.
+code-sources: getMovieRating()
+code-sinks: return rating;
+suggested-fix: 
+```diff
+char* getMovieRating() {
+  static char rating[5];
+  printf("Enter the movie rating: ");
+  scanf("%4s", rating);
+
+  return rating;
+}
+```
+explanation-suggested-fix: Changing `rating` to a static array ensures that the memory remains valid after the function returns. Additionally, limiting the input length to 4 characters prevents buffer overflow.
+
+vuln-fix: cpp/unbounded-write ('cwe-120', 'cwe-787', 'cwe-805') in gemini_pro-32375 (severity: critical)
+what: Buffer write operations that do not control the length of data written may overflow the buffer, causing memory corruption.
+where: gemini_pro-32375, lines 37
+why: Buffer overflow vulnerabilities can lead to arbitrary code execution, system crashes, or other malicious manipulation of the program.
+how: An attacker can exploit this vulnerability by providing an input longer than the buffer size, potentially leading to code execution or other malicious actions.
+code-sources: getMovieRating()
+code-sinks: scanf("%s", rating)
+suggested-fix: 
+```diff
+char* getMovieRating() {
+  static char rating[5];
+  printf("Enter the movie rating: ");
+  scanf("%4s", rating);
+
+  return rating;
+}
+```
+explanation-suggested-fix: Limiting the input length to 4 characters with `scanf("%4s", rating)` ensures that the buffer is not overflowed, preventing memory corruption.
+
+method: CODEQL

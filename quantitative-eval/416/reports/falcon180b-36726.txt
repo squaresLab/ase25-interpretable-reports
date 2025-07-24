@@ -1,0 +1,25 @@
+
+    vuln-fix: Buffer Overflow (CWE-120) in falcon180b-36726 (severity: High)
+    what: The code doesn't properly handle the case when more data is received than what the buffer `buffer[BUFFER_SIZE]` can accommodate, which can cause a buffer overflow.
+    where: The vulnerability is in the `handle_client` function of the falcon180b-36726 file.
+    why: If a buffer overflow occurs, it could lead to arbitrary code execution, allowing an attacker to take control of the server or disrupt its normal operation.
+    how: An attacker could exploit this vulnerability by sending data that exceeds the size of the buffer, causing adjacent memory to be overwritten and potentially executing malicious code.
+    code-sources: User input is received through the `recv` call in the `handle_client` function on the line `int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);`.
+    code-sinks: The `buffer` is later used in a `printf` statement and sent to other clients using `send`, both of which rely on the integrity of the buffer to function correctly.
+    suggested-fix: 
+    ```diff
+    --- falcon180b-36726.c 2023-10-14 10:00:00.000000000 +0000
+    +++ falcon180b-36726_fixed.c 2023-10-14 11:00:00.000000000 +0000
+    @@ -20,7 +20,8 @@
+         while (1) {
+             memset(buffer, 0, BUFFER_SIZE);
+             int bytes_received = recv(client_socket, buffer, BUFFER_SIZE - 1, 0);
+    -        if (bytes_received <= 0) {
+    +        if (bytes_received <= 0 || bytes_received >= BUFFER_SIZE) {
+    +            buffer[BUFFER_SIZE - 1] = '\0'; //Ensure null-term
+                 break;
+             }
+             printf("Client %d sent: %s\n", client_socket, buffer);
+    ```
+    explanation-suggested-fix: The suggested code fix reserves space for the null terminator by changing the `recv` call to receive one less than the buffer size (`BUFFER_SIZE - 1`). It also explicitly sets the last byte of the buffer to `\0` to ensure it is null-terminated, preventing buffer overflow and preserving string integrity.
+    method: UNKNOWN

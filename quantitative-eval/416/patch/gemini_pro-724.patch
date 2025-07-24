@@ -1,0 +1,20 @@
+
+
+--- gemini_pro-724.c
++++ gemini_pro-724_fixed.c
+@@ -29,8 +29,10 @@
+     while (1) {
+         printf("Enter your choice:\n");
+         printf("1. Travel to the future\n");
+         printf("2. Travel to the past\n");
+         printf("3. Get the current time\n");
+         printf("4. Exit\n");
+         scanf("%d", &choice);
++
++        int years = 0; // Initialize the variable to zero
++
+         // Process the user's choice
+         switch (choice) {
+             case 1:
+-                printf("Enter the number of years to travel to the future: ");
+

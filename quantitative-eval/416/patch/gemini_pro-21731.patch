@@ -1,0 +1,32 @@
+ 
+    
+    --- gemini_pro-21731
+    +++ gemini_pro-21731
+    @@ -70,11 +70,11 @@
+     
+     // Receive data from a client
+     char *receive_data(int sockfd) {
+    -  char buffer[256];
+    +  static char buffer[256];
+       if (recv(sockfd, buffer, sizeof(buffer), 0) < 0) {
+         perror("Error receiving data");
+         exit(EXIT_FAILURE);
+       }
+    -  return buffer;
+    +  return strdup(buffer);
+     }
+ 
+     // Close a socket
+     
+    @@ -95,7 +95,7 @@
+       newsockfd = accept_connection(sockfd);
+     
+       // Receive data from the client
+    -  strcpy(buffer, receive_data(newsockfd));
+    +  strncpy(buffer, receive_data(newsockfd), sizeof(buffer)-1);
+       buffer[sizeof(buffer)-1] = '\0'; // Ensure null termination
+
+       // Print the data received from the client
+       printf("Received data from the client: %s\n", buffer);
+    
+    

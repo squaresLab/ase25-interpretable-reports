@@ -1,0 +1,17 @@
+ 
+
+54c54
+<         if (num_fields == reader->num_fields) {
+---
+>         if (num_fields >= reader->num_fields) {
+56c56
+<             reader->num_fields++;
+---
+>             if (reader->num_fields >= SIZE_MAX / sizeof(char*)) {
+>                 // Handle error: too many fields
+>                 fprintf(stderr, "Too many fields in CSV file\n");
+>                 csv_reader_free(reader);
+>                 return 0;
+>             }
+>             reader->num_fields++;
+

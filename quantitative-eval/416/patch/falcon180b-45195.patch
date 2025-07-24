@@ -1,0 +1,21 @@
+ 
+    
+    --- falcon180b-45195.c
+    +++ falcon180b-45195_fixed.c
+    @@ -35,7 +35,7 @@
+             continue;
+         }
+ 
+    -    client_sockets[num_clients] = client_socket;
+    +    int *pclient = malloc(sizeof(int));
+    +    *pclient = client_socket;
+    +    client_sockets[num_clients] = *pclient;
+         num_clients++;
+ 
+         pthread_t thread_id;
+    -    pthread_create(&thread_id, NULL, handle_client, (void *)&client_socket);
+    +    pthread_create(&thread_id, NULL, handle_client, pclient);
+     }
+ }
+    
+    

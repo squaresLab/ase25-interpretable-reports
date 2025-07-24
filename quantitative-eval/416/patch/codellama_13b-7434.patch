@@ -1,0 +1,29 @@
+
+
+--- codellama_13b-7434
++++ codellama_13b-7434-fixed
+@@ -27,6 +27,12 @@
+         float amount;
+         scanf("%f", &amount);
++        if (amount <= 0) {
++          printf("Error: Deposit amount must be positive.\n");
++          continue;
++        }
+         accounts[0].balance += amount;
+         printf("Your new balance is: $%.2f\n", accounts[0].balance);
+         break;
+@@ -32,6 +38,12 @@
+         printf("Enter the amount to withdraw: ");
+         scanf("%f", &amount);
++        if (amount <= 0) {
++          printf("Error: Withdrawal amount must be positive.\n");
++          continue;
++        }
++        if (amount > accounts[0].balance) {
++          printf("Error: Insufficient funds.\n");
++          continue;
++        }
+         accounts[0].balance -= amount;
+         printf("Your new balance is: $%.2f\n", accounts[0].balance);
+         break;
+

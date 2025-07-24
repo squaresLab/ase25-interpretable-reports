@@ -1,0 +1,83 @@
+
+vuln-fix: CWE-362: Concurrent Execution using Shared Resource with Improper Synchronization (Race Condition) in falcon180b-56872 (severity: High)
+what: The vulnerability is a race condition arising from the concurrent access to the `client_socket` variable shared between the main thread and the newly created thread.
+where: The vulnerability is located in the file falcon180b-56872, specifically in lines around assigning and using `client_socket` in the main function and in the `handle_client` function.
+why: If the race condition is not resolved, it could lead to unpredictable behavior, including data corruption, crashes, and potential security flaws where data intended for one client might be sent to another.
+how: An attacker could exploit this vulnerability by connecting multiple clients concurrently, thus leading to unpredictable interactions. This might result in one client's data being erroneously sent to another, potential unauthorized data access, crashes, or data corruption.
+code-sources: Entry point is the `accept` function call in the main function which accepts client connections.
+code-sinks: The `recv` function call in the `handle_client` function where the received data from clients is used.
+suggested-fix:
+```diff
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <pthread.h>
+
+#define MAX_CLIENTS 5
+#define BUFFER_SIZE 1024
+
+int clients[MAX_CLIENTS];
+int num_clients = 0;
+
+pthread_mutex_t client_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+void *handle_client(void *arg) {
+    int client_socket = *(int *)arg;
+    char buffer[BUFFER_SIZE];
+    free(arg);  // Free the allocated memory
+
+    while (1) {
+        memset(buffer, 0, BUFFER_SIZE);
+        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+
+        if (bytes_received <= 0) {
+            break;
+        }
+
+        printf("Client %d sent: %s\n", client_socket, buffer);
+    }
+
+    close(client_socket);
+    return NULL;
+}
+
+int main() {
+    int server_socket = socket(AF_INET, SOCK_STREAM, 0);
+
+    struct sockaddr_in server_addr;
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(8080);
+    server_addr.sin_addr.s_addr = INADDR_ANY;
+
+    bind(server_socket, (struct sockaddr *)&server_addr, sizeof(server_addr));
+    listen(server_socket, 5);
+
+    printf("Server is waiting for clients...\n");
+
+    while (num_clients < MAX_CLIENTS) {
+        int *client_socket = malloc(sizeof(int));
+        *client_socket = accept(server_socket, NULL, NULL);
+
+        pthread_mutex_lock(&client_mutex);
+        clients[num_clients] = *client_socket;
+        num_clients++;
+        pthread_mutex_unlock(&client_mutex);
+
+        pthread_t thread_id;
+        pthread_create(&thread_id, NULL, handle_client, (void *)client_socket);
+        pthread_detach(thread_id);  // Detach the thread to prevent resource leaks
+    }
+
+    while (1) {
+        usleep(1000);
+    }
+
+    return 0;
+}
+```
+explanation-suggested-fix: The suggested code change removes the concurrent access issue by ensuring each client socket is unique to its thread. Memory is dynamically allocated for each client socket and then freed within the thread function after use. A mutex lock around the `clients` array and `num_clients` variable ensures thread-safe operations when modifying these shared resources. The threads are detached to prevent resource leaks.
+method: UNKNOWN

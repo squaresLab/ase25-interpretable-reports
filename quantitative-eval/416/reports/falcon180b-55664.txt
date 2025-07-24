@@ -1,0 +1,37 @@
+
+vuln-fix: Buffer Overflow (CWE-120) in falcon180b-55664, lines 14-28 (severity: High)
+what: The code contains a potential buffer overflow vulnerability in the `handle_client` function when using the `recv` function to read data from a client into a fixed-size buffer without proper bounds checking.
+where: The vulnerability is located in the `handle_client` function, particularly in the lines 14-28 of the file falcon180b-55664.
+why: Failing to resolve this buffer overflow could allow an attacker to crash the server or possibly execute arbitrary code with the same privileges as the running process.
+how: An attacker can craft and send a data packet larger than BUFFER_SIZE to the server. Since there is no proper bounds checking, this will overflow the buffer, potentially overwriting adjacent memory and leading to undefined behavior, including server crashes or code execution.
+code-sources: The primary entry point for user input is via the `recv` function on line 19 in the `handle_client` function.
+code-sinks: The `recv` function is the sink where the user input is read into the buffer on line 19.
+suggested-fix:
+```diff
+--- falcon180b-55664.c 2023-10-03 12:34:56.000000000 +0000
++++ falcon180b-55664-fixed.c 2023-10-03 12:35:56.000000000 +0000
+@@ -14,7 +14,7 @@
+ void *handle_client(void *socket_desc) {
+     int client_socket = *(int *) socket_desc;
+     char buffer[BUFFER_SIZE];
+ 
+     while(1) {
+         memset(buffer, 0, BUFFER_SIZE);
+-        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
++        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE - 1, 0);
+         if(bytes_received <= 0) {
+             if(bytes_received == 0)
+                 printf("Client %d disconnected\n", client_socket);
+@@ -22,6 +22,7 @@
+ 
+             close(client_socket);
+             pthread_exit(0);
+         }
+ 
++        buffer[bytes_received] = '\0'; // Null-terminate the buffer
+         printf("Client %d sent: %s\n", client_socket, buffer);
+         send(client_socket, buffer, strlen(buffer), 0);
+     }
+```
+explanation-suggested-fix: The suggested code diff reduces the buffer size by one when calling `recv` to ensure there is always space for the null-terminator, preventing buffer overflow. The addition of `buffer[bytes_received] = '\0';` ensures that the buffer is null-terminated, which prevents potential out-of-bounds reads.
+method: UNKNOWN

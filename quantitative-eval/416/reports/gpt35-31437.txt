@@ -1,0 +1,63 @@
+
+vuln-fix: Buffer Overflow (CWE-121) in gpt35-31437 (severity: High)
+what: The code contains a buffer overflow vulnerability where user input is read into a fixed-size buffer without proper bounds checking, which can lead to overwriting adjacent memory and potentially executing arbitrary code.
+where: 
+  - Vulnerability in function `handleClient`:
+    - `char sourceIP[20], destinationIP[20], protocol[10];` (line ~42)
+    - `read(socket, buffer, MAX_BUFFER);` (line ~43)
+    - `sscanf(buffer, "%[^,],%d,%[^,],%d,%[^,]", sourceIP, &sourcePort, destinationIP, &destinationPort, protocol);` (line ~48)
+why: Not resolving this vulnerability can allow an attacker to overwrite critical memory sections, leading to potential execution of arbitrary code or crashing of the server, thus creating denial-of-service (DoS) conditions.
+how: An attacker could exploit this vulnerability by sending a specially crafted packet with data that exceeds the expected length of the IP addresses, ports, or protocol fields. This could overflow the `sourceIP`, `destinationIP`, or `protocol` buffers, potentially allowing the attacker to control the flow of the program or cause it to crash.
+code-sources: 
+  - Input data received by `read(socket, buffer, MAX_BUFFER);` in `handleClient`.
+code-sinks: 
+  - Data copied to fixed-size arrays `sourceIP`, `destinationIP`, `protocol` by `sscanf(buffer, "%[^,],%d,%[^,],%d,%[^,]", sourceIP, &sourcePort, destinationIP, &destinationPort, protocol);`.
+suggested-fix: 
+```diff
+--- gpt35-31437.c	2023-08-12 16:32:54.000000000 +0000
++++ gpt35-31437-fixed.c	2023-08-12 16:38:12.000000000 +0000
+@@ -45,7 +45,14 @@
+     pthread_exit(NULL);
+ }
+ 
++// Safe scanning of user input
++int safeSscanf(const char *buffer, char *sourceIP, size_t sourceIPSize, int *sourcePort,
++    char *destIP, size_t destIPSize, int *destPort, char *protocol, size_t protocolSize) {
++    char sourceIPBuf[20], destIPBuf[20], protocolBuf[10];
++    int res = sscanf(buffer, "%19[^,],%d,%19[^,],%d,%9[^,]", sourceIPBuf, sourcePort, destIPBuf, destPort, protocolBuf);
++    if(res == 5) {
++        strncpy(sourceIP, sourceIPBuf, sourceIPSize - 1);
++        sourceIP[sourceIPSize - 1] = '\0';
++        strncpy(destIP, destIPBuf, destIPSize - 1);
++        destIP[destIPSize - 1] = '\0';
++        strncpy(protocol, protocolBuf, protocolSize - 1);
++        protocol[protocolSize - 1] = '\0';
++    }
++    return res;
++}
++
+ void *handleClient(void *args) {
+     struct Client client = *((struct Client*)args); // Client details
+     int socket = client.socket;
+ 
+@@ -43,10 +45,12 @@
+     read(socket, buffer, MAX_BUFFER);
+ 
+     // Parse packet data
+-    char sourceIP[20], destinationIP[20], protocol[10];
++    char sourceIP[20] = {0}, destinationIP[20] = {0}, protocol[10] = {0};
+     int sourcePort, destinationPort;
+-    sscanf(buffer, "%[^,],%d,%[^,],%d,%[^,]", sourceIP, &sourcePort, destinationIP, &destinationPort, protocol);
++    if (safeSscanf(buffer, sourceIP, sizeof(sourceIP), &sourcePort, destinationIP, sizeof(destinationIP), &destinationPort, protocol, sizeof(protocol)) != 5) {
++        char *responseMessage = "Invalid packet format!";
++        send(socket, responseMessage, strlen(responseMessage), 0);
++        close(socket);
++        pthread_exit(NULL);
++    }
+ 
+     // Check if packet data matches firewall rule
+     if(!isMatch(sourceIP, destinationIP, sourcePort, destinationPort, protocol)) {
+         // Send rejection message to client
+```
+explanation-suggested-fix: The suggested fix introduces a helper function `safeSscanf` that performs safe scanning and copying of input data. It ensures that user-supplied strings are properly null-terminated and do not exceed the destination buffer sizes, thus preventing buffer overflow vulnerabilities.
+method: UNKNOWN

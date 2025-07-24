@@ -1,0 +1,50 @@
+
+vuln-fix: CWE-415: Double Free in falcon180b-58161.c (severity: High)
+what: The server program can experience a double free vulnerability, leading to undefined behavior, crashes, or exploitable security issues.
+where: The vulnerability originates in the `handle_client` function when `client_socket` is closed without proper synchronization, specifically at lines 32 and inside the `accept_connections` function when `client_socket` is potentially passed incorrectly to threads.
+why: Double freeing memory can cause heap corruption, program crashes, or allow an attacker to execute arbitrary code or escalate privileges.
+how: An attacker can exploit this by causing multiple threads to close the same socket, leading to attempts to free the same memory twice.
+code-sources: The user input enters the application through `recv()` in the `handle_client` function at line 26.
+code-sinks: The application performs an action using the user input in `close(client_socket)` at line 32.
+suggested-fix: 
+```diff
+--- falcon180b-58161.c
++++ falcon180b-58161-fixed.c
+@@ -39,7 +39,7 @@
+         if (bytes_received <= 0) {
+             printf("Client %d disconnected\n", client_socket);
+             close(client_socket);
+-            pthread_exit(0);
++            break;
+         }
+
+         printf("Client %d sent: %s\n", client_socket, buffer);
+@@ -56,9 +56,15 @@
+
+         if (num_clients >= MAX_CLIENTS) {
+             printf("Maximum number of clients reached\n");
++            close(client_socket);
+             continue;
+         }
+
++        int *new_socket = malloc(sizeof(int));
++        if (new_socket == NULL) {
++            printf("Error allocating memory\n");
++            close(client_socket);
++            continue;
++        }
++        *new_socket = client_socket;
+ 
+         client_sockets[num_clients] = client_socket;
+         printf("Client %d connected\n", client_socket);
+@@ -66,7 +72,7 @@
+ 
+         pthread_t thread_id;
+-        pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
++        pthread_create(&thread_id, NULL, handle_client, (void *) new_socket);
+         thread_ids[num_clients - 1] = thread_id;
+     }
+ }
+```
+explanation-suggested-fix: The suggested changes ensure memory is correctly allocated for each new client socket, avoiding shared state issues. Additionally, the `pthread_exit` call is replaced with `break` to ensure the loop terminates safely in the `handle_client` function, thus preventing premature thread exits that could cause double freeing.
+method: UNKNOWN

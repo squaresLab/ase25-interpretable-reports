@@ -1,0 +1,28 @@
+ 
+    
+    --- falcon180b-4002    2023-03-18 10:53:48.000000000 +0100
+    +++ falcon180b-4002-fixed    2023-03-18 10:58:36.000000000 +0100
+    @@ -63,12 +63,13 @@
+            if (num_clients >= MAX_CLIENTS) {
+                send(client_sock, "Server is full\n", strlen("Server is full\n"), 0);
+                close(client_sock);
+                continue;
+            }
+
+    -       client_sockets[num_clients] = client_sock;
+    -       num_clients++;
+    +       int *new_sock = malloc(sizeof(int));
+    +       *new_sock = client_sock;
+    +
+    +       client_sockets[num_clients] = *new_sock;
+    +       num_clients++;
+
+    -       pthread_t thread_id;
+    -       pthread_create(&thread_id, NULL, handle_client, (void *) &client_sock);
+    +       pthread_t thread_id;
+    +       pthread_create(&thread_id, NULL, handle_client, (void *) new_sock);
+        }
+
+        return 0;
+    
+    

@@ -1,0 +1,92 @@
+
+    vuln-fix: Buffer Overflow (CWE-120) in falcon180b-19843.c at line 26 and 31 (severity: High)
+    what: The vulnerable code writes data received from clients without ensuring that the length of the data does not exceed the size of the buffer. This can lead to a buffer overflow.
+    where: The vulnerability can be found in the `recv` function call at line 26 and the `send` function call at line 31 in falcon180b-19843.c.
+    why: If this vulnerability is not resolved, an attacker could exploit the buffer overflow to execute arbitrary code, cause a denial of service, or corrupt important data.
+    how: An attacker would proceed to exploit this vulnerability by sending a payload larger than the BUFFER_SIZE (1024 bytes). This would overflow the buffer leading to overwriting adjacent memory, and potentially gaining control over the program flow.
+    code-sources: 
+        - `recv(client_socket, buffer, BUFFER_SIZE, 0);` at line 26
+    code-sinks: 
+        - `printf("Client %d sent: %s\n", client_socket, buffer);` at line 29
+        - `send(g_client_sockets[i], buffer, strlen(buffer), 0);` at line 31
+    suggested-fix: 
+    ```diff
+    #include <stdio.h>
+    #include <stdlib.h>
+    #include <string.h>
+    #include <unistd.h>
+    #include <sys/socket.h>
+    #include <arpa/inet.h>
+    #include <pthread.h>
+    
+    #define BUFFER_SIZE 1024
+    #define MAX_CLIENTS 10
+    #define PORT 8080
+    
+    int g_server_socket;
+    int g_client_sockets[MAX_CLIENTS];
+    int g_num_clients;
+    
+    void *handle_client(void *arg) {
+        int client_socket = *(int *) arg;
+        pthread_detach(pthread_self());
+    
+        char buffer[BUFFER_SIZE];
+        while (1) {
+            memset(buffer, 0, BUFFER_SIZE);
+            int bytes_received = recv(client_socket, buffer, BUFFER_SIZE - 1, 0);
+    
+            if (bytes_received <= 0) {
+                break;
+            }
+            buffer[bytes_received] = '\0';
+    
+            printf("Client %d sent: %s\n", client_socket, buffer);
+    
+            // Send message to all clients
+            for (int i = 0; i < g_num_clients; i++) {
+                if (g_client_sockets[i]!= client_socket) {
+                    send(g_client_sockets[i], buffer, bytes_received, 0);
+                }
+            }
+        }
+    
+        close(client_socket);
+        return NULL;
+    }
+    
+    int main() {
+        int server_socket = socket(AF_INET, SOCK_STREAM, 0);
+    
+        struct sockaddr_in server_addr;
+        memset(&server_addr, 0, sizeof(server_addr));
+        server_addr.sin_family = AF_INET;
+        server_addr.sin_port = htons(PORT);
+        server_addr.sin_addr.s_addr = INADDR_ANY;
+    
+        bind(server_socket, (struct sockaddr *) &server_addr, sizeof(server_addr));
+        listen(server_socket, MAX_CLIENTS);
+    
+        printf("Server started on port %d\n", PORT);
+    
+        while (1) {
+            int client_socket = accept(server_socket, NULL, NULL);
+    
+            if (g_num_clients >= MAX_CLIENTS) {
+                printf("Maximum number of clients reached\n");
+                close(client_socket);
+                continue;
+            }
+    
+            g_client_sockets[g_num_clients] = client_socket;
+            g_num_clients++;
+    
+            pthread_t thread_id;
+            pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+        }
+    
+        return 0;
+    }
+    ```
+    explanation-suggested-fix: The suggested fix adjusts the `recv` function call to ensure that at most `BUFFER_SIZE - 1` bytes are written into `buffer`, leaving space for a null terminator which is then manually added. This prevents potential buffer overflow and ensures the buffer is null-terminated. Implementing `pthread_detach` ensures that resources of finished threads are released properly.
+    method: UNKNOWN

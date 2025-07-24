@@ -1,0 +1,24 @@
+ 
+
+--- gpt35-37509.c	(revision 1)
++++ gpt35-37509.c	(revision 2)
+@@ -24,7 +24,7 @@
+ 
+         // read the incoming message from the current client
+         int valread = read(sock, incoming_message, 1024);
++        if (valread > sizeof(incoming_message) - 1)
++        {
++            // handle overflow: log it and disconnect the client
++            printf("Received message exceeds buffer size, disconnecting client.\n");
++            close(sock);
++            return NULL;
++        }
+         incoming_message[valread] = '\0'; // null-terminate the incoming message to prevent overflow
+ 
+         // if the client has disconnected, stop handling incoming messages
+         if (valread == 0)
+         {
+             for (int i = 0; i < num_clients; i++)
+             {
+                 if (clients[i] == sock)
+ 

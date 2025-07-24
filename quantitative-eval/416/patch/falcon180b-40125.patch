@@ -1,0 +1,35 @@
+ 
+
+--- falcon180b-40125
++++ falcon180b-40125-fixed
+@@ -24,7 +24,8 @@
+     int client_socket = *(int *) arg;
+     char buffer[1024];
+
+-    while (1) {
++    ssize_t bytes_received;
++    while ((bytes_received = recv(client_socket, buffer, sizeof(buffer) - 1, 0)) > 0) {
+         memset(buffer, 0, sizeof(buffer));
+         recv(client_socket, buffer, sizeof(buffer), 0);
+
+         buffer[bytes_received] = '\0';    // Null-terminate the buffer
+
+         if (strcmp(buffer, "on") == 0) {
+             for (int i = 0; i < num_clients; i++) {
+@@ -33,16 +34,16 @@
+                 }
+             }
+         } else if (strcmp(buffer, "off") == 0) {
+             for (int i = 0; i < num_clients; i++) {
+                 if (clients[i] != client_socket) {
+-                    send(clients[i], "off", sizeof("off"), 0);
++                    send(clients[i], "off", strlen("off") + 1, 0);
+                 }
+             }
+         }
+     }
+
+     close(client_socket);
+     pthread_exit(0);
+ }
+

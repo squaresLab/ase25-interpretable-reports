@@ -1,0 +1,22 @@
+ 
+        
+        diff --git a/falcon180b-47262 b/falcon180b-47262
+        index abcdefg..hijklmn 100644
+        --- a/falcon180b-47262
+        +++ b/falcon180b-47262
+        @@ -29,7 +29,11 @@ void *handle_client(void *arg) {
+                 int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+                 if (bytes_received <= 0) {
+                     break;
+                 }
+        +        // Sanitize the received buffer
+        +        for (int i = 0; i < bytes_received; i++) {
+        +            if (!isprint(buffer[i]) && !isspace(buffer[i])) {
+        +                buffer[i] = '\0';
+        +            }
+        +        }
+                 printf("Client %d sent message: %s\n", client_socket, buffer);
+                 send(client_socket, buffer, strlen(buffer), 0);
+             }
+        
+    

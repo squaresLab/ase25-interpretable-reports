@@ -1,0 +1,45 @@
+
+vuln-fix: Buffer Overflow (CWE-120) in falcon180b-40125 at lines 27 and 30 (severity: High)
+what: The code does not properly limit the size of data read into the buffer, leading to a possible buffer overflow.
+where: At lines 27 (`recv`) and 30 (`send`) in the `handle_client` function found in the file falcon180b-40125.
+why: An attacker could exploit this vulnerability to corrupt memory, leading to a crash or the execution of arbitrary code, compromising system integrity.
+how: An attacker could send a specially crafted message larger than the buffer size, leading to memory corruption and potentially gaining control of the process execution.
+code-sources: The `recv` function at line 27 in the `handle_client` function.
+code-sinks: The `send` function at lines 30 and 34 in the `handle_client` function.
+suggested-fix: 
+```
+--- falcon180b-40125
++++ falcon180b-40125-fixed
+@@ -24,7 +24,8 @@
+     int client_socket = *(int *) arg;
+     char buffer[1024];
+
+-    while (1) {
++    ssize_t bytes_received;
++    while ((bytes_received = recv(client_socket, buffer, sizeof(buffer) - 1, 0)) > 0) {
+         memset(buffer, 0, sizeof(buffer));
+         recv(client_socket, buffer, sizeof(buffer), 0);
+
+         buffer[bytes_received] = '\0';    // Null-terminate the buffer
+
+         if (strcmp(buffer, "on") == 0) {
+             for (int i = 0; i < num_clients; i++) {
+@@ -33,16 +34,16 @@
+                 }
+             }
+         } else if (strcmp(buffer, "off") == 0) {
+             for (int i = 0; i < num_clients; i++) {
+                 if (clients[i] != client_socket) {
+-                    send(clients[i], "off", sizeof("off"), 0);
++                    send(clients[i], "off", strlen("off") + 1, 0);
+                 }
+             }
+         }
+     }
+
+     close(client_socket);
+     pthread_exit(0);
+ }
+```
+explanation-suggested-fix: The modification ensures that the buffer is null-terminated after `recv` to prevent buffer overflow. It avoids reading more bytes than the buffer can hold. Additionally, `send` uses `strlen(buffer) + 1` to ensure correct string length for null-termination.
+method: UNKNOWN

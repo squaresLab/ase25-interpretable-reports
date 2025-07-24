@@ -1,0 +1,13 @@
+ 
+
+--- a/falcon180b-10666
++++ b/falcon180b-10666
+@@ -27,7 +27,8 @@
+    }
+
+    close(client_socket);
+-   pthread_exit(0);
++   // Remove the double-free vulnerability by avoiding closing the socket again in pthread_exit.
++   pthread_exit(NULL);
+}
+

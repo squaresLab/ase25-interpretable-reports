@@ -1,0 +1,13 @@
+ 
+
+--- falcon180b-50436.c.orig 2023-10-16 18:20:00.000000000 +0000
++++ falcon180b-50436.c 2023-10-16 18:22:00.000000000 +0000
+@@ -21,6 +21,7 @@
+    while (1) {
+        memset(buffer, 0, BUFFER_SIZE);
+        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE-1, 0);
++       buffer[BUFFER_SIZE-1] = '\0';  // Ensure null-termination
+
+        if (bytes_received <= 0) {
+            break;
+

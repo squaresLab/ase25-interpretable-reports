@@ -1,0 +1,29 @@
+
+vuln-fix: Buffer Overflow (CWE-120) in falcon180b-5006 at line 16 and line 24 (severity: High)
+what: The provided code is vulnerable to a buffer overflow attack due to insufficient bounds checking when receiving data into the buffer.
+where: The vulnerability occurs at lines:
+```c
+int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+printf("Client %d sent message: %s\n", client_socket, buffer);
+```
+why: Not resolving this weakness can allow an attacker to craft inputs that overflow the buffer, potentially leading to arbitrary code execution, crashes, or data corruption.
+how: An attacker can send a string larger than the `BUFFER_SIZE`, causing a buffer overflow. This might overwrite memory and control the behavior of the application.
+code-sources: The entry point is `recv(client_socket, buffer, BUFFER_SIZE, 0);`
+code-sinks: The actions performed using user input are `printf("Client %d sent message: %s\n", client_socket, buffer);` and `send(client_sockets[i], buffer, strlen(buffer), 0);`
+suggested-fix:
+```diff
+--- falcon180b-5006.c
++++ falcon180b-5006-fixed.c
+@@ -16,7 +16,7 @@
+ while (1) {
+     memset(buffer, 0, BUFFER_SIZE);
+     int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+ 
+-    if (bytes_received <= 0) {
++    if (bytes_received <= 0 || bytes_received >= BUFFER_SIZE) {
+         break;
+     }
+ 
+```
+explanation-suggested-fix: The suggested code adds a check to ensure that `bytes_received` does not exceed `BUFFER_SIZE` before processing the data. This prevents buffer overflow by ensuring that only up to BUFFER_SIZE - 1 bytes are used in the buffer, maintaining null-termination.
+method: UNKNOWN

@@ -1,0 +1,23 @@
+ 
+
+--- a/falcon180b-21261
++++ b/falcon180b-21261
+@@ -22,7 +22,7 @@ void *handle_client(void *arg) {
+ void accept_connections() {
+     while (1) {
+         int client_socket = accept(server_socket, NULL, NULL);
++        int *client_sock_ptr = malloc(sizeof(int));
++        *client_sock_ptr = client_socket;
+
+         if (num_clients >= MAX_CLIENTS) {
+             send(client_socket, "Server is full. Please try again later.\n", 45, 0);
+@@ -31,7 +31,7 @@ void accept_connections() {
+         client_sockets[num_clients] = client_socket;
+         num_clients++;
+
+         pthread_t thread_id;
+-        pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
++        pthread_create(&thread_id, NULL, handle_client, (void *) client_sock_ptr);
+     }
+ }
+

@@ -1,0 +1,16 @@
+ 
+
+--- gpt35-59206.c
++++ gpt35-59206-fixed.c
+@@ -20,7 +20,7 @@
+     printf("Client message: %s", buffer);
+   }
+   else {
+     printf("Receive failed.\n");
+   }
+ 
+   // Send message to client
+   char *message = "Server received message.\n";
+   send(sock, message, strlen(message), 0);
+ 
+

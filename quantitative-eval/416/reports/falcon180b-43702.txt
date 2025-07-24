@@ -1,0 +1,29 @@
+
+    vuln-fix: Race Condition (CWE-362) in falcon180b-43702 at line 60-65 (severity: High)
+    what: The code within the `main()` function creates multiple threads using `pthread_create`, passing the address of the loop index `i` as the argument to each thread. This can lead to a race condition because all threads will reference the same memory location for `i`, potentially causing incorrect behavior.
+    where: Lines 60-65 in the file falcon180b-43702.
+    why: If the race condition is not resolved, it could lead to unpredictable program behavior, including incorrect ghost-to-room assignments and possibly crashing the program. This could be exploited to cause denial of service or other malicious actions.
+    how: An attacker could trigger this vulnerability by manipulating thread scheduling, thus causing thread arguments to overlap. This might lead to multiple threads using the same `i` value, leading to undefined behavior or incorrect program output.
+    code-sources: The loop index `i` at line 60 in the `main()` function.
+    code-sinks: The argument passed to `pthread_create()` at line 63 in the `main()` function.
+    suggested-fix: 
+    ```diff
+    --- falcon180b-43702.c
+    +++ falcon180b-43702_fixed.c
+    @@ -61,10 +61,12 @@
+    
+        pthread_t threads[NUM_ROOMS];
+    
+    +   int indexes[NUM_ROOMS];
+    +
+        for (int i = 0; i < NUM_ROOMS; i++) {
+    +       indexes[i] = i;
+            pthread_create(&threads[i], NULL, ghost_thread, &indexes[i]);
+        }
+    
+        for (int i = 0; i < NUM_ROOMS; i++) {
+            pthread_join(threads[i], NULL);
+        }
+    ```
+    explanation-suggested-fix: The suggested fix resolves the race condition by creating an array `indexes` to store the unique index value for each thread. Each thread is passed a pointer to a unique element within this array instead of the loop index variable, ensuring no race condition occurs.
+    method: UNKNOWN

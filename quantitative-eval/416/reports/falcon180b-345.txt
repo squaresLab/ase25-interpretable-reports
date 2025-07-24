@@ -1,0 +1,101 @@
+
+vuln-fix: CWE-459: Improper Resource Shutdown or Release in falcon180b-345.c (severity: High)
+what: The vulnerability lies in the failure to properly initialize the `server_socket` file descriptor before using it in the `main` function and not checking the return values of `bind` and `listen` functions.
+where: The vulnerability is located in the `main` function in falcon180b-345.c.
+why: If the `server_socket` is not properly initialized, the application could behave unexpectedly, leading to crashes or potentially giving an attacker control over the server. Additionally, failing to check the return values of critical functions can result in the server continuing to run in an invalid state.
+how: An attacker might exploit this vulnerability by causing the server to operate on an undefined or invalid socket, leading to unexpected behavior or crashing the server.
+code-sources: The entry point where user input enters the application is via the `recv` function in the `handle_client` function.
+code-sinks: The action performed by the application using user input is the `printf` function in the `handle_client` function.
+suggested-fix: 
+```diff
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <pthread.h>
+
+#define MAX_CLIENTS 10
+#define BUFFER_SIZE 1024
+
+int server_socket;
+int client_sockets[MAX_CLIENTS];
+int num_clients = 0;
+
+void *handle_client(void *arg) {
+    int client_socket = *(int *) arg;
+    char buffer[BUFFER_SIZE];
+
+    while (1) {
+        memset(buffer, 0, BUFFER_SIZE);
+        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+
+        if (bytes_received <= 0) {
+            break;
+        }
+
+        printf("Client %d sent: %s\n", client_socket, buffer);
+    }
+
+    close(client_socket);
+    num_clients--;
+
+    return NULL;
+}
+
+void accept_connections() {
+    while (num_clients < MAX_CLIENTS) {
+        int client_socket = accept(server_socket, NULL, NULL);
+
+        if (client_socket == -1) {
+            printf("Error accepting connection\n");
+            continue;
+        }
+
+        client_sockets[num_clients] = client_socket;
+        num_clients++;
+
+        pthread_t thread_id;
+        pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+    }
+}
+
+int main() {
+    int opt = 1;
++   server_socket = socket(AF_INET, SOCK_STREAM, 0);
++   if (server_socket == -1) {
++       perror("Could not create socket");
++       exit(EXIT_FAILURE);
++   }
+    setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+
+    struct sockaddr_in server_addr;
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.s_addr = INADDR_ANY;
+    server_addr.sin_port = htons(8080);
+
+-   if (bind(server_socket, (struct sockaddr *) &server_addr, sizeof(server_addr)) < 0) {
++   if (bind(server_socket, (struct sockaddr *) &server_addr, sizeof(server_addr)) == -1) {
+        perror("Bind failed");
++       close(server_socket);
+        exit(EXIT_FAILURE);
+    }
+-   listen(server_socket, 3);
++   if (listen(server_socket, 3) == -1) {
++       perror("Listen failed");
++       close(server_socket);
++       exit(EXIT_FAILURE);
++   }
+
+    printf("Server is listening on port 8080\n");
+
+    accept_connections();
+
++   close(server_socket);
+    return 0;
+}
+```
+explanation-suggested-fix: The suggested fix ensures that `server_socket` is properly initialized before it is used. Additionally, it adds error checking for the `bind` and `listen` functions. If either of these calls fails, an error message is printed, the socket is closed, and the server exits. This prevents the server from running in an invalid state by ensuring that all necessary resources are properly initialized and checked.
+method: UNKNOWN

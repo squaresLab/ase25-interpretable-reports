@@ -1,0 +1,22 @@
+ 
+
+--- gpt35-12636.c
++++ gpt35-12636_fixed.c
+@@ -9,6 +9,7 @@
+ {
+     int res;
+     pthread_t threads[NUM_THREADS];
++    int thread_args[NUM_THREADS];
+
+     for(int i = 0; i < NUM_THREADS; i++)
+     {
+-        printf("Creating thread %d\n", i);
+-        res = pthread_create(&threads[i], NULL, thread_function, (void *)&i);
++        thread_args[i] = i;
++        printf("Creating thread %d\n", i);
++        res = pthread_create(&threads[i], NULL, thread_function, (void *)&thread_args[i]);
+         if (res != 0)
+         {
+             perror("Thread creation failed");
+
+    

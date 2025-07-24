@@ -1,0 +1,95 @@
+
+    vuln-fix: CWE-825: Return of stack variable address in falcon180b-44865 line 27 (severity: High)
+    what: A function returns a pointer to a stack-allocated region of memory. This memory is deallocated at the end of the function, which may lead the caller to dereference a dangling pointer.
+    where: Line 27 in falcon180b-44865
+    why: Not resolving this weakness can cause the program to crash during runtime or lead to undefined behavior since the memory being referenced is no longer valid.
+    how: An attacker could exploit this to cause a segmentation fault which could potentially be used to crash the application or execute arbitrary code.
+    code-sources: fgets(input, MAX_INPUT_SIZE, stdin) in get_input function
+    code-sinks: return input in get_input function
+    suggested-fix: 
+    ```diff
+    -char *get_input(char *prompt) {
+    -    char input[MAX_INPUT_SIZE];
+    +void get_input(char *prompt, char *input) {
+    ...
+    -    return input;
+    +    // sanitize_input is already called before returning
+    ...
+    }
+    ...
+    strcpy(name, get_input(""));
+    ...
+    strcpy(address, get_input(""));
+    ...
+    strcpy(phone_number, get_input(""));
+    +
+    - strcpy(name, get_input(""));
+    + get_input("", name);
+    ...
+    - strcpy(address, get_input(""));
+    + get_input("", address);
+    ...
+    - strcpy(phone_number, get_input(""));
+    + get_input("", phone_number);
+    ```
+
+    explanation-suggested-fix: The suggested fix changes the function `get_input` to avoid returning a pointer to a stack-allocated array. Instead, it accepts the buffer as an argument. This ensures that the memory for storing user input is correctly allocated by the caller, preventing the use of deallocated stack memory.
+   
+    method: CODEQL
+```
+
+```
+    vuln-fix: CWE-120 / CWE-787 / CWE-805: Unbounded write in falcon180b-44865 line 37 (severity: High)
+    what: Buffer write operations that do not control the length of data written may overflow.
+    where: Line 37 in falcon180b-44865
+    why: Buffer overflow can lead to arbitrary code execution, which might enable an attacker to take control of the application.
+    how: An attacker could supply input larger than the buffer size to overwrite adjacent memory, potentially leading to code execution or crashing the program.
+    code-sources: get_input function
+    code-sinks: strcpy(name, get_input("")) in main function
+    suggested-fix: 
+    ```diff
+    -strcpy(name, get_input(""));
+    +get_input("", name);
+    ```
+    
+    explanation-suggested-fix: The fix replaces the `strcpy` function with a function call to the revised `get_input`, which ensures proper bounds checking and avoids the risk of buffer overflow.
+    
+    method: CODEQL
+```
+
+```
+    vuln-fix: CWE-120 / CWE-787 / CWE-805: Unbounded write in falcon180b-44865 line 41 (severity: High)
+    what: Buffer write operations that do not control the length of data written may overflow.
+    where: Line 41 in falcon180b-44865
+    why: Buffer overflow can lead to arbitrary code execution, which might enable an attacker to take control of the application.
+    how: An attacker could supply input larger than the buffer size to overwrite adjacent memory, potentially leading to code execution or crashing the program.
+    code-sources: get_input function
+    code-sinks: strcpy(address, get_input("")) in main function
+    suggested-fix: 
+    ```diff
+    -strcpy(address, get_input(""));
+    +get_input("", address);
+    ```
+
+    explanation-suggested-fix: The fix replaces the `strcpy` function with a function call to the revised `get_input`, which ensures proper bounds checking and avoids the risk of buffer overflow.
+
+    method: CODEQL
+```
+
+```
+    vuln-fix: CWE-120 / CWE-787 / CWE-805: Unbounded write in falcon180b-44865 line 45 (severity: High)
+    what: Buffer write operations that do not control the length of data written may overflow.
+    where: Line 45 in falcon180b-44865
+    why: Buffer overflow can lead to arbitrary code execution, which might enable an attacker to take control of the application.
+    how: An attacker could supply input larger than the buffer size to overwrite adjacent memory, potentially leading to code execution or crashing the program.
+    code-sources: get_input function
+    code-sinks: strcpy(phone_number, get_input("")) in main function
+    suggested-fix: 
+    ```diff
+    -strcpy(phone_number, get_input(""));
+    +get_input("", phone_number);
+    ```
+
+    explanation-suggested-fix: The fix replaces the `strcpy` function with a function call to the revised `get_input`, which ensures proper bounds checking and avoids the risk of buffer overflow.
+
+    method: CODEQL

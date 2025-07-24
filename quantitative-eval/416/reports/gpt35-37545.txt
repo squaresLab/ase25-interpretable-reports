@@ -1,0 +1,25 @@
+
+vuln-fix: CWE-787 Out-of-bounds Write in gpt35-37545 (severity: High)
+what: The vulnerability is an out-of-bounds write resulting from using `strlen(client_message)` to determine the amount of data to send back to the client after receiving data from the client. This occurs when `client_message` is not null-terminated.
+where: 
+Function: `server_handler`
+Location: lines 67 and 80 in file gpt35-37545
+Function: `client_handler`
+Location: lines 116 and 129 in file gpt35-37545
+why: An out-of-bounds write can lead to program crashes, corruption of data, or execution of arbitrary code, which may be exploited by attackers to gain unauthorized access to the system.
+how: An attacker could send a specially crafted packet that either does not include a null terminator within the first 2000 characters or purposefully overflows the buffer, causing the subsequent `strlen` call to read out-of-bounds memory and write beyond the buffer's limits.
+code-sources: The socket input received via `recv()` on lines 71 and 122 is the user-input entry point.
+code-sinks: The `write()` calls using `strlen(client_message)` on lines 80 and 129 are the sinks where the out-of-bound data is written back to the client.
+suggested-fix: 
+```diff
+80c80
+<     write(sock, client_message, strlen(client_message));
+---
+>     write(sock, client_message, read_size);
+129c129
+<     write(sock, client_message, strlen(client_message));
+---
+>     write(sock, client_message, read_size);
+```
+explanation-suggested-fix: The suggested changes use `read_size`, the number of bytes actually read into the `client_message` buffer, instead of `strlen(client_message)` to determine the number of bytes to write back to the client. This ensures that no out-of-bounds memory is accessed.
+method: UNKNOWN

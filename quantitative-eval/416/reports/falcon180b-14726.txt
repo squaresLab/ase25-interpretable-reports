@@ -1,0 +1,47 @@
+ 
+    vuln-fix: CWE-362: Race Condition in falcon180b-14726 (severity: High)
+    what: The code creates a race condition by passing a pointer to a local `int` variable (`client_socket`) to the `pthread_create` function. Multiple threads can be created simultaneously causing them to overwrite the same `client_socket` variable before it gets used, leading to unpredictable behavior and potential security issues.
+    where: The vulnerability is located in the `accept_connections` function, specifically in the lines:
+    ```
+    int client_socket = accept(server_socket, (struct sockaddr *) &client_addr, &client_len);
+
+    if (client_socket < 0) {
+        printf("Error accepting connection\n");
+        continue;
+    }
+
+    pthread_t thread_id;
+    pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+    ```
+    why: If not resolved, this race condition can lead to security vulnerabilities where malicious users could potentially hijack other user sessions, cause crashes, or execute arbitrary code, compromising the entire system.
+    how: An attacker could exploit this vulnerability by initiating multiple connections simultaneously, causing the `client_socket` variable to be overwritten in the middle of a `pthread_create` call, resulting in undefined behavior and potentially giving the attacker unauthorized access or causing a denial of service.
+    code-sources: The entry point for user input is the socket receiving data in the `handle_client` function.
+    code-sinks: The application performs actions using the user input in the `printf` function which prints the received input to the console.
+    suggested-fix:
+    ```diff
+    --- old_falcon180b-14726.c
+    +++ new_falcon180b-14726.c
+    @@ -26,7 +26,8 @@
+            socklen_t client_len = sizeof(client_addr);
+            int client_socket = accept(server_socket, (struct sockaddr *) &client_addr, &client_len);
+
+            if (client_socket < 0) {
+                printf("Error accepting connection\n");
+                continue;
+            }
+    
+            pthread_t thread_id;
+    -        pthread_create(&thread_id, NULL, handle_client, (void *) &client_socket);
+    +        int *client_socket_ptr = malloc(sizeof(int));
+    +        *client_socket_ptr = client_socket;
+    +        pthread_create(&thread_id, NULL, handle_client, (void *) client_socket_ptr);
+        }
+    }
+
+    void *handle_client(void *arg) {
+        int client_socket = *(int *) arg;
+        free(arg);
+        char buffer[BUFFER_SIZE];
+    ```
+    explanation-suggested-fix: The suggested fix allocates memory for a new integer pointer to store the client socket descriptor and passes this pointer to the `pthread_create` function. This prevents multiple threads from possibly sharing the same `client_socket` variable, thereby avoiding the race condition.
+    method: UNKNOWN

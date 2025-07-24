@@ -1,0 +1,43 @@
+plaintext
+vuln-fix: CWE-667: Shared Resource with Improper Synchronization ('Race Condition') in gpt35-45491 line 49 (severity: High)
+what: The vulnerability is a race condition that occurs because the `client_socket` in the `main()` function is passed directly to the `client_handler` function without proper synchronization, leading to the potential for multiple threads to access and modify the same shared resource concurrently.
+where: The vulnerability is located in `gpt35-45491` file at line 49, specifically where `pthread_create` passes the address of `client_socket` to `client_handler`.
+why: Failing to resolve this flaw can result in data corruption and unexpected behavior, as multiple threads can interfere with each other when accessing or modifying shared resources. This could lead to application crashes, data leakage, or corrupted responses.
+how: An attacker could exploit this vulnerability by creating multiple connections to the server in rapid succession, which could lead to multiple threads racing to update the `client_socket`, causing data corruption and unpredictable behavior.
+code-sources: The code source where user input enters the application is the `recv(client_socket, buffer, 1024, 0)` call in the `client_handler` function.
+code-sinks: The actions performed using the user input from the source include checking if the message is a palindrome and sending the respective response back using `send(client_socket, response, strlen(response), 0)`.
+suggested-fix:
+```diff
+--- gpt35-45491.c
++++ gpt35-45491.c
+@@ -49,12 +49,20 @@
+         int client_socket = accept(server_socket, NULL, NULL);
+         if (client_socket < 0) {
+             printf("Failed to accept incoming connection\n");
+             close(server_socket);
+             return -1;
+         }
+
++        // Allocate memory for client_socket argument and assign value
++        int *client_sock_ptr = malloc(sizeof(int));
++        if (client_sock_ptr == NULL) {
++            printf("Memory allocation failed\n");
++            close(client_socket);
++            continue;
++        }
++        *client_sock_ptr = client_socket;
++
+         // create thread for client handling
+         pthread_t tid;
+-        if (pthread_create(&tid, NULL, client_handler, (void *)&client_socket) < 0) {
++        if (pthread_create(&tid, NULL, client_handler, (void *)client_sock_ptr) < 0) {
+             printf("Failed to create client handling thread\n");
+             close(client_socket);
++            free(client_sock_ptr);
+             continue;
+         }
+     }
+ }
+```
+explanation-suggested-fix: The suggested code diff resolves the vulnerability by allocating memory dynamically for each `client_socket` and passing a pointer to this newly allocated memory to the `pthread_create` function. This ensures that each thread gets its own unique `client_socket` value, thus avoiding the race condition and ensuring thread-safe operations.
+method: UNKNOWN

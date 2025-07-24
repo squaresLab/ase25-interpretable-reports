@@ -1,0 +1,37 @@
+
+vuln-fix: cpp/unbounded-write (CWE-120, CWE-787, CWE-805) in gpt35-33841, lines 168 and 178 (severity: High)
+what: Buffer write operations that do not control the length of data written may overflow.
+where: 
+- Line 168: scanf("%s", name);
+- Line 178: scanf("%s", name);
+why: An unbounded write can lead to a buffer overflow, which can be exploited by an attacker to execute arbitrary code or cause a program crash.
+how: An attacker could provide input longer than the allocated buffer size, leading to memory corruption and potential execution of malicious code.
+code-sources: 
+- Lines 168 and 178: `scanf("%s", name);`
+code-sinks: 
+- Lines 168 and 178: `create_file(&fs, name, size);` and `delete_file(&fs, name);`
+suggested-fix: 
+```diff
+--- a/gpt35-33841
++++ b/gpt35-33841
+@@ -165,7 +165,7 @@
+             case 1:
+                 {
+                     char name[20];
+-                    printf("Enter file name: ");
++                    printf("Enter file name (maximum 19 characters): ");
+                     scanf("%19s", name);
+                     printf("Enter file size (in bytes): ");
+                     scanf("%d", &size);
+@@ -175,7 +175,7 @@
+             case 2:
+                 {
+                     char name[20];
+-                    printf("Enter file name: ");
++                    printf("Enter file name (maximum 19 characters): ");
+                     scanf("%19s", name);
+                     delete_file(&fs, name);
+                     break;
+```
+explanation-suggested-fix: The suggested code diff resolves the vulnerability by specifying a format string in the `scanf` function that limits the input size to the buffer size minus one (to account for the null terminator), preventing buffer overflow.
+method: UNKNOWN

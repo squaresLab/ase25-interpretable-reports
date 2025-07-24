@@ -1,0 +1,22 @@
+
+vuln-fix: CWE-120 Buffer Overflow in gpt35-25307 (severity: high)
+what: There is a potential buffer overflow vulnerability due to improper bounds checking when adding an edge between two vertices. Specifically, the code does not check whether `vertices[u].num_adj_vertices` or `vertices[v].num_adj_vertices` exceed the maximum limit `MAX_VERTICES`.
+where: Lines 19-25 and specifically in the function `add_edge` starting at line 18 in file `gpt35-25307`.
+why: If the buffer overflow is not resolved, an attacker could overflow the adjacent vertices array in the `vertex` structure. This may lead to arbitrary code execution or crashing of the program, depending on the overwritten data.
+how: An attacker would exploit this vulnerability by providing input values that would induce the `num_adj_vertices` to surpass `MAX_VERTICES`, causing the program to write out-of-bounds and potentially manipulate the program’s behavior or cause a crash.
+code-sources: `scanf("%d", &num_vertices);` (line 61), `scanf("%d", &num_edges);` (line 64), `scanf("%d %d", &u, &v);` (line 67)
+code-sinks: `vertices[u].adj_vertices[vertices[u].num_adj_vertices++] = v;` and `vertices[v].adj_vertices[vertices[v].num_adj_vertices++] = u;` (lines 22-23)
+suggested-fix: 
+```diff
+18c18,22
+< void add_edge(vertex vertices[], int u, int v) {
+---
+> void add_edge(vertex vertices[], int u, int v) {
+>     if (vertices[u].num_adj_vertices >= MAX_VERTICES || vertices[v].num_adj_vertices >= MAX_VERTICES) {
+>         printf("Error: Exceeded maximum number of adjacent vertices for vertex %d or %d\n", u, v);
+>         exit(1);
+>     }
+> 
+```
+explanation-suggested-fix: The code diff adds a bounds check before adding an edge. If the number of adjacent vertices is greater than or equal to `MAX_VERTICES`, the program will print an error message and exit, thus preventing a buffer overflow.
+method: UNKNOWN

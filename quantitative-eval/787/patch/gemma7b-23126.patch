@@ -1,0 +1,20 @@
+
+    
+    --- original.c
+    +++ fixed.c
+    @@ -25,7 +25,7 @@
+             fgets(line, MAX_BUFFER_SIZE, reader->file);
+    
+             // Allocate memory for the row if needed
+    -        if (reader->size < reader->current_row + 1)
+    +        if (reader->size <= reader->current_row)
+             {
+    -             reader->buffer = realloc(reader->buffer, (reader->size + 1) * MAX_BUFFER_SIZE);
+    -             reader->size++;
+    +             reader->buffer = realloc(reader->buffer, (reader->size + 1) * sizeof(char *));
+    +             reader->size++;
+             }
+    
+            // Store the line in the buffer
+    
+    

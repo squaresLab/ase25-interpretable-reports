@@ -1,0 +1,84 @@
+
+
+#include <pthread.h>
+
+pthread_mutex_t clients_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+// In handle_client function
+void *handle_client(void *client_socket) {
+    int client_socket_copy = *((int *) client_socket);
+    while (1) {
+        memset(buffer, 0, BUFFER_SIZE);
+        int bytes_received = recv(client_socket_copy, buffer, BUFFER_SIZE, 0);
+        if (bytes_received <= 0) {
+            pthread_mutex_lock(&clients_mutex);
+            for (int i = 0; i < client_count; i++) {
+                if (clients[i] == client_socket_copy) {
+                    clients[i] = clients[client_count - 1];
+                    client_count--;
+                    break;
+                }
+            }
+            pthread_mutex_unlock(&clients_mutex);
+            close(client_socket_copy);
+            return NULL;
+        }
+        printf("Client %d sent: %s\n", client_socket_copy, buffer);
+        pthread_mutex_lock(&clients_mutex);
+        for (int i = 0; i < client_count; i++) {
+            if (clients[i] != client_socket_copy) {
+                send(clients[i], buffer, strlen(buffer), 0);
+            }
+        }
+        pthread_mutex_unlock(&clients_mutex);
+    }
+}
+
+// In main function
+int main() {
+    int server_socket = socket(AF_INET, SOCK_STREAM, 0);
+    if (server_socket == -1) {
+        printf("Error creating socket\n");
+        return 1;
+    }
+
+    struct sockaddr_in server_addr;
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(12345);
+    server_addr.sin_addr.s_addr = INADDR_ANY;
+
+    if (bind(server_socket, (struct sockaddr *) &server_addr, sizeof(server_addr)) == -1) {
+        printf("Error binding socket\n");
+        return 1;
+    }
+
+    if (listen(server_socket, MAX_CLIENTS) == -1) {
+        printf("Error listening on socket\n");
+        return 1;
+    }
+
+    while (1) {
+        int client_socket = accept(server_socket, NULL, NULL);
+        if (client_socket == -1) {
+            printf("Error accepting connection\n");
+            continue;
+        }
+        pthread_mutex_lock(&clients_mutex);
+        if (client_count >= MAX_CLIENTS) {
+            pthread_mutex_unlock(&clients_mutex);
+            close(client_socket);
+            continue;
+        }
+        clients[client_count] = client_socket;
+        client_count++;
+        pthread_mutex_unlock(&clients_mutex);
+        pthread_t thread_id;
+        int *pclient_socket = malloc(sizeof(int));
+        *pclient_socket = client_socket;
+        pthread_create(&thread_id, NULL, handle_client, (void *) pclient_socket);
+    }
+
+    return 0;
+}
+

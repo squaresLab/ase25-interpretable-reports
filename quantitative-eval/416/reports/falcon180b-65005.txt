@@ -1,0 +1,108 @@
+
+vuln-fix: CWE-362: Race Condition in falcon180b-65005 (severity: High)
+what: The vulnerability is a race condition where multiple threads access and modify the same memory (i.e., the `client_socket` variable) without proper synchronization.
+where: `falcon180b-65005`, specifically in the `accept_connections` function and the `handle_client` function, where the `client_socket` variable is passed to a new thread.
+why: One possible consequence of not resolving this weakness is that an attacker could exploit the race condition to manipulate the data read by another thread, potentially leading to memory corruption, crashing the application, or unexpected behavior.
+how: An attacker could rapidly establish connections to the server and force it to handle more threads than designed for, thereby triggering the race condition and exploiting the unsynchronized access to shared resources.
+code-sources: The entry point is when a new client connects through the `accept` call in the `accept_connections` function.
+code-sinks: The action performed using user input is in the `recv` call within the `handle_client` function, where the received data is printed and echoed back to the client.
+suggested-fix: 
+```diff
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <pthread.h>
+
+#define MAX_CLIENTS 10
+#define BUFFER_SIZE 1024
+
+int server_socket;
+int client_sockets[MAX_CLIENTS];
+int num_clients = 0;
+pthread_mutex_t client_sockets_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+void *handle_client(void *arg) {
+    int client_socket = *(int *) arg;
+    char buffer[BUFFER_SIZE];
+
+    while (1) {
+        memset(buffer, 0, BUFFER_SIZE);
+        int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+
+        if (bytes_received <= 0) {
+            break;
+        }
+
+        printf("Client %d sent: %s\n", client_socket, buffer);
+        send(client_socket, buffer, strlen(buffer), 0);
+    }
+
+    close(client_socket);
+    
+    pthread_mutex_lock(&client_sockets_mutex);
+    num_clients--;
+    pthread_mutex_unlock(&client_sockets_mutex);
+}
+
+void accept_connections() {
+    while (1) {
+        int client_socket = accept(server_socket, NULL, NULL);
+
+        if (client_socket == -1) {
+            printf("Error accepting connection\n");
+            continue;
+        }
+
+        pthread_mutex_lock(&client_sockets_mutex);
+
+        if (num_clients >= MAX_CLIENTS) {
+            close(client_socket);
+            printf("Maximum number of clients reached\n");
+            pthread_mutex_unlock(&client_sockets_mutex);
+            continue;
+        }
+
+        client_sockets[num_clients++] = client_socket;
+        pthread_mutex_unlock(&client_sockets_mutex);
+
+        int *client_sock = malloc(sizeof(int));
+        *client_sock = client_socket;
+        pthread_t thread_id;
+        pthread_create(&thread_id, NULL, handle_client, (void *) client_sock);
+    }
+}
+
+int main() {
+    int opt = 1;
+    setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+
+    struct sockaddr_in server_addr;
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(8080);
+    server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+
+    server_socket = socket(AF_INET, SOCK_STREAM, 0);
+
+    if (bind(server_socket, (struct sockaddr *) &server_addr, sizeof(server_addr)) == -1) {
+        printf("Error binding socket\n");
+        return -1;
+    }
+
+    if (listen(server_socket, 10) == -1) {
+        printf("Error listening on socket\n");
+        return -1;
+    }
+
+    printf("Server started on port 8080\n");
+    accept_connections();
+
+    close(server_socket);
+    return 0;
+}
+```
+explanation-suggested-fix: The suggested fix resolves the race condition by introducing a mutex (`client_sockets_mutex`) to synchronize access to the shared `client_sockets` array and `num_clients` variable. Using `pthread_mutex_lock` and `pthread_mutex_unlock` around the critical sections ensures that only one thread can modify these resources at a time. Additionally, each new thread gets its own `client_socket` instance by allocating memory, preventing the race condition.
+method: UNKNOWN

@@ -1,0 +1,29 @@
+ 
+
+--- falcon180b-59800.c
++++ falcon180b-59800-fixed.c
+@@ -45,7 +45,7 @@
+ 
+     if (logFile == NULL) {
+         printf("Error: Could not open log file.\n");
+-        return 1;
++        return EXIT_FAILURE;
+     }
+ 
+     while (fgets(logLine, MAX_LINE_LENGTH, logFile)!= NULL) {
+@@ -54,7 +54,14 @@
+         totalWords += getLineWords(logLine, wordsCount);
+     }
+ 
++    // Correctly set numWords to totalWords to reflect the actual count of words
++    numWords = totalWords;
+     fclose(logFile);
++    
++    for (int i = 0; i < numWords; i++) {
++        wordsCount[i].count = 1; // Initialize the count for each word
++    }
++    
+     qsort(wordsCount, numWords, sizeof(WordCount), compareWords);
+ 
+     printf("Total lines: %d\n", lineCount);
+

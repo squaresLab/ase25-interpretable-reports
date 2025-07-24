@@ -1,0 +1,26 @@
+
+vuln-fix: CWE-787: Out-of-bounds Write in falcon180b-4508 (severity: High)
+what: The code fails to correctly handle the case where `num_clients` is decremented from zero, leading to an out-of-bounds write and a potential buffer overflow.
+where: Handle client disconnection at the `clients[num_clients] = -1;` line within the `handle_client` function.
+why: If not resolved, this vulnerability can cause an out-of-bounds write which can lead to a denial of service, corruption of data, or arbitrary code execution.
+how: An attacker can trigger multiple client disconnections to cause `num_clients` to decrement below zero, resulting in an out-of-bounds write to `clients[-1]`.
+code-sources: The user inputs enter the application via the `recv(client_socket, buffer, BUFFER_SIZE, 0);` call.
+code-sinks: The application processes user input in the `for (int i = 0; i < num_clients; i++) { if (clients[i] != -1) { send(clients[i], buffer, bytes_received, 0); }}` loop.
+suggested-fix: 
+```diff
+--- falcon180b-4508
++++ falcon180b-4508
+@@ -21,8 +21,10 @@
+         if (bytes_received <= 0) {
+             close(client_socket);
+             clients[num_clients] = -1;
+-            num_clients--;
++            if(num_clients > 0) {
++                num_clients--;
++            }
+             break;
+         }
+ 
+```
+explanation-suggested-fix: The suggested code diff resolves the vulnerability by ensuring that `num_clients` is decremented only if it is greater than zero, preventing the out-of-bounds write.
+method: CODEQL

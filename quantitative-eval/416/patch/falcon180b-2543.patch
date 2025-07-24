@@ -1,0 +1,19 @@
+ 
+    
+    11,13c11,13
+    < system("echo 1 > /sys/class/leds/light/brightness");
+    < } else if (strncmp(buffer, "off", 4) == 0) {
+    < system("echo 0 > /sys/class/leds/light/brightness");
+    < } else if (strncmp(buffer, "dim", 4) == 0) {
+    < system("echo 50 > /sys/class/leds/light/brightness");
+    ---
+    > if (strcmp(buffer, "on") == 0) {
+    >     system("echo 1 > /sys/class/leds/light/brightness");
+    > } else if (strcmp(buffer, "off") == 0) {
+    >     system("echo 0 > /sys/class/leds/light/brightness");
+    > } else if (strncmp(buffer, "dim", 4) == 0) {
+    >     system("echo 0 > /sys/class/leds/light/brightness");
+    17c17
+    < }
+    
+    

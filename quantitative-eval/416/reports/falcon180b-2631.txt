@@ -1,0 +1,50 @@
+
+    vuln-fix: Buffer Overflow (CWE-120) in falcon180b-2631 (severity: High)
+    what: The code lacks proper bounds checking on user input before sending it to other clients, leading to potential buffer overflow.
+    where: 
+    - Line 18: `recv(client_socket, buffer, BUFFER_SIZE, 0);` receives data from a client.
+    - Line 23: `printf("Client %d sent: %s\n", client_socket, buffer);` outputs the received data without bounds checking.
+    - Line 26: `send(clients[i][0], buffer, strlen(buffer), 0);` sends the potentially oversized buffer to other clients.
+    why: An attacker could exploit this vulnerability to execute arbitrary code on the server, leading to potential system compromise, denial-of-service, or data leakage.
+    how: An attacker would send specially crafted input that exceeds the buffer size, causing a buffer overflow and potentially executing malicious code or crashing the server.
+    code-sources: `recv(client_socket, buffer, BUFFER_SIZE, 0);` on line 18
+    code-sinks: 
+    - `printf("Client %d sent: %s\n", client_socket, buffer);` on line 23
+    - `send(clients[i][0], buffer, strlen(buffer), 0);` on line 26
+    suggested-fix: 
+    ```
+    diff --git a/falcon180b-2631 b/falcon180b-2631
+    index 46e6c4b..d4f8d2e 100644
+    --- a/falcon180b-2631
+    +++ b/falcon180b-2631
+    @@ -17,16 +17,22 @@ void *handle_client(void *arg) {
+         int client_socket = *(int *)arg;
+         char buffer[BUFFER_SIZE];
+ 
+    -    while (1) {
+    +    while (1) {
+             memset(buffer, 0, BUFFER_SIZE);
+             int bytes_received = recv(client_socket, buffer, BUFFER_SIZE - 1, 0);
+ 
+    -        if (bytes_received <= 0) {
+    +        if (bytes_received <= 0) {
+                 break;
+             }
+ 
+    +        buffer[bytes_received] = '\0'; // Null-terminate buffer
+             printf("Client %d sent: %s\n", client_socket, buffer);
+ 
+    -        for (int i = 0; i < num_clients; i++) {
+    +        for (int i = 0; i < num_clients; i++) {
+                 if (i != client_socket) {
+    +                if (send(clients[i][0], buffer, bytes_received, 0) < 0) {
+    +                    perror("Error sending data to client");
+    +                    close(client_socket);
+    +                    return NULL;
+    +                }
+                 }
+             }
+         }
+    ```
+    explanation-suggested-fix: The fix ensures the buffer is correctly null-terminated after receiving data by adjusting the `recv` call to `BUFFER_SIZE - 1` and adding a null-termination at `buffer[bytes_received]`. Additionally, it validates the `send` calls, ensuring errors are handled if sending data fails.
+    method: UNKNOWN
