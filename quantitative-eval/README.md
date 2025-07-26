@@ -14,13 +14,13 @@ We conducted a comprehensive quantitative evaluation focusing on two critical we
 Our evaluation measured three key aspects:
 
 ### 1. Report Compliance
-Evaluation of how well generated vulnerability reports adhere to our interpretability standards and structured format requirements.
+Evaluation of how well generated vulnerability reports adhere to our interpretability standards and structured format requirements. We measured compliance by running **SecGenLint** on each generated report to assess adherence to our structured format.
 
 ### 2. Patch Success
-Assessment of the quality and correctness of automatically generated patches for fixing identified vulnerabilities.
+Assessment of the quality and correctness of automatically generated patches for fixing identified vulnerabilities. We evaluated patch success by running [**ESBMC**](https://github.com/esbmc/esbmc) (Efficient SMT-based Context-Bounded Model Checker) on the patched code to verify that the original vulnerabilities were successfully eliminated.
 
 ### 3. Applicability
-Analysis of how successfully our approach can be applied to different vulnerability instances and code patterns.
+Analysis of how successfully our approach can be applied to different vulnerability instances and code patterns. We measured patch applicability by testing whether each generated patch could be automatically applied to the original vulnerable code using the standard `patch` command from the terminal.
 
 ## Dataset Structure
 
